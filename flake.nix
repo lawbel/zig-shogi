@@ -38,8 +38,10 @@
             src = ./.;
             buildInputs = [
               pkgs.zigpkgs.master
+              pkgs.glibc
               pkgs.SDL2
               pkgs.SDL2.dev
+              pkgs.pkg-config
             ];
             buildPhase = ''
               # By default zig will check a global cache for build artefacts.
@@ -48,6 +50,7 @@
               # one we create locally.
               mkdir ./empty-cache
 
+              # TODO: fix this, it is currently broken
               zig build \
                 --global-cache-dir ./empty-cache \
                 -Doptimize=ReleaseFast
@@ -62,8 +65,10 @@
             nativeBuildInputs = [
               pkgs.zigpkgs.master
               zls.packages.${system}.zls
+              pkgs.glibc
               pkgs.SDL2
               pkgs.SDL2.dev
+              pkgs.pkg-config
             ];
           };
         }
