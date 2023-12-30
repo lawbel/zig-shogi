@@ -27,15 +27,43 @@
       };
       overlays = [ zig-pkgs ];
       systems = builtins.attrNames zig.packages;
+      name = "shogi";
     in
       flake-utils.lib.eachSystem systems (system:
         let
           pkgs = import nixpkgs { inherit overlays system; };
         in {
+          packages.default = pkgs.stdenv.mkDerivation {
+            inherit name;
+            src = ./.;
+            buildInputs = [
+              pkgs.zigpkgs.master
+              pkgs.SDL2
+              pkgs.SDL2.dev
+            ];
+            buildPhase = ''
+              # By default zig will check a global cache for build artefacts.
+              # We must disable this behaviour to get a pure build environment,
+              # which we can do by simply re-directing that cache to an empty
+              # one we create locally.
+              mkdir ./empty-cache
+
+              zig build \
+                --global-cache-dir ./empty-cache \
+                -Doptimize=ReleaseFast
+            '';
+            installPhase = ''
+              mkdir -p $out/bin
+              cp zig-out/bin/${name} $out/bin
+            '';
+          };
+
           devShells.default = pkgs.mkShell {
             nativeBuildInputs = [
               pkgs.zigpkgs.master
               zls.packages.${system}.zls
+              pkgs.SDL2
+              pkgs.SDL2.dev
             ];
           };
         }
