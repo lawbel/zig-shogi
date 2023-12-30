@@ -14,8 +14,8 @@ pub fn build(builder: *std.build.Builder) void {
     exe.linkSystemLibrary("SDL2");
     builder.installArtifact(exe);
 
+    const run_step = builder.step("run", "Run the program");
     const run_exe = builder.addRunArtifact(exe);
-    run_exe.step.dependOn(builder.getInstallStep());
-    const run_step = builder.step("run", "Run the application");
     run_step.dependOn(&run_exe.step);
+    run_exe.step.dependOn(builder.getInstallStep());
 }
