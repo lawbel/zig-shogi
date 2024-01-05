@@ -22,55 +22,62 @@
 
   outputs = { self, nixpkgs, zig, zls, flake-utils, ... }:
     let
-      zig-pkgs = final: prev: {
-        zigpkgs = zig.packages.${prev.system};
-      };
-      overlays = [ zig-pkgs ];
-      systems = builtins.attrNames zig.packages;
+      system = "x86_64-linux";
       name = "shogi";
-    in
-      flake-utils.lib.eachSystem systems (system:
-        let
-          pkgs = import nixpkgs { inherit overlays system; };
-        in {
-          packages.default = pkgs.stdenv.mkDerivation {
-            inherit name;
-            src = ./.;
-            buildInputs = [
-              pkgs.zigpkgs.master
-              pkgs.glibc
-              pkgs.SDL2
-              pkgs.SDL2.dev
-              pkgs.pkg-config
-            ];
-            buildPhase = ''
-              # By default zig will check a global cache for build artefacts.
-              # We must disable this behaviour to get a pure build environment,
-              # which we can do by simply re-directing that cache to an empty
-              # one we create locally.
-              mkdir ./empty-cache
+      pkgs = import nixpkgs { inherit system; };
 
-              # TODO: fix this, it is currently broken
-              zig build \
-                --global-cache-dir ./empty-cache \
-                -Doptimize=ReleaseFast
-            '';
-            installPhase = ''
-              mkdir -p $out/bin
-              cp zig-out/bin/${name} $out/bin
-            '';
-          };
+    in {
+      packages.${system}.default = pkgs.stdenv.mkDerivation {
+        inherit name;
+        src = ./.;
 
-          devShells.default = pkgs.mkShell {
-            nativeBuildInputs = [
-              pkgs.zigpkgs.master
-              zls.packages.${system}.zls
-              pkgs.glibc
-              pkgs.SDL2
-              pkgs.SDL2.dev
-              pkgs.pkg-config
-            ];
-          };
-        }
-      );
+        buildInputs = [
+          zig.packages.${system}.master
+          pkgs.glibc
+          pkgs.SDL2
+          pkgs.SDL2.dev
+          pkgs.pkg-config
+        ];
+
+        buildPhase = ''
+          # By default zig will check a global cache for build artefacts.
+          # We must disable this behaviour to get a pure build environment,
+          # which we can do by simply re-directing that cache to an empty
+          # one we create locally.
+          mkdir ./empty-cache
+
+          # Nix outputs should be deterministic, so we set the seed to help
+          # with that.
+          zig build \
+            --global-cache-dir ./empty-cache \
+            --seed 12345 \
+            -Doptimize=ReleaseFast
+        '';
+
+        installPhase = ''
+          mkdir -p $out/bin
+
+          # This changes the 'dynamic loader' / 'ELF interpreter' of the
+          # resulting binary from musl to glibc. Without this, the output will
+          # not work. I would rather give zig some options to fix the
+          # underlying linker issue, but for now this solves the problem and
+          # makes this into a complete working build.
+          patchelf \
+            --set-interpreter ${pkgs.glibc}/lib/ld-linux-x86-64.so.2 \
+            --output $out/bin/${name} \
+            zig-out/bin/${name}
+        '';
+      };
+
+      devShells.${system}.default = pkgs.mkShell {
+        nativeBuildInputs = [
+          zig.packages.${system}.master
+          zls.packages.${system}.zls
+          pkgs.glibc
+          pkgs.SDL2
+          pkgs.SDL2.dev
+          pkgs.pkg-config
+        ];
+      };
+    };
 }
