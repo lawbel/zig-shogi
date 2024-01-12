@@ -1,9 +1,11 @@
-const c = @cImport(@cInclude("SDL2/SDL.h"));
+const c = @cImport({
+    @cInclude("SDL2/SDL.h");
+    @cInclude("SDL2/SDL_image.h");
+});
 const conf = @import("config.zig");
 const init = @import("init.zig");
-const std = @import("std");
-const types = @import("types.zig");
 const render = @import("render.zig");
+const ty = @import("types.zig");
 
 pub fn main() !void {
     try init.sdlInit();
@@ -15,7 +17,7 @@ pub fn main() !void {
     const renderer = try init.createRenderer(window);
     defer c.SDL_DestroyRenderer(renderer);
 
-    var board = types.Board.init;
+    var board = ty.Board.init;
     var event: c.SDL_Event = undefined;
 
     main_loop: while (true) {

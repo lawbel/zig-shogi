@@ -1,5 +1,14 @@
 const std = @import("std");
 
+pub const Colour = struct {
+    red: u8,
+    green: u8,
+    blue: u8,
+    alpha: u8 = max_alpha,
+
+    pub const max_alpha = std.math.maxInt(u8);
+};
+
 pub const IsPromoted =
     union(enum) { basic, promoted };
 
