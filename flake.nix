@@ -1,17 +1,14 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs";
-
     flake-utils.url = "github:numtide/flake-utils";
     flake-compat.url = "github:edolstra/flake-compat";
-
     zig = {
       url = "github:mitchellh/zig-overlay";
       inputs.flake-utils.follows = "flake-utils";
       inputs.flake-compat.follows = "flake-compat";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     zls = {
       url = "github:zigtools/zls";
       inputs.flake-utils.follows = "flake-utils";
@@ -26,18 +23,23 @@
       name = "shogi";
       pkgs = import nixpkgs { inherit system; };
 
+      commonInputs = [
+        # zig
+        zig.packages.${system}.master
+        # C
+        pkgs.glibc
+        pkgs.pkg-config
+        # SDL
+        pkgs.SDL2
+        pkgs.SDL2.dev
+        pkgs.SDL2_image
+      ];
+
     in {
       packages.${system}.default = pkgs.stdenv.mkDerivation {
         inherit name;
         src = ./.;
-
-        buildInputs = [
-          zig.packages.${system}.master
-          pkgs.glibc
-          pkgs.SDL2
-          pkgs.SDL2.dev
-          pkgs.pkg-config
-        ];
+        buildInputs = commonInputs;
 
         buildPhase = ''
           # By default zig will check a global cache for build artefacts.
@@ -70,14 +72,7 @@
       };
 
       devShells.${system}.default = pkgs.mkShell {
-        nativeBuildInputs = [
-          zig.packages.${system}.master
-          zls.packages.${system}.zls
-          pkgs.glibc
-          pkgs.SDL2
-          pkgs.SDL2.dev
-          pkgs.pkg-config
-        ];
+        nativeBuildInputs = commonInputs ++ [ zls.packages.${system}.zls ];
       };
     };
 }
