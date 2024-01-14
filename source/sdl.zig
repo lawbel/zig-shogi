@@ -6,6 +6,8 @@ const conf = @import("config.zig");
 const render = @import("render.zig");
 const ty = @import("types.zig");
 
+// Declared in render.zig but mostly used here. Perhaps it would be better to
+// change it to declare it here instead?
 const RenderError = render.RenderError;
 
 /// Any kind of error that can happen during initialization of SDL.
