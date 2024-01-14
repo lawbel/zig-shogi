@@ -16,6 +16,13 @@ pub fn main() !void {
 
     var board = ty.Board.init;
     var event: c.SDL_Event = undefined;
+    var state: ty.State = .{
+        .board = ty.Board.init,
+        .mouse = .{
+            .pos = .{ .x = 0, .y = 0 },
+            .move = .{ .from = null, .to = null },
+        },
+    };
 
     main_loop: while (true) {
         // Process all events that occured since the last frame.
@@ -26,7 +33,8 @@ pub fn main() !void {
             }
         }
 
-        try render.render(renderer, &board);
+        // Render the current game state.
+        try render.render(renderer, &state);
 
         const one_s_in_ms: u32 = 1000;
         c.SDL_Delay(one_s_in_ms / conf.fps);

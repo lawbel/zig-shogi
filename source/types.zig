@@ -18,6 +18,29 @@
 
 const std = @import("std");
 
+/// Our entire game state, which includes a mix of core types like `Board`
+/// from `types.zig` and things relating to window/mouse state.
+pub const State = struct {
+    /// The state of the board.
+    board: Board,
+    /// Information needed for mouse interactions.
+    mouse: struct {
+        /// The current position of the mouse.
+        pos: Pos,
+        /// Whether there is a move currently being made with the mouse.
+        move: struct {
+            /// Where the move started - where left-click was first held down.
+            from: ?Pos,
+            /// Where the move ended - where left-click was released.
+            to: ?Pos,
+        },
+    },
+};
+
+/// A position (x, y) in our game window.
+pub const Pos =
+    struct { x: i32, y: i32 };
+
 /// An RGB colour, including an alpha (opacity) field.
 pub const Colour = struct {
     red: u8,

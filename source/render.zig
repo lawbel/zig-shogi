@@ -27,21 +27,29 @@ const piece_img = @embedFile("../data/piece.png");
 var board_texture: ?*c.SDL_Texture = null;
 var piece_texture: ?*c.SDL_Texture = null;
 
-pub fn render(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
+/// The main rendering function - it does *all* the rendering each frame, by
+/// calling out to helper functions.
+pub fn render(
+    renderer: *c.SDL_Renderer,
+    state: *const ty.State,
+) RenderError!void {
     const black = .{ .red = 0, .green = 0, .blue = 0 };
 
     try sdl.setRenderDrawColour(renderer, &black);
     try sdl.renderClear(renderer);
 
     try renderBoard(renderer);
-    try renderPieces(renderer, board);
+    try renderPieces(renderer, &state.board);
 
     // Take the rendered state and update the window with it.
     c.SDL_RenderPresent(renderer);
 }
 
 /// Renders all the pieces on the board.
-fn renderPieces(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
+fn renderPieces(
+    renderer: *c.SDL_Renderer,
+    board: *const ty.Board,
+) RenderError!void {
     const texture = piece_texture orelse init: {
         const stream = try sdl.constMemToRw(piece_img);
         const tex = try sdl.rwToTexture(renderer, stream, true);
