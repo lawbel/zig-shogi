@@ -4,9 +4,9 @@ pub const Colour = struct {
     red: u8,
     green: u8,
     blue: u8,
-    alpha: u8 = max_alpha,
+    alpha: u8 = @"opaque",
 
-    pub const max_alpha = std.math.maxInt(u8);
+    pub const @"opaque" = std.math.maxInt(u8);
 };
 
 pub const IsPromoted =
