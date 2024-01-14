@@ -97,12 +97,12 @@ fn renderCopy(args: RenderCopyArgs) RenderError!void {
 fn rwToTexture(
     renderer: *c.SDL_Renderer,
     stream: *c.SDL_RWops,
-    free_arg: bool,
+    free_stream: bool,
 ) RenderError!*c.SDL_Texture {
     return c.IMG_LoadTexture_RW(
         renderer,
         stream,
-        if (free_arg) 1 else 0,
+        if (free_stream) 1 else 0,
     ) orelse {
         const msg = "Failed to load texture: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
