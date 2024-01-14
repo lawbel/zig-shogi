@@ -1,6 +1,7 @@
 //! This module provides some simple wrappers around the raw SDL functions.
 //! We handle errors in a more idiomatic Zig fashion, and provide "keyword"
 //! arguments for functions with long argument lists via the struct trick.
+
 const c = @import("c.zig");
 const conf = @import("config.zig");
 const render = @import("render.zig");

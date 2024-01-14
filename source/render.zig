@@ -4,6 +4,7 @@
 //! Currently we have the setup necessary to recognize and handle those errors
 //! however we want, but for now we simply early-return if we encounter any
 //! error.
+
 const c = @import("c.zig");
 const conf = @import("config.zig");
 const sdl = @import("sdl.zig");
