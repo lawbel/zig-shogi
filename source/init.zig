@@ -12,11 +12,8 @@ pub const InitError = error{
 
 pub fn sdlInit() InitError!void {
     if (c.SDL_Init(conf.sdl_init_flags) < 0) {
-        c.SDL_LogError(
-            c.SDL_LOG_CATEGORY_SYSTEM,
-            "Failed to initialize SDL: %s",
-            c.SDL_GetError(),
-        );
+        const msg = "Failed to initialize SDL: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_SYSTEM, msg, c.SDL_GetError());
         return InitError.Initialization;
     }
 }
@@ -30,11 +27,8 @@ pub fn createWindow() InitError!*c.SDL_Window {
         conf.window_height,
         conf.window_flags,
     ) orelse {
-        c.SDL_LogError(
-            c.SDL_LOG_CATEGORY_VIDEO,
-            "Failed to create window: %s",
-            c.SDL_GetError(),
-        );
+        const msg = "Failed to create window: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_VIDEO, msg, c.SDL_GetError());
         return InitError.CreateWindow;
     };
 }
@@ -47,11 +41,8 @@ pub fn createRenderer(window: *c.SDL_Window) InitError!*c.SDL_Renderer {
         use_any_rendering_driver,
         c.SDL_RENDERER_ACCELERATED,
     ) orelse {
-        c.SDL_LogError(
-            c.SDL_LOG_CATEGORY_RENDER,
-            "Failed to create renderer: %s",
-            c.SDL_GetError(),
-        );
+        const msg = "Failed to create renderer: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return InitError.CreateRenderer;
     };
 }
