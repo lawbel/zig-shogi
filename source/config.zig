@@ -1,7 +1,4 @@
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_image.h");
-});
+const c = @import("c.zig");
 const ty = @import("types.zig");
 
 pub const window_title: [:0]const u8 = "Zig Shogi";

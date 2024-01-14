@@ -1,7 +1,4 @@
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_image.h");
-});
+const c = @import("c.zig");
 const conf = @import("config.zig");
 const ty = @import("types.zig");
 
