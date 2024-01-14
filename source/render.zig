@@ -16,6 +16,11 @@ pub const RenderError = error{
 const board_img = @embedFile("../data/board.png");
 const piece_img = @embedFile("../data/piece.png");
 
+// As we will use these textures constantly while the program is running, we
+// make them global and don't de-allocate them.
+var board_texture: ?*c.SDL_Texture = null;
+var piece_texture: ?*c.SDL_Texture = null;
+
 pub fn render(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
     const black = .{ .red = 0, .green = 0, .blue = 0 };
 
@@ -29,11 +34,12 @@ pub fn render(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
 }
 
 fn renderPieces(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
-    const stream = try constMemToRw(piece_img);
-    defer _ = c.SDL_RWclose(stream);
-
-    const texture = try rwToTexture(renderer, stream, false);
-    defer c.SDL_DestroyTexture(texture);
+    const texture = piece_texture orelse init: {
+        const stream = try constMemToRw(piece_img);
+        const tex = try rwToTexture(renderer, stream, true);
+        piece_texture = tex;
+        break :init tex;
+    };
 
     for (board.squares, 0..) |row, y| {
         for (row, 0..) |val, x| {
@@ -59,11 +65,12 @@ fn renderPieces(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
 }
 
 fn renderBoard(renderer: *c.SDL_Renderer) RenderError!void {
-    const stream = try constMemToRw(board_img);
-    defer _ = c.SDL_RWclose(stream);
-
-    const texture = try rwToTexture(renderer, stream, false);
-    defer c.SDL_DestroyTexture(texture);
+    const texture = board_texture orelse init: {
+        const stream = try constMemToRw(board_img);
+        const tex = try rwToTexture(renderer, stream, true);
+        board_texture = tex;
+        break :init tex;
+    };
 
     try renderCopy(.{ .renderer = renderer, .texture = texture });
 }
