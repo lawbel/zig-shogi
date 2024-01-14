@@ -4,6 +4,8 @@
 //! truth for our C dependencies. Hence we do so in this file.
 
 pub usingnamespace @cImport({
+    // From 'SDL2'.
     @cInclude("SDL2/SDL.h");
+    // From 'SDL2_image'.
     @cInclude("SDL2/SDL_image.h");
 });

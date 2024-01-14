@@ -1,6 +1,10 @@
 //! This module provides some simple wrappers around the raw SDL functions.
 //! We handle errors in a more idiomatic Zig fashion, and provide "keyword"
 //! arguments for functions with long argument lists via the struct trick.
+//!
+//! Note: if we do get an error from the underlying functions, we always log
+//! it with the help of the C functions `SDL_GetError` (to get the details of
+//! what happened) and `SDL_LogError` (to do the logging).
 
 const c = @import("c.zig");
 const conf = @import("config.zig");
@@ -18,6 +22,7 @@ pub const InitError = error{
     CreateRenderer,
 };
 
+/// A wrapper around the C function `SDL_Init`.
 pub fn sdlInit() InitError!void {
     if (c.SDL_Init(conf.sdl_init_flags) < 0) {
         const msg = "Failed to initialize SDL: %s";
@@ -26,6 +31,7 @@ pub fn sdlInit() InitError!void {
     }
 }
 
+/// A wrapper around the C function `SDL_CreateWindow`.
 pub fn createWindow() InitError!*c.SDL_Window {
     return c.SDL_CreateWindow(
         conf.window_title,
@@ -41,6 +47,7 @@ pub fn createWindow() InitError!*c.SDL_Window {
     };
 }
 
+/// A wrapper around the C function `SDL_CreateRenderer`.
 pub fn createRenderer(window: *c.SDL_Window) InitError!*c.SDL_Renderer {
     const use_any_rendering_driver: c_int = -1;
 
@@ -55,6 +62,7 @@ pub fn createRenderer(window: *c.SDL_Window) InitError!*c.SDL_Renderer {
     };
 }
 
+/// The arguments to `renderCopy`.
 pub const RenderCopyArgs = struct {
     renderer: *c.SDL_Renderer,
     texture: *c.SDL_Texture,
@@ -65,6 +73,10 @@ pub const RenderCopyArgs = struct {
     flip: c.SDL_RendererFlip = c.SDL_FLIP_NONE,
 };
 
+/// A wrapper around the C function `SDL_RenderCopyEx`. As that function has a
+/// lot of arguments, in order to easily keep track of them we provide a type
+/// `RenderCopyArgs` which allows us to give a name to each one, and to provide
+/// sensible default arguments where possible.
 pub fn renderCopy(args: RenderCopyArgs) RenderError!void {
     if (c.SDL_RenderCopyEx(
         args.renderer,
@@ -81,6 +93,9 @@ pub fn renderCopy(args: RenderCopyArgs) RenderError!void {
     }
 }
 
+/// A wrapper around the C function `IMG_LoadTexture_RW`. If the argument
+/// `free_stream` is set to `true`, it will free the `stream` argument during
+/// the function call.
 pub fn rwToTexture(
     renderer: *c.SDL_Renderer,
     stream: *c.SDL_RWops,
@@ -97,6 +112,7 @@ pub fn rwToTexture(
     };
 }
 
+/// A wrapper around the C function `SDL_RWFromConstMem`.
 pub fn constMemToRw(data: [:0]const u8) RenderError!*c.SDL_RWops {
     return c.SDL_RWFromConstMem(
         @ptrCast(data),
@@ -108,6 +124,7 @@ pub fn constMemToRw(data: [:0]const u8) RenderError!*c.SDL_RWops {
     };
 }
 
+/// A wrapper around the C function `SDL_SetRenderDrawColor`.
 pub fn setRenderDrawColour(
     renderer: *c.SDL_Renderer,
     colour: *const ty.Colour,
@@ -125,6 +142,7 @@ pub fn setRenderDrawColour(
     }
 }
 
+/// A wrapper around the C function `SDL_RenderClear`.
 pub fn renderClear(renderer: *c.SDL_Renderer) RenderError!void {
     if (c.SDL_RenderClear(renderer) < 0) {
         const msg = "Failed to clear renderer: %s";
