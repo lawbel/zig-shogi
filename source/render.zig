@@ -1,3 +1,9 @@
+//! This module contains all the rendering logic for this game.
+//!
+//! Note on errors: the SDL rendering functions can error for various reasons.
+//! Currently we have the setup necessary to recognize and handle those errors
+//! however we want, but for now we simply early-return if we encounter any
+//! error.
 const c = @import("c.zig");
 const conf = @import("config.zig");
 const sdl = @import("sdl.zig");
@@ -29,9 +35,11 @@ pub fn render(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
     try renderBoard(renderer);
     try renderPieces(renderer, board);
 
+    // Take the rendered state and update the window with it.
     c.SDL_RenderPresent(renderer);
 }
 
+/// Renders all the pieces on the board.
 fn renderPieces(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
     const texture = piece_texture orelse init: {
         const stream = try sdl.constMemToRw(piece_img);
@@ -63,6 +71,7 @@ fn renderPieces(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
     }
 }
 
+/// Renders the game board.
 fn renderBoard(renderer: *c.SDL_Renderer) RenderError!void {
     const texture = board_texture orelse init: {
         const stream = try sdl.constMemToRw(board_img);
