@@ -22,24 +22,49 @@ pub const InitError = error{
     CreateRenderer,
 };
 
+/// Flags to use for SDL initialization; can be used to enable various
+/// subsystems.
+pub const sdl_init_flags: u32 =
+    c.SDL_INIT_VIDEO | c.SDL_INIT_TIMER | c.SDL_INIT_EVENTS;
+
 /// A wrapper around the C function `SDL_Init`.
 pub fn sdlInit() InitError!void {
-    if (c.SDL_Init(conf.sdl_init_flags) < 0) {
+    if (c.SDL_Init(sdl_init_flags) < 0) {
         const msg = "Failed to initialize SDL: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_SYSTEM, msg, c.SDL_GetError());
         return InitError.Initialization;
     }
 }
 
+/// This type represents the various configuration options that can be set
+/// when creating the game window.
+pub const WindowOpts = struct {
+    /// Flags to use when creating the main window.
+    flags: u32 = 0,
+    /// The title of the main window.
+    title: [:0]const u8,
+    /// The window width.
+    width: c_int,
+    /// The window height.
+    height: c_int,
+};
+
+/// Our chosen `WindowOpts` that we use in `createWindow`.
+pub const window_opts: WindowOpts = .{
+    .title = "Zig Shogi",
+    .width = conf.tile_size * ty.Board.size,
+    .height = conf.tile_size * ty.Board.size,
+};
+
 /// A wrapper around the C function `SDL_CreateWindow`.
 pub fn createWindow() InitError!*c.SDL_Window {
     return c.SDL_CreateWindow(
-        conf.window_title,
+        window_opts.title,
         c.SDL_WINDOWPOS_UNDEFINED,
         c.SDL_WINDOWPOS_UNDEFINED,
-        conf.window_width,
-        conf.window_height,
-        conf.window_flags,
+        window_opts.width,
+        window_opts.height,
+        window_opts.flags,
     ) orelse {
         const msg = "Failed to create window: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_VIDEO, msg, c.SDL_GetError());
