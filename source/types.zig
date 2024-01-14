@@ -15,8 +15,27 @@ pub const IsPromoted =
 pub const Player =
     union(enum) { white, black };
 
-pub const Kind =
-    enum { king, rook, bishop, gold, silver, knight, lance, pawn };
+pub const Kind = enum {
+    king,
+    rook,
+    bishop,
+    gold,
+    silver,
+    knight,
+    lance,
+    pawn,
+
+    pub fn size(this: @This()) u8 {
+        return switch (this) {
+            .king => 6,
+            .rook, .bishop => 5,
+            .gold, .silver => 4,
+            .knight => 3,
+            .lance => 2,
+            .pawn => 1,
+        };
+    }
+};
 
 pub const Piece = union(Kind) {
     king,
