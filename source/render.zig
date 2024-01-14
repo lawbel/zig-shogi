@@ -17,7 +17,7 @@ const board_img = @embedFile("../data/board.png");
 const piece_img = @embedFile("../data/piece.png");
 
 pub fn render(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
-    const black: ty.Colour = .{ .red = 0, .green = 0, .blue = 0 };
+    const black = .{ .red = 0, .green = 0, .blue = 0 };
 
     try setRenderDrawColour(renderer, &black);
     try renderClear(renderer);
