@@ -1,5 +1,6 @@
 const c = @import("c.zig");
 const conf = @import("config.zig");
+const sdl = @import("sdl.zig");
 const ty = @import("types.zig");
 
 pub const RenderError = error{
@@ -21,8 +22,8 @@ var piece_texture: ?*c.SDL_Texture = null;
 pub fn render(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
     const black = .{ .red = 0, .green = 0, .blue = 0 };
 
-    try setRenderDrawColour(renderer, &black);
-    try renderClear(renderer);
+    try sdl.setRenderDrawColour(renderer, &black);
+    try sdl.renderClear(renderer);
 
     try renderBoard(renderer);
     try renderPieces(renderer, board);
@@ -32,8 +33,8 @@ pub fn render(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
 
 fn renderPieces(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
     const texture = piece_texture orelse init: {
-        const stream = try constMemToRw(piece_img);
-        const tex = try rwToTexture(renderer, stream, true);
+        const stream = try sdl.constMemToRw(piece_img);
+        const tex = try sdl.rwToTexture(renderer, stream, true);
         piece_texture = tex;
         break :init tex;
     };
@@ -47,7 +48,7 @@ fn renderPieces(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
                     .w = conf.tile_size,
                     .h = conf.tile_size,
                 };
-                try renderCopy(.{
+                try sdl.renderCopy(.{
                     .renderer = renderer,
                     .texture = texture,
                     .dst_rect = &dest,
@@ -63,89 +64,11 @@ fn renderPieces(renderer: *c.SDL_Renderer, board: *ty.Board) RenderError!void {
 
 fn renderBoard(renderer: *c.SDL_Renderer) RenderError!void {
     const texture = board_texture orelse init: {
-        const stream = try constMemToRw(board_img);
-        const tex = try rwToTexture(renderer, stream, true);
+        const stream = try sdl.constMemToRw(board_img);
+        const tex = try sdl.rwToTexture(renderer, stream, true);
         board_texture = tex;
         break :init tex;
     };
 
-    try renderCopy(.{ .renderer = renderer, .texture = texture });
-}
-
-const RenderCopyArgs = struct {
-    renderer: *c.SDL_Renderer,
-    texture: *c.SDL_Texture,
-    src_rect: ?*const c.SDL_Rect = null,
-    dst_rect: ?*const c.SDL_Rect = null,
-    angle: f64 = 0,
-    center: ?*const c.SDL_Point = null,
-    flip: c.SDL_RendererFlip = c.SDL_FLIP_NONE,
-};
-
-fn renderCopy(args: RenderCopyArgs) RenderError!void {
-    if (c.SDL_RenderCopyEx(
-        args.renderer,
-        args.texture,
-        args.src_rect,
-        args.dst_rect,
-        args.angle,
-        args.center,
-        args.flip,
-    ) < 0) {
-        const msg = "Failed to render copy: %s";
-        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.RenderCopy;
-    }
-}
-
-fn rwToTexture(
-    renderer: *c.SDL_Renderer,
-    stream: *c.SDL_RWops,
-    free_stream: bool,
-) RenderError!*c.SDL_Texture {
-    return c.IMG_LoadTexture_RW(
-        renderer,
-        stream,
-        if (free_stream) 1 else 0,
-    ) orelse {
-        const msg = "Failed to load texture: %s";
-        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.LoadTexture;
-    };
-}
-
-fn constMemToRw(data: [:0]const u8) RenderError!*c.SDL_RWops {
-    return c.SDL_RWFromConstMem(
-        @ptrCast(data),
-        @intCast(data.len),
-    ) orelse {
-        const msg = "Failed to read from const memory: %s";
-        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.ReadConstMemory;
-    };
-}
-
-fn setRenderDrawColour(
-    renderer: *c.SDL_Renderer,
-    colour: *const ty.Colour,
-) RenderError!void {
-    if (c.SDL_SetRenderDrawColor(
-        renderer,
-        colour.red,
-        colour.green,
-        colour.blue,
-        colour.alpha,
-    ) < 0) {
-        const msg = "Failed to set render draw color: %s";
-        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.SetRenderDrawColour;
-    }
-}
-
-fn renderClear(renderer: *c.SDL_Renderer) RenderError!void {
-    if (c.SDL_RenderClear(renderer) < 0) {
-        const msg = "Failed to clear renderer: %s";
-        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.RenderClear;
-    }
+    try sdl.renderCopy(.{ .renderer = renderer, .texture = texture });
 }

@@ -1,17 +1,17 @@
 const c = @import("c.zig");
 const conf = @import("config.zig");
-const init = @import("init.zig");
 const render = @import("render.zig");
+const sdl = @import("sdl.zig");
 const ty = @import("types.zig");
 
 pub fn main() !void {
-    try init.sdlInit();
+    try sdl.sdlInit();
     defer c.SDL_Quit();
 
-    const window = try init.createWindow();
+    const window = try sdl.createWindow();
     defer c.SDL_DestroyWindow(window);
 
-    const renderer = try init.createRenderer(window);
+    const renderer = try sdl.createRenderer(window);
     defer c.SDL_DestroyRenderer(renderer);
 
     var board = ty.Board.init;
