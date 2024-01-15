@@ -14,7 +14,6 @@ pub fn main() !void {
     const renderer = try sdl.createRenderer(window);
     defer c.SDL_DestroyRenderer(renderer);
 
-    var board = ty.Board.init;
     var event: c.SDL_Event = undefined;
     var state: ty.State = .{
         .board = ty.Board.init,
@@ -28,6 +27,21 @@ pub fn main() !void {
         // Process all events that occured since the last frame.
         while (c.SDL_PollEvent(&event) != 0) {
             switch (event.type) {
+                c.SDL_MOUSEMOTION => {
+                    state.mouse.pos.x = event.motion.x;
+                    state.mouse.pos.y = event.motion.y;
+                },
+                c.SDL_MOUSEBUTTONDOWN => {
+                    if (event.button.button == c.SDL_BUTTON_LEFT) {
+                        state.mouse.move.from = state.mouse.pos;
+                    }
+                },
+                c.SDL_MOUSEBUTTONUP => {
+                    if (event.button.button == c.SDL_BUTTON_LEFT) {
+                        state.mouse.move.to = state.mouse.pos;
+                        // move_piece();
+                    }
+                },
                 c.SDL_QUIT => break :main_loop,
                 else => {},
             }

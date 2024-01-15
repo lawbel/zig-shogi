@@ -39,7 +39,7 @@ pub fn render(
     try sdl.renderClear(renderer);
 
     try renderBoard(renderer);
-    try renderPieces(renderer, &state.board);
+    try renderPieces(renderer, state);
 
     // Take the rendered state and update the window with it.
     c.SDL_RenderPresent(renderer);
@@ -48,42 +48,70 @@ pub fn render(
 /// Renders all the pieces on the board.
 fn renderPieces(
     renderer: *c.SDL_Renderer,
-    board: *const ty.Board,
+    state: *const ty.State,
 ) RenderError!void {
     const texture = piece_texture orelse init: {
         const stream = try sdl.constMemToRw(piece_img);
+        // This call to rwToTexture frees the `stream`.
         const tex = try sdl.rwToTexture(renderer, stream, true);
         piece_texture = tex;
         break :init tex;
     };
 
-    for (board.squares, 0..) |row, y| {
-        for (row, 0..) |val, x| {
-            if (val) |piece| {
-                const dest: c.SDL_Rect = .{
+    var move_player: ?ty.Player = null;
+    var move_from: ?ty.BoardPos =
+        if (state.mouse.move.from) |pos| pos.toBoardPos() else null;
+
+    for (state.board.squares, 0..) |row, y| {
+        for (row, 0..) |val, x| if (val) |piece| render: {
+            if (move_from) |pos| if (x == pos.x and y == pos.y) {
+                move_player = piece.player;
+                break :render;
+            };
+
+            try sdl.renderCopy(.{
+                .renderer = renderer,
+                .texture = texture,
+                .dst_rect = &.{
                     .x = conf.tile_size * @as(c_int, @intCast(x)),
                     .y = conf.tile_size * @as(c_int, @intCast(y)),
                     .w = conf.tile_size,
                     .h = conf.tile_size,
-                };
-                try sdl.renderCopy(.{
-                    .renderer = renderer,
-                    .texture = texture,
-                    .dst_rect = &dest,
-                    .angle = switch (piece.player) {
-                        .white => 0,
-                        .black => 180,
-                    },
-                });
-            }
-        }
+                },
+                .angle = switch (piece.player) {
+                    .white => 0,
+                    .black => 180,
+                },
+            });
+        };
     }
+
+    // We need to render any piece the player may be moving last, so it
+    // appears on top of everything else.
+    if (move_player) |player| if (state.mouse.move.from) |from| {
+        const offset = from.offsetFromGrid();
+        try sdl.renderCopy(.{
+            .renderer = renderer,
+            .texture = texture,
+            .dst_rect = &.{
+                .x = state.mouse.pos.x - offset.x,
+                .y = state.mouse.pos.y - offset.y,
+                .w = conf.tile_size,
+                .h = conf.tile_size,
+            },
+            .angle = switch (player) {
+                .white => 0,
+                .black => 180,
+            },
+        });
+    };
 }
 
 /// Renders the game board.
 fn renderBoard(renderer: *c.SDL_Renderer) RenderError!void {
     const texture = board_texture orelse init: {
         const stream = try sdl.constMemToRw(board_img);
+        // This call to rwToTexture frees the `stream`.
         const tex = try sdl.rwToTexture(renderer, stream, true);
         board_texture = tex;
         break :init tex;

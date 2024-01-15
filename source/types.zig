@@ -16,6 +16,7 @@
 //! * lance (kyōsha 香車)
 //! * pawn (fuhyō 歩兵)
 
+const conf = @import("config.zig");
 const std = @import("std");
 
 /// Our entire game state, which includes a mix of core types like `Board`
@@ -26,20 +27,40 @@ pub const State = struct {
     /// Information needed for mouse interactions.
     mouse: struct {
         /// The current position of the mouse.
-        pos: Pos,
+        pos: PixelPos,
         /// Whether there is a move currently being made with the mouse.
         move: struct {
             /// Where the move started - where left-click was first held down.
-            from: ?Pos,
+            from: ?PixelPos,
             /// Where the move ended - where left-click was released.
-            to: ?Pos,
+            to: ?PixelPos,
         },
     },
 };
 
 /// A position (x, y) in our game window.
-pub const Pos =
-    struct { x: i32, y: i32 };
+pub const PixelPos = struct {
+    x: i32,
+    y: i32,
+
+    pub fn toBoardPos(this: @This()) BoardPos {
+        return .{
+            .x = @intCast(@divFloor(this.x, conf.tile_size)),
+            .y = @intCast(@divFloor(this.y, conf.tile_size)),
+        };
+    }
+
+    pub fn offsetFromGrid(this: @This()) @This() {
+        return .{
+            .x = @mod(this.x, conf.tile_size),
+            .y = @mod(this.y, conf.tile_size),
+        };
+    }
+};
+
+/// A position (x, y) on our board.
+pub const BoardPos =
+    struct { x: i8, y: i8 };
 
 /// An RGB colour, including an alpha (opacity) field.
 pub const Colour = struct {
