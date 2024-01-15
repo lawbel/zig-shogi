@@ -12,7 +12,7 @@ pub fn build(builder: *std.build.Builder) void {
 
         // This is needed so that we can have our source files under `source/`
         // and other files in another folder like `data/` for example.
-        .main_mod_path = .{ .path = "." },
+        .main_pkg_path = .{ .path = "." },
 
         .target = target,
         .optimize = optimize,
