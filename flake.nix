@@ -25,7 +25,7 @@
 
       commonInputs = [
         # zig
-        zig.packages.${system}."0.11.0"
+        zig.packages.${system}.master
         # C
         pkgs.glibc
         pkgs.pkg-config
@@ -48,8 +48,11 @@
           # one we create locally.
           mkdir ./empty-cache
 
+          # Nix outputs should be deterministic, so we set the seed to help
+          # with that.
           zig build \
             --global-cache-dir ./empty-cache \
+            --seed 12345 \
             -Doptimize=ReleaseFast
         '';
 
