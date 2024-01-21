@@ -32,8 +32,6 @@ pub const State = struct {
         move: struct {
             /// Where the move started - where left-click was first held down.
             from: ?PixelPos,
-            /// Where the move ended - where left-click was released.
-            to: ?PixelPos,
         },
     },
 };
@@ -64,9 +62,9 @@ pub const BoardPos =
 
 /// An RGB colour, including an alpha (opacity) field.
 pub const Colour = struct {
-    red: u8,
-    green: u8,
-    blue: u8,
+    red: u8 = 0,
+    green: u8 = 0,
+    blue: u8 = 0,
     alpha: u8 = @"opaque",
 
     pub const @"opaque" = std.math.maxInt(u8);

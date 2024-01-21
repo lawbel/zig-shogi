@@ -14,6 +14,7 @@ pub const RenderError = error{
     SetDrawColour,
     Clear,
     Copy,
+    FillRect,
     ReadConstMemory,
     LoadTexture,
 };
@@ -38,12 +39,10 @@ pub fn render(
     renderer: *c.SDL_Renderer,
     state: *const ty.State,
 ) RenderError!void {
-    const black = .{ .red = 0, .green = 0, .blue = 0 };
-
-    try sdl.setRenderDrawColour(renderer, &black);
     try sdl.renderClear(renderer);
 
     try renderBoard(renderer);
+    try renderMoveHighlighted(renderer, state);
     try renderPieces(renderer, state);
 
     // Take the rendered state and update the window with it.
@@ -64,7 +63,7 @@ fn renderPieces(
     };
 
     var move_player: ?ty.Player = null;
-    var move_from: ?ty.BoardPos =
+    const move_from: ?ty.BoardPos =
         if (state.mouse.move.from) |pos| pos.toBoardPos() else null;
 
     for (state.board.squares, 0..) |row, y| {
@@ -123,4 +122,33 @@ fn renderBoard(renderer: *c.SDL_Renderer) RenderError!void {
     };
 
     try sdl.renderCopy(.{ .renderer = renderer, .texture = texture });
+}
+
+const highlight_from: ty.Colour = .{
+    .red = 0,
+    .green = 0xAA,
+    .blue = 0,
+    .alpha = ty.Colour.@"opaque" / 4,
+};
+
+/// Show the current move (if there is one) on the board by highlighting the
+/// tile/square of the selected piece.
+fn renderMoveHighlighted(
+    renderer: *c.SDL_Renderer,
+    state: *const ty.State,
+) RenderError!void {
+    if (state.mouse.move.from) |from| {
+        const offset = from.offsetFromGrid();
+
+        try sdl.renderFillRect(
+            renderer,
+            &highlight_from,
+            &.{
+                .x = from.x - offset.x,
+                .y = from.y - offset.y,
+                .w = tile_size,
+                .h = tile_size,
+            },
+        );
+    }
 }

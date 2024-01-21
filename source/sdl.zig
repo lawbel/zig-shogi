@@ -163,11 +163,31 @@ pub fn setRenderDrawColour(
     }
 }
 
-/// A wrapper around the C function `SDL_RenderClear`.
+/// A wrapper around the C function `SDL_RenderClear`. Note: may change the
+/// render draw colour.
 pub fn renderClear(renderer: *c.SDL_Renderer) RenderError!void {
+    const black = ty.Colour{};
+    try setRenderDrawColour(renderer, &black);
+
     if (c.SDL_RenderClear(renderer) < 0) {
         const msg = "Failed to clear renderer: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return RenderError.Clear;
+    }
+}
+
+/// A wrapper around the C function `c.SDL_RenderFillRect`. Note: may change
+/// the render draw colour.
+pub fn renderFillRect(
+    renderer: *c.SDL_Renderer,
+    colour: *const ty.Colour,
+    rect: ?*const c.SDL_Rect,
+) RenderError!void {
+    try setRenderDrawColour(renderer, colour);
+
+    if (c.SDL_RenderFillRect(renderer, rect) < 0) {
+        const msg = "Failed to fill rectangle: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return RenderError.FillRect;
     }
 }

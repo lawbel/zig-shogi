@@ -21,7 +21,7 @@ pub fn main() !void {
         .board = ty.Board.init,
         .mouse = .{
             .pos = .{ .x = 0, .y = 0 },
-            .move = .{ .from = null, .to = null },
+            .move = .{ .from = null },
         },
     };
 
@@ -40,7 +40,8 @@ pub fn main() !void {
                 },
                 c.SDL_MOUSEBUTTONUP => {
                     if (event.button.button == c.SDL_BUTTON_LEFT) {
-                        state.mouse.move.to = state.mouse.pos;
+                        state.mouse.move.from = null;
+                        // state.mouse.move.to = state.mouse.pos;
                         // move_piece();
                     }
                 },
