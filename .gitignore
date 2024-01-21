@@ -7,3 +7,6 @@ zig-cache/
 
 # nix
 result
+
+# temporary data files
+*.png~
