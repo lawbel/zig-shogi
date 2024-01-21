@@ -95,22 +95,21 @@ pub fn createRenderer(
     return renderer;
 }
 
-/// The arguments to `renderCopy`.
-pub const RenderCopyArgs = struct {
-    renderer: *c.SDL_Renderer,
-    texture: *c.SDL_Texture,
-    src_rect: ?*const c.SDL_Rect = null,
-    dst_rect: ?*const c.SDL_Rect = null,
-    angle: f64 = 0,
-    center: ?*const c.SDL_Point = null,
-    flip: c.SDL_RendererFlip = c.SDL_FLIP_NONE,
-};
-
 /// A wrapper around the C function `SDL_RenderCopyEx`. As that function has a
-/// lot of arguments, in order to easily keep track of them we provide a type
-/// `RenderCopyArgs` which allows us to give a name to each one, and to provide
+/// lot of arguments, in order to easily keep track of them we take them in as
+/// a struct which allows us to give a name to each one, and to provide
 /// sensible default arguments where possible.
-pub fn renderCopy(args: RenderCopyArgs) RenderError!void {
+pub fn renderCopy(
+    args: struct {
+        renderer: *c.SDL_Renderer,
+        texture: *c.SDL_Texture,
+        src_rect: ?*const c.SDL_Rect = null,
+        dst_rect: ?*const c.SDL_Rect = null,
+        angle: f64 = 0,
+        center: ?*const c.SDL_Point = null,
+        flip: c.SDL_RendererFlip = c.SDL_FLIP_NONE,
+    },
+) RenderError!void {
     if (c.SDL_RenderCopyEx(
         args.renderer,
         args.texture,
