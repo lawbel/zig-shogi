@@ -110,7 +110,7 @@ pub fn renderCopy(args: RenderCopyArgs) RenderError!void {
     ) < 0) {
         const msg = "Failed to render copy: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.RenderCopy;
+        return RenderError.Copy;
     }
 }
 
@@ -159,7 +159,7 @@ pub fn setRenderDrawColour(
     ) < 0) {
         const msg = "Failed to set render draw color: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.SetRenderDrawColour;
+        return RenderError.SetDrawColour;
     }
 }
 
@@ -168,6 +168,6 @@ pub fn renderClear(renderer: *c.SDL_Renderer) RenderError!void {
     if (c.SDL_RenderClear(renderer) < 0) {
         const msg = "Failed to clear renderer: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.RenderClear;
+        return RenderError.Clear;
     }
 }

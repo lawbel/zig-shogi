@@ -11,9 +11,9 @@ const ty = @import("types.zig");
 
 /// Any kind of error that can happen during rendering.
 pub const RenderError = error{
-    SetRenderDrawColour,
-    RenderClear,
-    RenderCopy,
+    SetDrawColour,
+    Clear,
+    Copy,
     ReadConstMemory,
     LoadTexture,
 };
