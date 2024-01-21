@@ -12,12 +12,16 @@ const ty = @import("types.zig");
 /// Any kind of error that can happen during rendering.
 pub const RenderError = error{
     SetDrawColour,
+    SetDrawBlendMode,
     Clear,
     Copy,
     FillRect,
     ReadConstMemory,
     LoadTexture,
 };
+
+/// The blending mode to use for all rendering.
+pub const blend_mode: c_int = c.SDL_BLENDMODE_BLEND;
 
 /// The raw bytes of the board image.
 const board_img = @embedFile("../data/board.png");
@@ -57,7 +61,7 @@ fn renderPieces(
     const texture = piece_texture orelse init: {
         const stream = try sdl.constMemToRw(piece_img);
         // This call to rwToTexture frees the `stream`.
-        const tex = try sdl.rwToTexture(renderer, stream, true);
+        const tex = try sdl.rwToTexture(renderer, stream, true, blend_mode);
         piece_texture = tex;
         break :init tex;
     };
@@ -116,7 +120,7 @@ fn renderBoard(renderer: *c.SDL_Renderer) RenderError!void {
     const texture = board_texture orelse init: {
         const stream = try sdl.constMemToRw(board_img);
         // This call to rwToTexture frees the `stream`.
-        const tex = try sdl.rwToTexture(renderer, stream, true);
+        const tex = try sdl.rwToTexture(renderer, stream, true, blend_mode);
         board_texture = tex;
         break :init tex;
     };

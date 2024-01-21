@@ -13,7 +13,7 @@ pub fn main() !void {
     const window = try sdl.createWindow();
     defer c.SDL_DestroyWindow(window);
 
-    const renderer = try sdl.createRenderer(window);
+    const renderer = try sdl.createRenderer(window, render.blend_mode);
     defer c.SDL_DestroyRenderer(renderer);
 
     var event: c.SDL_Event = undefined;

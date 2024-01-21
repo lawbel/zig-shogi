@@ -16,6 +16,7 @@ pub const InitError = error{
     Initialization,
     CreateWindow,
     CreateRenderer,
+    SetDrawBlendMode,
 };
 
 /// Flags to use for SDL initialization; can be used to enable various
@@ -69,10 +70,13 @@ pub fn createWindow() InitError!*c.SDL_Window {
 }
 
 /// A wrapper around the C function `SDL_CreateRenderer`.
-pub fn createRenderer(window: *c.SDL_Window) InitError!*c.SDL_Renderer {
+pub fn createRenderer(
+    window: *c.SDL_Window,
+    blend_mode: c.SDL_BlendMode,
+) InitError!*c.SDL_Renderer {
     const use_any_rendering_driver: c_int = -1;
 
-    return c.SDL_CreateRenderer(
+    const renderer = c.SDL_CreateRenderer(
         window,
         use_any_rendering_driver,
         c.SDL_RENDERER_ACCELERATED,
@@ -81,6 +85,14 @@ pub fn createRenderer(window: *c.SDL_Window) InitError!*c.SDL_Renderer {
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return InitError.CreateRenderer;
     };
+
+    if (c.SDL_SetRenderDrawBlendMode(renderer, blend_mode) < 0) {
+        const msg = "Failed to set draw blend mode: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return InitError.SetDrawBlendMode;
+    }
+
+    return renderer;
 }
 
 /// The arguments to `renderCopy`.
@@ -121,8 +133,9 @@ pub fn rwToTexture(
     renderer: *c.SDL_Renderer,
     stream: *c.SDL_RWops,
     free_stream: bool,
+    blend_mode: c.SDL_BlendMode,
 ) RenderError!*c.SDL_Texture {
-    return c.IMG_LoadTexture_RW(
+    const texture = c.IMG_LoadTexture_RW(
         renderer,
         stream,
         if (free_stream) 1 else 0,
@@ -131,6 +144,14 @@ pub fn rwToTexture(
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return RenderError.LoadTexture;
     };
+
+    if (c.SDL_SetTextureBlendMode(texture, blend_mode) < 0) {
+        const msg = "Failed to set draw blend mode: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return RenderError.SetDrawBlendMode;
+    }
+
+    return texture;
 }
 
 /// A wrapper around the C function `SDL_RWFromConstMem`.
