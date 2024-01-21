@@ -142,8 +142,14 @@ fn renderMoveHighlighted(
     state: *const ty.State,
 ) RenderError!void {
     if (state.mouse.move.from) |from| {
-        const offset = from.offsetFromGrid();
+        const board_pos = from.toBoardPos();
+        const x: usize = @intCast(board_pos.x);
+        const y: usize = @intCast(board_pos.y);
+        if (state.board.squares[y][x] == null) {
+            return;
+        }
 
+        const offset = from.offsetFromGrid();
         try sdl.renderFillRect(
             renderer,
             &highlight_from,
