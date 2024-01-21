@@ -36,7 +36,9 @@ pub const State = struct {
     },
 };
 
-/// A position (x, y) in our game window.
+/// A position (x, y) in our game window. We use `i32` as the type, instead
+/// of an alternative like `u16`, for ease when interfacing with the SDL
+/// library.
 pub const PixelPos = struct {
     x: i32,
     y: i32,
