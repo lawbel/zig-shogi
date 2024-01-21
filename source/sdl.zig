@@ -129,22 +129,24 @@ pub fn renderCopy(
 /// `free_stream` is set to `true`, it will free the `stream` argument during
 /// the function call.
 pub fn rwToTexture(
-    renderer: *c.SDL_Renderer,
-    stream: *c.SDL_RWops,
-    free_stream: bool,
-    blend_mode: c.SDL_BlendMode,
+    args: struct {
+        renderer: *c.SDL_Renderer,
+        stream: *c.SDL_RWops,
+        free_stream: bool,
+        blend_mode: c.SDL_BlendMode,
+    },
 ) RenderError!*c.SDL_Texture {
     const texture = c.IMG_LoadTexture_RW(
-        renderer,
-        stream,
-        if (free_stream) 1 else 0,
+        args.renderer,
+        args.stream,
+        if (args.free_stream) 1 else 0,
     ) orelse {
         const msg = "Failed to load texture: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return RenderError.LoadTexture;
     };
 
-    if (c.SDL_SetTextureBlendMode(texture, blend_mode) < 0) {
+    if (c.SDL_SetTextureBlendMode(texture, args.blend_mode) < 0) {
         const msg = "Failed to set draw blend mode: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return RenderError.SetDrawBlendMode;

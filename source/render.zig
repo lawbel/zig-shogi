@@ -60,8 +60,12 @@ fn renderPieces(
 ) RenderError!void {
     const texture = piece_texture orelse init: {
         const stream = try sdl.constMemToRw(piece_img);
-        // This call to rwToTexture frees the `stream`.
-        const tex = try sdl.rwToTexture(renderer, stream, true, blend_mode);
+        const tex = try sdl.rwToTexture(.{
+            .renderer = renderer,
+            .stream = stream,
+            .free_stream = true, // frees the `stream` value
+            .blend_mode = blend_mode,
+        });
         piece_texture = tex;
         break :init tex;
     };
@@ -119,8 +123,12 @@ fn renderPieces(
 fn renderBoard(renderer: *c.SDL_Renderer) RenderError!void {
     const texture = board_texture orelse init: {
         const stream = try sdl.constMemToRw(board_img);
-        // This call to rwToTexture frees the `stream`.
-        const tex = try sdl.rwToTexture(renderer, stream, true, blend_mode);
+        const tex = try sdl.rwToTexture(.{
+            .renderer = renderer,
+            .stream = stream,
+            .free_stream = true, // frees the `stream` value
+            .blend_mode = blend_mode,
+        });
         board_texture = tex;
         break :init tex;
     };
