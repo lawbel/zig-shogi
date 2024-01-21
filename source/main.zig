@@ -1,8 +1,10 @@
 const c = @import("c.zig");
-const conf = @import("config.zig");
 const render = @import("render.zig");
 const sdl = @import("sdl.zig");
 const ty = @import("types.zig");
+
+/// Desired frames per second.
+pub const fps: u32 = 60;
 
 pub fn main() !void {
     try sdl.sdlInit();
@@ -51,6 +53,6 @@ pub fn main() !void {
         try render.render(renderer, &state);
 
         const one_s_in_ms: u32 = 1000;
-        c.SDL_Delay(one_s_in_ms / conf.fps);
+        c.SDL_Delay(one_s_in_ms / fps);
     }
 }

@@ -6,7 +6,6 @@
 //! error.
 
 const c = @import("c.zig");
-const conf = @import("config.zig");
 const sdl = @import("sdl.zig");
 const ty = @import("types.zig");
 
@@ -19,8 +18,14 @@ pub const RenderError = error{
     LoadTexture,
 };
 
+/// The raw bytes of the board image.
 const board_img = @embedFile("../data/board.png");
+
+/// The raw bytes of the piece image.
 const piece_img = @embedFile("../data/piece.png");
+
+/// The size (in pixels) of one tile/square on the game board.
+pub const tile_size: c_int = 70;
 
 // As we will use these textures constantly while the program is running, we
 // make them global and don't de-allocate them.
@@ -73,10 +78,10 @@ fn renderPieces(
                 .renderer = renderer,
                 .texture = texture,
                 .dst_rect = &.{
-                    .x = conf.tile_size * @as(c_int, @intCast(x)),
-                    .y = conf.tile_size * @as(c_int, @intCast(y)),
-                    .w = conf.tile_size,
-                    .h = conf.tile_size,
+                    .x = tile_size * @as(c_int, @intCast(x)),
+                    .y = tile_size * @as(c_int, @intCast(y)),
+                    .w = tile_size,
+                    .h = tile_size,
                 },
                 .angle = switch (piece.player) {
                     .white => 0,
@@ -96,8 +101,8 @@ fn renderPieces(
             .dst_rect = &.{
                 .x = state.mouse.pos.x - offset.x,
                 .y = state.mouse.pos.y - offset.y,
-                .w = conf.tile_size,
-                .h = conf.tile_size,
+                .w = tile_size,
+                .h = tile_size,
             },
             .angle = switch (player) {
                 .white => 0,

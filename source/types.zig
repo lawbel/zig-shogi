@@ -16,8 +16,8 @@
 //! * lance (kyōsha 香車)
 //! * pawn (fuhyō 歩兵)
 
-const conf = @import("config.zig");
 const std = @import("std");
+const tile_size = @import("render.zig").tile_size;
 
 /// Our entire game state, which includes a mix of core types like `Board`
 /// from `types.zig` and things relating to window/mouse state.
@@ -45,15 +45,15 @@ pub const PixelPos = struct {
 
     pub fn toBoardPos(this: @This()) BoardPos {
         return .{
-            .x = @intCast(@divFloor(this.x, conf.tile_size)),
-            .y = @intCast(@divFloor(this.y, conf.tile_size)),
+            .x = @intCast(@divFloor(this.x, tile_size)),
+            .y = @intCast(@divFloor(this.y, tile_size)),
         };
     }
 
     pub fn offsetFromGrid(this: @This()) @This() {
         return .{
-            .x = @mod(this.x, conf.tile_size),
-            .y = @mod(this.y, conf.tile_size),
+            .x = @mod(this.x, tile_size),
+            .y = @mod(this.y, tile_size),
         };
     }
 };

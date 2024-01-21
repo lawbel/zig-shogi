@@ -7,13 +7,9 @@
 //! what happened) and `SDL_LogError` (to do the logging).
 
 const c = @import("c.zig");
-const conf = @import("config.zig");
-const render = @import("render.zig");
 const ty = @import("types.zig");
-
-// Declared in render.zig but mostly used here. Perhaps it would be better to
-// change it to declare it here instead?
-const RenderError = render.RenderError;
+const tile_size = @import("render.zig").tile_size;
+const RenderError = @import("render.zig").RenderError;
 
 /// Any kind of error that can happen during initialization of SDL.
 pub const InitError = error{
@@ -52,8 +48,8 @@ pub const WindowOpts = struct {
 /// Our chosen `WindowOpts` that we use in `createWindow`.
 pub const window_opts: WindowOpts = .{
     .title = "Zig Shogi",
-    .width = conf.tile_size * ty.Board.size,
-    .height = conf.tile_size * ty.Board.size,
+    .width = tile_size * ty.Board.size,
+    .height = tile_size * ty.Board.size,
 };
 
 /// A wrapper around the C function `SDL_CreateWindow`.
