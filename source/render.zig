@@ -74,7 +74,7 @@ fn renderPieces(
     const move_from: ?ty.BoardPos =
         if (state.mouse.move.from) |pos| pos.toBoardPos() else null;
 
-    for (state.board.squares, 0..) |row, y| {
+    for (state.board.tiles, 0..) |row, y| {
         for (row, 0..) |val, x| if (val) |piece| render: {
             if (move_from) |pos| if (x == pos.x and y == pos.y) {
                 move_player = piece.player;
@@ -153,7 +153,7 @@ fn renderMoveHighlighted(
         const board_pos = from.toBoardPos();
         const x: usize = @intCast(board_pos.x);
         const y: usize = @intCast(board_pos.y);
-        if (state.board.squares[y][x] == null) {
+        if (state.board.tiles[y][x] == null) {
             return;
         }
 

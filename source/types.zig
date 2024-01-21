@@ -220,19 +220,23 @@ pub const PlayerPiece = struct {
 /// This type represents the pure state of the board, and has some associated
 /// functionality.
 pub const Board = struct {
-    /// Which (if any) piece (a `PlayerPiece`) is on each square.
-    squares: [size][size]?PlayerPiece,
-    /// What pieces does white have in hand, how many of each `Kind`?
-    white_hand: std.EnumMap(Kind, i8),
-    /// What pieces does black have in hand, how many of each `Kind`?
-    black_hand: std.EnumMap(Kind, i8),
+    /// Which (if any) piece (a `PlayerPiece`) is on each square/tile.
+    tiles: [size][size]?PlayerPiece,
+
+    /// Which pieces does each player have in hand?
+    hand: struct {
+        /// What pieces does white have in hand, and how many of each?
+        white: std.EnumMap(Piece, i8),
+        /// What pieces does black have in hand, and how many of each?
+        black: std.EnumMap(Piece, i8),
+    },
 
     /// The size of the board (i.e. its width/height).
     pub const size = 9;
 
     /// The initial / starting state of the board.
     pub const init: @This() = .{
-        .squares = .{
+        .tiles = .{
             // Black's territory.
             PlayerPiece.backRow(.black),
             PlayerPiece.middleRow(.black),
@@ -249,7 +253,9 @@ pub const Board = struct {
             PlayerPiece.backRow(.white),
         },
 
-        .white_hand = .{},
-        .black_hand = .{},
+        .hand = .{
+            .white = .{},
+            .black = .{},
+        },
     };
 };
