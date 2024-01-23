@@ -23,19 +23,47 @@ pub const RenderError = error{
 /// The blending mode to use for all rendering.
 pub const blend_mode: c_int = c.SDL_BLENDMODE_BLEND;
 
-/// The raw bytes of the board image.
-const board_img = @embedFile("../data/board.png");
-
-/// The raw bytes of the piece image.
-const piece_img = @embedFile("../data/piece.png");
-
 /// The size (in pixels) of one tile/square on the game board.
 pub const tile_size: c_int = 70;
 
-// As we will use these textures constantly while the program is running, we
-// make them global and don't de-allocate them.
+/// The board SDL texture. As we will use this textures constantly while the
+/// program is running, we make it a global for easy re-use.
 var board_texture: ?*c.SDL_Texture = null;
-var piece_texture: ?*c.SDL_Texture = null;
+
+/// The raw bytes of the board image.
+const board_image: [:0]const u8 = @embedFile("../data/board.png");
+
+var white_king_texture: ?*c.SDL_Texture = null;
+var black_king_texture: ?*c.SDL_Texture = null;
+var rook_texture: ?*c.SDL_Texture = null;
+var bishop_texture: ?*c.SDL_Texture = null;
+var gold_texture: ?*c.SDL_Texture = null;
+var silver_texture: ?*c.SDL_Texture = null;
+var knight_texture: ?*c.SDL_Texture = null;
+var lance_texture: ?*c.SDL_Texture = null;
+var pawn_texture: ?*c.SDL_Texture = null;
+var promoted_rook_texture: ?*c.SDL_Texture = null;
+var promoted_bishop_texture: ?*c.SDL_Texture = null;
+var promoted_silver_texture: ?*c.SDL_Texture = null;
+var promoted_knight_texture: ?*c.SDL_Texture = null;
+var promoted_lance_texture: ?*c.SDL_Texture = null;
+var promoted_pawn_texture: ?*c.SDL_Texture = null;
+
+const white_king_image: [:0]const u8 = @embedFile("../data/piece.png");
+const black_king_image: [:0]const u8 = @embedFile("../data/piece.png");
+const rook_image: [:0]const u8 = @embedFile("../data/piece.png");
+const bishop_image: [:0]const u8 = @embedFile("../data/piece.png");
+const gold_image: [:0]const u8 = @embedFile("../data/piece.png");
+const silver_image: [:0]const u8 = @embedFile("../data/piece.png");
+const knight_image: [:0]const u8 = @embedFile("../data/knight.png");
+const lance_image: [:0]const u8 = @embedFile("../data/lance.png");
+const pawn_image: [:0]const u8 = @embedFile("../data/pawn.png");
+const promoted_rook_image: [:0]const u8 = @embedFile("../data/piece.png");
+const promoted_bishop_image: [:0]const u8 = @embedFile("../data/piece.png");
+const promoted_silver_image: [:0]const u8 = @embedFile("../data/piece.png");
+const promoted_knight_image: [:0]const u8 = @embedFile("../data/piece.png");
+const promoted_lance_image: [:0]const u8 = @embedFile("../data/piece.png");
+const promoted_pawn_image: [:0]const u8 = @embedFile("../data/piece.png");
 
 /// The main rendering function - it does *all* the rendering each frame, by
 /// calling out to helper functions.
@@ -43,8 +71,10 @@ pub fn render(
     renderer: *c.SDL_Renderer,
     state: *const ty.State,
 ) RenderError!void {
+    // Clear the renderer for this frame.
     try sdl.renderClear(renderer);
 
+    // Perform all the rendering logic.
     try renderBoard(renderer);
     try renderMoveHighlighted(renderer, state);
     try renderPieces(renderer, state);
@@ -53,37 +83,131 @@ pub fn render(
     c.SDL_RenderPresent(renderer);
 }
 
+fn getKingTexture(
+    renderer: *c.SDL_Renderer,
+    player: ty.Player,
+) RenderError!*c.SDL_Texture {
+    return switch (player) {
+        .white => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &white_king_texture,
+            .raw_data = white_king_image,
+        }),
+        .black => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &black_king_texture,
+            .raw_data = black_king_image,
+        }),
+    };
+}
+
+fn getCorePieceTexture(
+    renderer: *c.SDL_Renderer,
+    piece: ty.Piece,
+) RenderError!*c.SDL_Texture {
+    return switch (piece) {
+        .rook => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &rook_texture,
+            .raw_data = rook_image,
+        }),
+        .bishop => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &bishop_texture,
+            .raw_data = bishop_image,
+        }),
+        .gold => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &gold_texture,
+            .raw_data = gold_image,
+        }),
+        .silver => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &silver_texture,
+            .raw_data = silver_image,
+        }),
+        .knight => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &knight_texture,
+            .raw_data = knight_image,
+        }),
+        .lance => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &lance_texture,
+            .raw_data = lance_image,
+        }),
+        .pawn => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &pawn_texture,
+            .raw_data = pawn_image,
+        }),
+        .promoted_rook => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &promoted_rook_texture,
+            .raw_data = promoted_rook_image,
+        }),
+        .promoted_bishop => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &promoted_bishop_texture,
+            .raw_data = promoted_bishop_image,
+        }),
+        .promoted_silver => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &promoted_silver_texture,
+            .raw_data = promoted_silver_image,
+        }),
+        .promoted_knight => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &promoted_knight_texture,
+            .raw_data = promoted_knight_image,
+        }),
+        .promoted_lance => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &promoted_lance_texture,
+            .raw_data = promoted_lance_image,
+        }),
+        .promoted_pawn => getInitTexture(.{
+            .renderer = renderer,
+            .texture = &promoted_pawn_texture,
+            .raw_data = promoted_pawn_image,
+        }),
+        else => unreachable,
+    };
+}
+
+fn getPieceTexture(
+    renderer: *c.SDL_Renderer,
+    player_piece: ty.PlayerPiece,
+) RenderError!*c.SDL_Texture {
+    const player = player_piece.player;
+    const piece = player_piece.piece;
+    return switch (piece) {
+        .king => getKingTexture(renderer, player),
+        else => getCorePieceTexture(renderer, piece),
+    };
+}
+
 /// Renders all the pieces on the board.
 fn renderPieces(
     renderer: *c.SDL_Renderer,
     state: *const ty.State,
 ) RenderError!void {
-    const texture = piece_texture orelse init: {
-        const stream = try sdl.constMemToRw(piece_img);
-        const tex = try sdl.rwToTexture(.{
-            .renderer = renderer,
-            .stream = stream,
-            .free_stream = true, // frees the `stream` value
-            .blend_mode = blend_mode,
-        });
-        piece_texture = tex;
-        break :init tex;
-    };
-
-    var move_player: ?ty.Player = null;
-    const move_from: ?ty.BoardPos =
+    var moved_piece: ?ty.PlayerPiece = null;
+    const moved_from: ?ty.BoardPos =
         if (state.mouse.move.from) |pos| pos.toBoardPos() else null;
 
+    // Render every piece on the board, except for the one (if any) that the
+    // player is currently moving.
     for (state.board.tiles, 0..) |row, y| {
         for (row, 0..) |val, x| if (val) |piece| render: {
-            if (move_from) |pos| if (x == pos.x and y == pos.y) {
-                move_player = piece.player;
+            if (moved_from) |pos| if (x == pos.x and y == pos.y) {
+                moved_piece = piece;
                 break :render;
             };
 
             try sdl.renderCopy(.{
                 .renderer = renderer,
-                .texture = texture,
+                .texture = try getPieceTexture(renderer, piece),
                 .dst_rect = &.{
                     .x = tile_size * @as(c_int, @intCast(x)),
                     .y = tile_size * @as(c_int, @intCast(y)),
@@ -100,18 +224,18 @@ fn renderPieces(
 
     // We need to render any piece the player may be moving last, so it
     // appears on top of everything else.
-    if (move_player) |player| if (state.mouse.move.from) |from| {
+    if (moved_piece) |piece| if (state.mouse.move.from) |from| {
         const offset = from.offsetFromGrid();
         try sdl.renderCopy(.{
             .renderer = renderer,
-            .texture = texture,
+            .texture = try getPieceTexture(renderer, piece),
             .dst_rect = &.{
                 .x = state.mouse.pos.x - offset.x,
                 .y = state.mouse.pos.y - offset.y,
                 .w = tile_size,
                 .h = tile_size,
             },
-            .angle = switch (player) {
+            .angle = switch (piece.player) {
                 .white => 0,
                 .black => 180,
             },
@@ -121,19 +245,37 @@ fn renderPieces(
 
 /// Renders the game board.
 fn renderBoard(renderer: *c.SDL_Renderer) RenderError!void {
-    const texture = board_texture orelse init: {
-        const stream = try sdl.constMemToRw(board_img);
-        const tex = try sdl.rwToTexture(.{
+    try sdl.renderCopy(.{
+        .renderer = renderer,
+        .texture = try getInitTexture(.{
             .renderer = renderer,
+            .texture = &board_texture,
+            .raw_data = board_image,
+        }),
+    });
+}
+
+/// Get the texture if it's there, or (if `null`) initialize it with the given
+/// `raw_data` and then return it.
+fn getInitTexture(
+    args: struct {
+        renderer: *c.SDL_Renderer,
+        texture: *?*c.SDL_Texture,
+        raw_data: [:0]const u8,
+    },
+) RenderError!*c.SDL_Texture {
+    return args.texture.* orelse init: {
+        const stream = try sdl.constMemToRw(args.raw_data);
+        const tex = try sdl.rwToTexture(.{
+            .renderer = args.renderer,
             .stream = stream,
             .free_stream = true, // frees the `stream` value
             .blend_mode = blend_mode,
         });
-        board_texture = tex;
+
+        args.texture.* = tex;
         break :init tex;
     };
-
-    try sdl.renderCopy(.{ .renderer = renderer, .texture = texture });
 }
 
 const highlight_from: ty.Colour = .{

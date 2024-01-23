@@ -7,14 +7,21 @@
 //!
 //! * king (ōshō 王将 / gyokushō 玉将)
 //! * rook (hisha 飛車)
-//! * dragon (ryūō 竜王)
 //! * bishop (kakugyō 角行)
-//! * horse (ryūma 竜馬)
 //! * gold (kinshō 金将)
 //! * silver (ginshō 銀将)
 //! * knight (keima 桂馬)
 //! * lance (kyōsha 香車)
 //! * pawn (fuhyō 歩兵)
+//!
+//! As well as these, we have the promoted pieces:
+//!
+//! * promoted rook (ryūō 竜王), also known as a dragon.
+//! * promoted bishop (ryūma 竜馬), also known as a horse.
+//! * promoted silver (narigin 成銀)
+//! * promoted knight (narikei 成桂)
+//! * promoted lance (narikyō 成香)
+//! * promoted pawn (tokin と金), also known as a tokin.
 
 const std = @import("std");
 const tile_size = @import("render.zig").tile_size;
@@ -72,14 +79,6 @@ pub const Colour = struct {
     pub const @"opaque" = std.math.maxInt(u8);
 };
 
-/// Whether a piece is promoted or not.
-pub const IsPromoted = union(enum) {
-    /// This piece is not promoted.
-    basic,
-    /// This piece *is* promoted.
-    promoted,
-};
-
 /// The possible players of the game.
 pub const Player = union(enum) {
     /// Typically called white in English; sente (先手) in Japanese.
@@ -88,82 +87,55 @@ pub const Player = union(enum) {
     black,
 };
 
-/// The 'kind' of a piece.
-///
-/// We don't include promoted pieces in this datatype, only the 'base' type
-/// of the piece. You can think of it that this type represents every possible
-/// 'face-up' piece. For more detailed documentation on each piece, see the
-/// variants of `Piece`.
-pub const Kind = enum {
+/// A shogi piece. Includes promoted and non-promoted pieces.
+pub const Piece = enum {
     /// The king (ōshō 王将 / gyokushō 玉将).
     king,
-    /// A rook (hisha 飛車).
+
+    /// A rook (hisha 飛車); can be promoted.
     rook,
-    /// A bishop (kakugyō 角行).
+    /// A promoted rook (ryūō 竜王).
+    promoted_rook,
+
+    /// A bishop (kakugyō 角行); can be promoted.
     bishop,
+    /// A promoted bishop (ryūma 竜馬).
+    promoted_bishop,
+
     /// A gold general (kinshō 金将).
     gold,
-    /// A silver general (ginshō 銀将).
-    silver,
-    /// A knight (keima 桂馬).
-    knight,
-    /// A lance (kyōsha 香車).
-    lance,
-    /// A pawn (fuhyō 歩兵).
-    pawn,
 
-    /// The size of the piece on the board - though they are similarly-sized,
-    /// the more important / powerful pieces are physically larger.
-    pub fn size(this: @This()) u8 {
+    /// A silver general (ginshō 銀将); can be promoted.
+    silver,
+    /// A promoted silver (narigin 成銀). Moves and attacks like a gold.
+    promoted_silver,
+
+    /// A knight (keima 桂馬); can be promoted.
+    knight,
+    /// A promoted knight (narikei 成桂). Moves and attacks like a gold.
+    promoted_knight,
+
+    /// A lance (kyōsha 香車); can be promoted.
+    lance,
+    /// A promoted lance (narikyō 成香). Moves and attacks like a gold.
+    promoted_lance,
+
+    /// A pawn (fuhyō 歩兵); can be promoted.
+    pawn,
+    /// A promoted pawn (tokin と金). Moves and attacks like a gold.
+    promoted_pawn,
+
+    pub fn promote(this: @This()) @This() {
         return switch (this) {
-            .king => 6,
-            .rook, .bishop => 5,
-            .gold, .silver => 4,
-            .knight => 3,
-            .lance => 2,
-            .pawn => 1,
+            .rook => .promoted_rook,
+            .bishop => .promoted_bishop,
+            .silver => .promoted_silver,
+            .knight => .promoted_knight,
+            .lance => .promoted_lance,
+            .pawn => .promoted_pawn,
+            else => this,
         };
     }
-};
-
-/// A piece, which is a combination of a `Kind` and (if relevant) `IsPromoted`.
-///
-/// Compared to `Kind`, you can think of this type as representing any possible
-/// piece on the board, be it face-up or flipped/promoted.
-pub const Piece = union(Kind) {
-    /// The king (ōshō 王将 / gyokushō 玉将). We only have one variant here
-    /// for the king for simplicity, even though the two kings could be
-    /// considered to be different and should look different for both players.
-    /// Cannot be promoted.
-    king,
-    /// In basic form, this is a rook (hisha 飛車). In promoted form, this
-    /// becomes a dragon (ryūō 竜王).
-    rook: IsPromoted,
-    /// In basic form, this is a bishop (kakugyō 角行). When promoted, it
-    /// becomes a horse (ryūma 竜馬).
-    bishop: IsPromoted,
-    /// A gold general (kinshō 金将). Cannot be promoted.
-    gold,
-    /// A silver general (ginshō 銀将). Promotes into a gold general (narigin
-    /// 成銀). Note that the promoted form is visually distinct, it is
-    /// different from a basic gold general or any other kind of piece promoted
-    /// to a gold general.
-    silver: IsPromoted,
-    /// A knight (keima 桂馬). Promotes into a gold general (narikei 成桂). Note
-    /// that the promoted form is visually distinct, it is different from a
-    /// basic gold general or any other kind of piece promoted to a gold
-    /// general.
-    knight: IsPromoted,
-    /// A lance (kyōsha 香車). Promotes into a gold general (narikyō 成香). Note
-    /// that the promoted form is visually distinct, it is different from a
-    /// basic gold general or any other kind of piece promoted to a gold
-    /// general.
-    lance: IsPromoted,
-    /// A pawn (fuhyō 歩兵). Promotes into a gold general (tokin と金). Note
-    /// that the promoted form should be visually distinct, it is different
-    /// from a basic gold general or any other kind of piece promoted to a
-    /// gold general.
-    pawn: IsPromoted,
 };
 
 /// This type combines a `Piece` and a `Player` in one type.
@@ -174,15 +146,15 @@ pub const PlayerPiece = struct {
     /// The starting back row for a given player.
     pub fn backRow(player: Player) [Board.size]?@This() {
         return .{
-            .{ .player = player, .piece = .{ .lance = .basic } },
-            .{ .player = player, .piece = .{ .knight = .basic } },
-            .{ .player = player, .piece = .{ .silver = .basic } },
+            .{ .player = player, .piece = .lance },
+            .{ .player = player, .piece = .knight },
+            .{ .player = player, .piece = .silver },
             .{ .player = player, .piece = .gold },
             .{ .player = player, .piece = .king },
             .{ .player = player, .piece = .gold },
-            .{ .player = player, .piece = .{ .silver = .basic } },
-            .{ .player = player, .piece = .{ .knight = .basic } },
-            .{ .player = player, .piece = .{ .lance = .basic } },
+            .{ .player = player, .piece = .silver },
+            .{ .player = player, .piece = .knight },
+            .{ .player = player, .piece = .lance },
         };
     }
 
@@ -191,15 +163,15 @@ pub const PlayerPiece = struct {
         const one = .{
             .player = player,
             .piece = switch (player) {
-                .white => .{ .bishop = .basic },
-                .black => .{ .rook = .basic },
+                .white => .bishop,
+                .black => .rook,
             },
         };
         const two = .{
             .player = player,
             .piece = switch (player) {
-                .white => .{ .rook = .basic },
-                .black => .{ .bishop = .basic },
+                .white => .rook,
+                .black => .bishop,
             },
         };
 
@@ -211,7 +183,7 @@ pub const PlayerPiece = struct {
         return .{
             .{
                 .player = player,
-                .piece = .{ .pawn = .basic },
+                .piece = .pawn,
             },
         } ** Board.size;
     }
