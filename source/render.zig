@@ -88,16 +88,8 @@ fn getKingTexture(
     player: ty.Player,
 ) RenderError!*c.SDL_Texture {
     return switch (player) {
-        .white => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &white_king_texture,
-            .raw_data = white_king_image,
-        }),
-        .black => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &black_king_texture,
-            .raw_data = black_king_image,
-        }),
+        .white => getInitTexture(renderer, &white_king_texture, white_king_image),
+        .black => getInitTexture(renderer, &black_king_texture, black_king_image),
     };
 }
 
@@ -106,71 +98,19 @@ fn getCorePieceTexture(
     piece: ty.Piece,
 ) RenderError!*c.SDL_Texture {
     return switch (piece) {
-        .rook => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &rook_texture,
-            .raw_data = rook_image,
-        }),
-        .bishop => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &bishop_texture,
-            .raw_data = bishop_image,
-        }),
-        .gold => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &gold_texture,
-            .raw_data = gold_image,
-        }),
-        .silver => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &silver_texture,
-            .raw_data = silver_image,
-        }),
-        .knight => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &knight_texture,
-            .raw_data = knight_image,
-        }),
-        .lance => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &lance_texture,
-            .raw_data = lance_image,
-        }),
-        .pawn => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &pawn_texture,
-            .raw_data = pawn_image,
-        }),
-        .promoted_rook => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &promoted_rook_texture,
-            .raw_data = promoted_rook_image,
-        }),
-        .promoted_bishop => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &promoted_bishop_texture,
-            .raw_data = promoted_bishop_image,
-        }),
-        .promoted_silver => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &promoted_silver_texture,
-            .raw_data = promoted_silver_image,
-        }),
-        .promoted_knight => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &promoted_knight_texture,
-            .raw_data = promoted_knight_image,
-        }),
-        .promoted_lance => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &promoted_lance_texture,
-            .raw_data = promoted_lance_image,
-        }),
-        .promoted_pawn => getInitTexture(.{
-            .renderer = renderer,
-            .texture = &promoted_pawn_texture,
-            .raw_data = promoted_pawn_image,
-        }),
+        .rook => getInitTexture(renderer, &rook_texture, rook_image),
+        .bishop => getInitTexture(renderer, &bishop_texture, bishop_image),
+        .gold => getInitTexture(renderer, &gold_texture, gold_image),
+        .silver => getInitTexture(renderer, &silver_texture, silver_image),
+        .knight => getInitTexture(renderer, &knight_texture, knight_image),
+        .lance => getInitTexture(renderer, &lance_texture, lance_image),
+        .pawn => getInitTexture(renderer, &pawn_texture, pawn_image),
+        .promoted_rook => getInitTexture(renderer, &promoted_rook_texture, promoted_rook_image),
+        .promoted_bishop => getInitTexture(renderer, &promoted_bishop_texture, promoted_bishop_image),
+        .promoted_silver => getInitTexture(renderer, &promoted_silver_texture, promoted_silver_image),
+        .promoted_knight => getInitTexture(renderer, &promoted_knight_texture, promoted_knight_image),
+        .promoted_lance => getInitTexture(renderer, &promoted_lance_texture, promoted_lance_image),
+        .promoted_pawn => getInitTexture(renderer, &promoted_pawn_texture, promoted_pawn_image),
         else => unreachable,
     };
 }
@@ -247,35 +187,29 @@ fn renderPieces(
 fn renderBoard(renderer: *c.SDL_Renderer) RenderError!void {
     try sdl.renderCopy(.{
         .renderer = renderer,
-        .texture = try getInitTexture(.{
-            .renderer = renderer,
-            .texture = &board_texture,
-            .raw_data = board_image,
-        }),
+        .texture = try getInitTexture(renderer, &board_texture, board_image),
     });
 }
 
 /// Get the texture if it's there, or (if `null`) initialize it with the given
 /// `raw_data` and then return it.
 fn getInitTexture(
-    args: struct {
         renderer: *c.SDL_Renderer,
         texture: *?*c.SDL_Texture,
         raw_data: [:0]const u8,
-    },
 ) RenderError!*c.SDL_Texture {
-    return args.texture.* orelse init: {
-        const stream = try sdl.constMemToRw(args.raw_data);
+    if (texture.*) |tex| {
+        return tex;
+    }
+
         const tex = try sdl.rwToTexture(.{
-            .renderer = args.renderer,
-            .stream = stream,
-            .free_stream = true, // frees the `stream` value
+        .renderer = renderer,
+        .stream = try sdl.constMemToRw(raw_data),
+        .free_stream = true,
             .blend_mode = blend_mode,
         });
-
-        args.texture.* = tex;
-        break :init tex;
-    };
+    texture.* = tex;
+    return tex;
 }
 
 const highlight_from: ty.Colour = .{
