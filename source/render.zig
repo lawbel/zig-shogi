@@ -7,6 +7,7 @@
 
 const c = @import("c.zig");
 const sdl = @import("sdl.zig");
+const std = @import("std");
 const ty = @import("types.zig");
 
 /// Any kind of error that can happen during rendering.
@@ -26,44 +27,67 @@ pub const blend_mode: c_int = c.SDL_BLENDMODE_BLEND;
 /// The size (in pixels) of one tile/square on the game board.
 pub const tile_size: c_int = 70;
 
-/// The board SDL texture. As we will use this textures constantly while the
-/// program is running, we make it a global for easy re-use.
-var board_texture: ?*c.SDL_Texture = null;
-
-/// The raw bytes of the board image.
+/// The board image.
 const board_image: [:0]const u8 = @embedFile("../data/board.png");
 
-var white_king_texture: ?*c.SDL_Texture = null;
-var black_king_texture: ?*c.SDL_Texture = null;
-var rook_texture: ?*c.SDL_Texture = null;
-var bishop_texture: ?*c.SDL_Texture = null;
-var gold_texture: ?*c.SDL_Texture = null;
-var silver_texture: ?*c.SDL_Texture = null;
-var knight_texture: ?*c.SDL_Texture = null;
-var lance_texture: ?*c.SDL_Texture = null;
-var pawn_texture: ?*c.SDL_Texture = null;
-var promoted_rook_texture: ?*c.SDL_Texture = null;
-var promoted_bishop_texture: ?*c.SDL_Texture = null;
-var promoted_silver_texture: ?*c.SDL_Texture = null;
-var promoted_knight_texture: ?*c.SDL_Texture = null;
-var promoted_lance_texture: ?*c.SDL_Texture = null;
-var promoted_pawn_texture: ?*c.SDL_Texture = null;
-
+/// The white king image.
 const white_king_image: [:0]const u8 = @embedFile("../data/piece.png");
+
+/// The black king image.
 const black_king_image: [:0]const u8 = @embedFile("../data/piece.png");
-const rook_image: [:0]const u8 = @embedFile("../data/piece.png");
-const bishop_image: [:0]const u8 = @embedFile("../data/piece.png");
-const gold_image: [:0]const u8 = @embedFile("../data/piece.png");
-const silver_image: [:0]const u8 = @embedFile("../data/piece.png");
-const knight_image: [:0]const u8 = @embedFile("../data/knight.png");
-const lance_image: [:0]const u8 = @embedFile("../data/lance.png");
-const pawn_image: [:0]const u8 = @embedFile("../data/pawn.png");
-const promoted_rook_image: [:0]const u8 = @embedFile("../data/piece.png");
-const promoted_bishop_image: [:0]const u8 = @embedFile("../data/piece.png");
-const promoted_silver_image: [:0]const u8 = @embedFile("../data/piece.png");
-const promoted_knight_image: [:0]const u8 = @embedFile("../data/piece.png");
-const promoted_lance_image: [:0]const u8 = @embedFile("../data/piece.png");
-const promoted_pawn_image: [:0]const u8 = @embedFile("../data/piece.png");
+
+/// The images for all 'core' pieces - every piece except for the kings.
+var core_piece_images: std.EnumMap(ty.Piece, [:0]const u8) = init: {
+    var map: std.EnumMap(ty.Piece, [:0]const u8) = .{};
+
+    map.put(.rook, @embedFile("../data/piece.png"));
+    map.put(.bishop, @embedFile("../data/piece.png"));
+    map.put(.gold, @embedFile("../data/piece.png"));
+    map.put(.silver, @embedFile("../data/piece.png"));
+    map.put(.knight, @embedFile("../data/knight.png"));
+    map.put(.lance, @embedFile("../data/lance.png"));
+    map.put(.pawn, @embedFile("../data/pawn.png"));
+
+    map.put(.promoted_rook, @embedFile("../data/piece.png"));
+    map.put(.promoted_bishop, @embedFile("../data/piece.png"));
+    map.put(.promoted_silver, @embedFile("../data/piece.png"));
+    map.put(.promoted_knight, @embedFile("../data/piece.png"));
+    map.put(.promoted_lance, @embedFile("../data/piece.png"));
+    map.put(.promoted_pawn, @embedFile("../data/piece.png"));
+
+    break :init map;
+};
+
+/// The board texture.
+var board_texture: ?*c.SDL_Texture = null;
+
+/// The white king texture.
+var white_king_texture: ?*c.SDL_Texture = null;
+
+/// The black king texture.
+var black_king_texture: ?*c.SDL_Texture = null;
+
+/// The textures for all 'core' pieces - every piece except for the kings.
+var core_piece_textures: std.EnumMap(ty.Piece, ?*c.SDL_Texture) = init: {
+    var map: std.EnumMap(ty.Piece, ?*c.SDL_Texture) = .{};
+
+    map.put(.rook, null);
+    map.put(.bishop, null);
+    map.put(.gold, null);
+    map.put(.silver, null);
+    map.put(.knight, null);
+    map.put(.lance, null);
+    map.put(.pawn, null);
+
+    map.put(.promoted_rook, null);
+    map.put(.promoted_bishop, null);
+    map.put(.promoted_silver, null);
+    map.put(.promoted_knight, null);
+    map.put(.promoted_lance, null);
+    map.put(.promoted_pawn, null);
+
+    break :init map;
+};
 
 /// The main rendering function - it does *all* the rendering each frame, by
 /// calling out to helper functions.
@@ -83,48 +107,38 @@ pub fn render(
     c.SDL_RenderPresent(renderer);
 }
 
-fn getKingTexture(
-    renderer: *c.SDL_Renderer,
-    player: ty.Player,
-) RenderError!*c.SDL_Texture {
-    return switch (player) {
-        .white => getInitTexture(renderer, &white_king_texture, white_king_image),
-        .black => getInitTexture(renderer, &black_king_texture, black_king_image),
-    };
-}
-
-fn getCorePieceTexture(
-    renderer: *c.SDL_Renderer,
-    piece: ty.Piece,
-) RenderError!*c.SDL_Texture {
-    return switch (piece) {
-        .rook => getInitTexture(renderer, &rook_texture, rook_image),
-        .bishop => getInitTexture(renderer, &bishop_texture, bishop_image),
-        .gold => getInitTexture(renderer, &gold_texture, gold_image),
-        .silver => getInitTexture(renderer, &silver_texture, silver_image),
-        .knight => getInitTexture(renderer, &knight_texture, knight_image),
-        .lance => getInitTexture(renderer, &lance_texture, lance_image),
-        .pawn => getInitTexture(renderer, &pawn_texture, pawn_image),
-        .promoted_rook => getInitTexture(renderer, &promoted_rook_texture, promoted_rook_image),
-        .promoted_bishop => getInitTexture(renderer, &promoted_bishop_texture, promoted_bishop_image),
-        .promoted_silver => getInitTexture(renderer, &promoted_silver_texture, promoted_silver_image),
-        .promoted_knight => getInitTexture(renderer, &promoted_knight_texture, promoted_knight_image),
-        .promoted_lance => getInitTexture(renderer, &promoted_lance_texture, promoted_lance_image),
-        .promoted_pawn => getInitTexture(renderer, &promoted_pawn_texture, promoted_pawn_image),
-        else => unreachable,
-    };
-}
-
 fn getPieceTexture(
     renderer: *c.SDL_Renderer,
     player_piece: ty.PlayerPiece,
 ) RenderError!*c.SDL_Texture {
     const player = player_piece.player;
     const piece = player_piece.piece;
-    return switch (piece) {
-        .king => getKingTexture(renderer, player),
-        else => getCorePieceTexture(renderer, piece),
-    };
+
+    var texture: *?*c.SDL_Texture = undefined;
+    var image: [:0]const u8 = undefined;
+
+    switch (piece) {
+        .king => switch (player) {
+            .white => {
+                texture = &white_king_texture;
+                image = white_king_image;
+            },
+            .black => {
+                texture = &black_king_texture;
+                image = black_king_image;
+            },
+        },
+        else => {
+            texture = core_piece_textures.getPtr(piece) orelse {
+                return error.RenderLoadTexture;
+            };
+            image = core_piece_images.get(piece) orelse {
+                return error.RenderReadConstMemory;
+            };
+        },
+    }
+
+    return getInitTexture(renderer, texture, image);
 }
 
 /// Renders all the pieces on the board.
