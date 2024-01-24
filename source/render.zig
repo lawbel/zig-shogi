@@ -115,6 +115,8 @@ pub fn render(
     c.SDL_RenderPresent(renderer);
 }
 
+/// Gets the appropriate texture for the given [`ty.PlayerPiece`], possibly
+/// initializing it along the way if necessary.
 fn getPieceTexture(
     renderer: *c.SDL_Renderer,
     player_piece: ty.PlayerPiece,
@@ -171,19 +173,11 @@ fn renderPieces(
                 }
             }
 
-            try sdl.renderCopy(.{
+            try renderPiece(.{
                 .renderer = renderer,
-                .texture = try getPieceTexture(renderer, piece),
-                .dst_rect = &.{
-                    .x = tile_size * @as(c_int, @intCast(x)),
-                    .y = tile_size * @as(c_int, @intCast(y)),
-                    .w = tile_size,
-                    .h = tile_size,
-                },
-                .angle = switch (piece.player) {
-                    .white => 0,
-                    .black => 180,
-                },
+                .player_piece = piece,
+                .x = tile_size * @as(c_int, @intCast(x)),
+                .y = tile_size * @as(c_int, @intCast(y)),
             });
         };
     }
@@ -192,21 +186,38 @@ fn renderPieces(
     // appears on top of everything else.
     if (moved_piece) |piece| if (state.mouse.move.from) |from| {
         const offset = from.offsetFromGrid();
-        try sdl.renderCopy(.{
+        try renderPiece(.{
             .renderer = renderer,
-            .texture = try getPieceTexture(renderer, piece),
-            .dst_rect = &.{
-                .x = state.mouse.pos.x - offset.x,
-                .y = state.mouse.pos.y - offset.y,
-                .w = tile_size,
-                .h = tile_size,
-            },
-            .angle = switch (piece.player) {
-                .white => 0,
-                .black => 180,
-            },
+            .player_piece = piece,
+            .x = state.mouse.pos.x - offset.x,
+            .y = state.mouse.pos.y - offset.y,
         });
     };
+}
+
+/// Renders the given piece at the given location.
+fn renderPiece(
+    args: struct {
+        renderer: *c.SDL_Renderer,
+        player_piece: ty.PlayerPiece,
+        x: c_int,
+        y: c_int,
+    },
+) RenderError!void {
+    return sdl.renderCopy(.{
+        .renderer = args.renderer,
+        .texture = try getPieceTexture(args.renderer, args.player_piece),
+        .dst_rect = &.{
+            .x = args.x,
+            .y = args.y,
+            .w = tile_size,
+            .h = tile_size,
+        },
+        .angle = switch (args.player_piece.player) {
+            .white => 0,
+            .black => 180,
+        },
+    });
 }
 
 /// Renders the game board.
