@@ -46,9 +46,9 @@ var core_piece_images: std.EnumMap(ty.Piece, [:0]const u8) = init: {
     var map: std.EnumMap(ty.Piece, [:0]const u8) = .{};
 
     map.put(.rook, embedData("piece.png"));
-    map.put(.bishop, embedData("piece.png"));
-    map.put(.gold, embedData("piece.png"));
-    map.put(.silver, embedData("piece.png"));
+    map.put(.bishop, embedData("bishop.png"));
+    map.put(.gold, embedData("gold.png"));
+    map.put(.silver, embedData("silver.png"));
     map.put(.knight, embedData("knight.png"));
     map.put(.lance, embedData("lance.png"));
     map.put(.pawn, embedData("pawn.png"));
