@@ -27,33 +27,38 @@ pub const blend_mode: c_int = c.SDL_BLENDMODE_BLEND;
 /// The size (in pixels) of one tile/square on the game board.
 pub const tile_size: c_int = 70;
 
+/// Embed a file in the `data` directory.
+fn embedData(comptime path: [:0]const u8) [:0]const u8 {
+    return @embedFile("../data/" ++ path);
+}
+
 /// The board image.
-const board_image: [:0]const u8 = @embedFile("../data/board.png");
+const board_image: [:0]const u8 = embedData("board.png");
 
 /// The white king image.
-const white_king_image: [:0]const u8 = @embedFile("../data/piece.png");
+const white_king_image: [:0]const u8 = embedData("piece.png");
 
 /// The black king image.
-const black_king_image: [:0]const u8 = @embedFile("../data/piece.png");
+const black_king_image: [:0]const u8 = embedData("piece.png");
 
 /// The images for all 'core' pieces - every piece except for the kings.
 var core_piece_images: std.EnumMap(ty.Piece, [:0]const u8) = init: {
     var map: std.EnumMap(ty.Piece, [:0]const u8) = .{};
 
-    map.put(.rook, @embedFile("../data/piece.png"));
-    map.put(.bishop, @embedFile("../data/piece.png"));
-    map.put(.gold, @embedFile("../data/piece.png"));
-    map.put(.silver, @embedFile("../data/piece.png"));
-    map.put(.knight, @embedFile("../data/knight.png"));
-    map.put(.lance, @embedFile("../data/lance.png"));
-    map.put(.pawn, @embedFile("../data/pawn.png"));
+    map.put(.rook, embedData("piece.png"));
+    map.put(.bishop, embedData("piece.png"));
+    map.put(.gold, embedData("piece.png"));
+    map.put(.silver, embedData("piece.png"));
+    map.put(.knight, embedData("knight.png"));
+    map.put(.lance, embedData("lance.png"));
+    map.put(.pawn, embedData("pawn.png"));
 
-    map.put(.promoted_rook, @embedFile("../data/piece.png"));
-    map.put(.promoted_bishop, @embedFile("../data/piece.png"));
-    map.put(.promoted_silver, @embedFile("../data/piece.png"));
-    map.put(.promoted_knight, @embedFile("../data/piece.png"));
-    map.put(.promoted_lance, @embedFile("../data/piece.png"));
-    map.put(.promoted_pawn, @embedFile("../data/piece.png"));
+    map.put(.promoted_rook, embedData("piece.png"));
+    map.put(.promoted_bishop, embedData("piece.png"));
+    map.put(.promoted_silver, embedData("piece.png"));
+    map.put(.promoted_knight, embedData("piece.png"));
+    map.put(.promoted_lance, embedData("piece.png"));
+    map.put(.promoted_pawn, embedData("piece.png"));
 
     break :init map;
 };
