@@ -11,13 +11,13 @@ const ty = @import("types.zig");
 
 /// Any kind of error that can happen during rendering.
 pub const RenderError = error{
-    SetDrawColour,
-    SetDrawBlendMode,
-    Clear,
-    Copy,
-    FillRect,
-    ReadConstMemory,
-    LoadTexture,
+    RenderSetDrawColour,
+    RenderSetDrawBlendMode,
+    RenderClear,
+    RenderCopy,
+    RenderFillRect,
+    RenderReadConstMemory,
+    RenderLoadTexture,
 };
 
 /// The blending mode to use for all rendering.
@@ -194,20 +194,20 @@ fn renderBoard(renderer: *c.SDL_Renderer) RenderError!void {
 /// Get the texture if it's there, or (if `null`) initialize it with the given
 /// `raw_data` and then return it.
 fn getInitTexture(
-        renderer: *c.SDL_Renderer,
-        texture: *?*c.SDL_Texture,
-        raw_data: [:0]const u8,
+    renderer: *c.SDL_Renderer,
+    texture: *?*c.SDL_Texture,
+    raw_data: [:0]const u8,
 ) RenderError!*c.SDL_Texture {
     if (texture.*) |tex| {
         return tex;
     }
 
-        const tex = try sdl.rwToTexture(.{
+    const tex = try sdl.rwToTexture(.{
         .renderer = renderer,
         .stream = try sdl.constMemToRw(raw_data),
         .free_stream = true,
-            .blend_mode = blend_mode,
-        });
+        .blend_mode = blend_mode,
+    });
     texture.* = tex;
     return tex;
 }
