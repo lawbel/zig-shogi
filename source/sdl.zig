@@ -29,7 +29,7 @@ pub fn sdlInit() InitError!void {
     if (c.SDL_Init(sdl_init_flags) < 0) {
         const msg = "Failed to initialize SDL: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_SYSTEM, msg, c.SDL_GetError());
-        return InitError.Initialization;
+        return error.Initialization;
     }
 }
 
@@ -65,7 +65,7 @@ pub fn createWindow() InitError!*c.SDL_Window {
     ) orelse {
         const msg = "Failed to create window: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_VIDEO, msg, c.SDL_GetError());
-        return InitError.InitCreateWindow;
+        return error.InitCreateWindow;
     };
 }
 
@@ -83,13 +83,13 @@ pub fn createRenderer(
     ) orelse {
         const msg = "Failed to create renderer: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return InitError.InitCreateRenderer;
+        return error.InitCreateRenderer;
     };
 
     if (c.SDL_SetRenderDrawBlendMode(renderer, blend_mode) < 0) {
         const msg = "Failed to set draw blend mode: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return InitError.InitSetDrawBlendMode;
+        return error.InitSetDrawBlendMode;
     }
 
     return renderer;
@@ -121,7 +121,7 @@ pub fn renderCopy(
     ) < 0) {
         const msg = "Failed to render copy: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.RenderCopy;
+        return error.RenderCopy;
     }
 }
 
@@ -143,13 +143,13 @@ pub fn rwToTexture(
     ) orelse {
         const msg = "Failed to load texture: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.RenderLoadTexture;
+        return error.RenderLoadTexture;
     };
 
     if (c.SDL_SetTextureBlendMode(texture, args.blend_mode) < 0) {
         const msg = "Failed to set draw blend mode: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.RenderSetDrawBlendMode;
+        return error.RenderSetDrawBlendMode;
     }
 
     return texture;
@@ -163,7 +163,7 @@ pub fn constMemToRw(data: [:0]const u8) RenderError!*c.SDL_RWops {
     ) orelse {
         const msg = "Failed to read from const memory: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.RenderReadConstMemory;
+        return error.RenderReadConstMemory;
     };
 }
 
@@ -181,7 +181,7 @@ pub fn setRenderDrawColour(
     ) < 0) {
         const msg = "Failed to set render draw color: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.RenderSetDrawColour;
+        return error.RenderSetDrawColour;
     }
 }
 
@@ -194,7 +194,7 @@ pub fn renderClear(renderer: *c.SDL_Renderer) RenderError!void {
     if (c.SDL_RenderClear(renderer) < 0) {
         const msg = "Failed to clear renderer: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.RenderClear;
+        return error.RenderClear;
     }
 }
 
@@ -210,6 +210,6 @@ pub fn renderFillRect(
     if (c.SDL_RenderFillRect(renderer, rect) < 0) {
         const msg = "Failed to fill rectangle: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return RenderError.RenderFillRect;
+        return error.RenderFillRect;
     }
 }
