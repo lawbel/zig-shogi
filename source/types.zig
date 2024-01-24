@@ -41,6 +41,8 @@ pub const State = struct {
             from: ?PixelPos,
         },
     },
+    /// Which colour is the player? The other will be the CPU.
+    player: Player,
 };
 
 /// A position (x, y) in our game window. We use `i32` as the type, instead

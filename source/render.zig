@@ -140,10 +140,14 @@ fn renderPieces(
     // player is currently moving.
     for (state.board.tiles, 0..) |row, y| {
         for (row, 0..) |val, x| if (val) |piece| render: {
-            if (moved_from) |pos| if (x == pos.x and y == pos.y) {
-                moved_piece = piece;
-                break :render;
-            };
+            if (moved_from) |pos| {
+                const owner = @intFromEnum(piece.player);
+                const player = @intFromEnum(state.player);
+                if (owner == player and x == pos.x and y == pos.y) {
+                    moved_piece = piece;
+                    break :render;
+                }
+            }
 
             try sdl.renderCopy(.{
                 .renderer = renderer,
@@ -229,8 +233,16 @@ fn renderMoveHighlighted(
         const board_pos = from.toBoardPos();
         const x: usize = @intCast(board_pos.x);
         const y: usize = @intCast(board_pos.y);
-        if (state.board.tiles[y][x] == null) {
+        const tile = state.board.tiles[y][x];
+
+        if (tile == null) {
             return;
+        } else if (tile) |piece| {
+            const owner = @intFromEnum(piece.player);
+            const player = @intFromEnum(state.player);
+            if (owner != player) {
+                return;
+            }
         }
 
         const offset = from.offsetFromGrid();

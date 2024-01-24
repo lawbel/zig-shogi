@@ -23,6 +23,7 @@ pub fn main() !void {
             .pos = .{ .x = 0, .y = 0 },
             .move = .{ .from = null },
         },
+        .player = .white,
     };
 
     main_loop: while (true) {
