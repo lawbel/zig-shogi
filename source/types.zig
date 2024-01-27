@@ -83,9 +83,9 @@ pub const Colour = struct {
 
 /// The possible players of the game.
 pub const Player = union(enum) {
-    /// Typically called white in English; sente (先手) in Japanese.
+    /// Typically called white in English; gōte (後手) in Japanese. Goes second.
     white,
-    /// Typically called black in English; gōte (後手) in Japanese.
+    /// Typically called black in English; sente (先手) in Japanese. Goes first.
     black,
 };
 
