@@ -39,10 +39,10 @@ fn embedData(comptime path: [:0]const u8) [:0]const u8 {
 const board_image: [:0]const u8 = embedData("board.png");
 
 /// The white king image.
-const white_king_image: [:0]const u8 = embedData("piece.png");
+const white_king_image: [:0]const u8 = embedData("white_king.png");
 
 /// The black king image.
-const black_king_image: [:0]const u8 = embedData("piece.png");
+const black_king_image: [:0]const u8 = embedData("black_king.png");
 
 /// The images for all 'core' pieces - every piece except for the kings.
 var core_piece_images: std.EnumMap(ty.Piece, [:0]const u8) = init: {
