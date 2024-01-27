@@ -79,20 +79,10 @@ var black_king_texture: ?*c.SDL_Texture = null;
 var core_piece_textures: std.EnumMap(ty.Piece, ?*c.SDL_Texture) = init: {
     var map: std.EnumMap(ty.Piece, ?*c.SDL_Texture) = .{};
 
-    map.put(.rook, null);
-    map.put(.bishop, null);
-    map.put(.gold, null);
-    map.put(.silver, null);
-    map.put(.knight, null);
-    map.put(.lance, null);
-    map.put(.pawn, null);
-
-    map.put(.promoted_rook, null);
-    map.put(.promoted_bishop, null);
-    map.put(.promoted_silver, null);
-    map.put(.promoted_knight, null);
-    map.put(.promoted_lance, null);
-    map.put(.promoted_pawn, null);
+    // We want every key to be initialized so indexing is always safe.
+    for (@typeInfo(ty.Piece).Enum.fields) |field| {
+        map.put(@enumFromInt(field.value), null);
+    }
 
     break :init map;
 };
