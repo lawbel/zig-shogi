@@ -48,20 +48,16 @@ const black_king_image: [:0]const u8 = embedData("piece.png");
 var core_piece_images: std.EnumMap(ty.Piece, [:0]const u8) = init: {
     var map: std.EnumMap(ty.Piece, [:0]const u8) = .{};
 
-    map.put(.rook, embedData("piece.png"));
-    map.put(.bishop, embedData("bishop.png"));
-    map.put(.gold, embedData("gold.png"));
-    map.put(.silver, embedData("silver.png"));
-    map.put(.knight, embedData("knight.png"));
-    map.put(.lance, embedData("lance.png"));
-    map.put(.pawn, embedData("pawn.png"));
-
-    map.put(.promoted_rook, embedData("piece.png"));
-    map.put(.promoted_bishop, embedData("piece.png"));
-    map.put(.promoted_silver, embedData("piece.png"));
-    map.put(.promoted_knight, embedData("piece.png"));
-    map.put(.promoted_lance, embedData("piece.png"));
-    map.put(.promoted_pawn, embedData("piece.png"));
+    for (@typeInfo(ty.Piece).Enum.fields) |field| {
+        // Skip over kings, as we handle them seperately due to the need to
+        // assign them different images for white and black.
+        if (field.value != @intFromEnum(ty.Piece.king)) {
+            map.put(
+                @enumFromInt(field.value),
+                embedData(field.name ++ ".png"),
+            );
+        }
+    }
 
     break :init map;
 };
