@@ -170,7 +170,7 @@ pub fn constMemToRw(data: [:0]const u8) RenderError!*c.SDL_RWops {
 /// A wrapper around the C function `SDL_SetRenderDrawColor`.
 pub fn setRenderDrawColour(
     renderer: *c.SDL_Renderer,
-    colour: *const ty.Colour,
+    colour: ty.Colour,
 ) RenderError!void {
     if (c.SDL_SetRenderDrawColor(
         renderer,
@@ -189,7 +189,7 @@ pub fn setRenderDrawColour(
 /// render draw colour.
 pub fn renderClear(renderer: *c.SDL_Renderer) RenderError!void {
     const black = ty.Colour{};
-    try setRenderDrawColour(renderer, &black);
+    try setRenderDrawColour(renderer, black);
 
     if (c.SDL_RenderClear(renderer) < 0) {
         const msg = "Failed to clear renderer: %s";
@@ -202,7 +202,7 @@ pub fn renderClear(renderer: *c.SDL_Renderer) RenderError!void {
 /// the render draw colour.
 pub fn renderFillRect(
     renderer: *c.SDL_Renderer,
-    colour: *const ty.Colour,
+    colour: ty.Colour,
     rect: ?*const c.SDL_Rect,
 ) RenderError!void {
     try setRenderDrawColour(renderer, colour);

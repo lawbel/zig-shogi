@@ -87,7 +87,7 @@ var core_piece_textures: std.EnumMap(ty.Piece, ?*c.SDL_Texture) = init: {
 /// calling out to helper functions.
 pub fn render(
     renderer: *c.SDL_Renderer,
-    state: *const ty.State,
+    state: ty.State,
 ) RenderError!void {
     // Clear the renderer for this frame.
     try sdl.renderClear(renderer);
@@ -140,7 +140,7 @@ fn getPieceTexture(
 /// Renders all the pieces on the board.
 fn renderPieces(
     renderer: *c.SDL_Renderer,
-    state: *const ty.State,
+    state: ty.State,
 ) RenderError!void {
     var moved_piece: ?ty.PlayerPiece = null;
     const moved_from: ?ty.BoardPos =
@@ -246,7 +246,7 @@ const highlight_from: ty.Colour = .{
 /// tile/square of the selected piece.
 fn renderMoveHighlighted(
     renderer: *c.SDL_Renderer,
-    state: *const ty.State,
+    state: ty.State,
 ) RenderError!void {
     if (state.mouse.move.from) |from| {
         const board_pos = from.toBoardPos();
@@ -267,7 +267,7 @@ fn renderMoveHighlighted(
         const offset = from.offsetFromGrid();
         try sdl.renderFillRect(
             renderer,
-            &highlight_from,
+            highlight_from,
             &.{
                 .x = from.x - offset.x,
                 .y = from.y - offset.y,

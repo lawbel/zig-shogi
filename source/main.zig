@@ -37,7 +37,7 @@ pub fn main() !void {
         }
 
         // Render the current game state.
-        try render.render(renderer, &state);
+        try render.render(renderer, state);
 
         // If we used less time than needed to hit our target `fps`, then delay
         // for the left-over time before starting on the next frame.
