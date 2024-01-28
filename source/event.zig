@@ -3,6 +3,7 @@ const render = @import("render.zig");
 const sdl = @import("sdl.zig");
 const ty = @import("types.zig");
 
+/// A scratch variable used for processing SDL events.
 var event: c.SDL_Event = undefined;
 
 /// Whether to exit the main loop or not.

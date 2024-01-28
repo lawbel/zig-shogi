@@ -50,6 +50,8 @@ pub fn validMovesFor(
     return moves;
 }
 
+/// Returns a list of all valid moves for the piece at the given `ty.BoardPos`,
+/// assuming that the piece belongs to black.
 fn validMovesForBlack(pos: ty.BoardPos, board: ty.Board) Moves {
     const player_piece = board.get(pos) orelse {
         return Moves.init(0) catch unreachable;
@@ -199,6 +201,9 @@ fn validMovesForBlack(pos: ty.BoardPos, board: ty.Board) Moves {
     }
 }
 
+/// Returns an array of possible `Move`s from the given position, by filtering
+/// the given argument `moves` based on whether the result of making that move
+/// would be in-bounds and the destination tile is vacant.
 fn directMovesFrom(
     pos: ty.BoardPos,
     board: ty.Board,
@@ -219,6 +224,10 @@ fn directMovesFrom(
     return array;
 }
 
+/// Returns an array of possible `Move`s from the given position. For each
+/// step in the `steps` argument, applying the given step to the starting
+/// `pos` as many times as possible until it hits a tile that is out-of-bounds
+/// or is occupied by another piece.
 fn rangedMovesFromSteps(
     pos: ty.BoardPos,
     board: ty.Board,

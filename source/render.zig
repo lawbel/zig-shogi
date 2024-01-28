@@ -253,7 +253,8 @@ const selected_colour: ty.Colour = .{
 const option_colour: ty.Colour = selected_colour;
 
 /// Show the current move (if there is one) on the board by highlighting the
-/// tile/square of the selected piece.
+/// tile/square of the selected piece, and any possible moves that piece could
+/// make.
 fn highlightCurrentMove(
     renderer: *c.SDL_Renderer,
     state: ty.State,
@@ -271,6 +272,9 @@ fn highlightCurrentMove(
     }
 }
 
+/// Does the main work for the `highlightCurrentMove` function, by highlighting
+/// the given position and any possible valid moves that the piece at that
+/// position could make.
 fn doHighlightCurrentMove(
     renderer: *c.SDL_Renderer,
     state: ty.State,
@@ -286,6 +290,8 @@ fn doHighlightCurrentMove(
     }
 }
 
+/// Highlights the given position on the board, by filling it with the given
+/// colour (typically a semi-transparent one).
 fn highlightTileSquare(
     renderer: *c.SDL_Renderer,
     tile: ty.BoardPos,
@@ -303,6 +309,7 @@ fn highlightTileSquare(
     );
 }
 
+/// Renders a `dot` highlight at the given position on the board.
 fn highlightTileDot(
     renderer: *c.SDL_Renderer,
     tile: ty.BoardPos,

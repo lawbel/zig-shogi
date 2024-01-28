@@ -53,6 +53,7 @@ pub const PixelPos = struct {
     x: i32,
     y: i32,
 
+    /// Returns the position on the board at this location on the screen.
     pub fn toBoardPos(this: @This()) BoardPos {
         return .{
             .x = @intCast(@divFloor(this.x, tile_size)),
@@ -60,6 +61,9 @@ pub const PixelPos = struct {
         };
     }
 
+    /// Returns the offset of this position from the board grid. For example,
+    /// if this position is right in the middle of a tile, it would return
+    /// `(tile_size / 2, tile_size / 2)`.
     pub fn offsetFromGrid(this: @This()) @This() {
         return .{
             .x = @mod(this.x, tile_size),
@@ -148,6 +152,8 @@ pub const Piece = enum {
     /// A promoted pawn (tokin と金). Moves and attacks like a gold.
     promoted_pawn,
 
+    /// Promote this piece. If it is already promoted or cannot be promoted,
+    /// returns it as-is.
     pub fn promote(this: @This()) @This() {
         return switch (this) {
             .rook => .promoted_rook,
@@ -254,6 +260,7 @@ pub const Board = struct {
         },
     };
 
+    /// Get the `PlayerPiece` (if any) at the given position.
     pub fn get(this: @This(), pos: BoardPos) ?PlayerPiece {
         const x: usize = @intCast(pos.x);
         const y: usize = @intCast(pos.y);

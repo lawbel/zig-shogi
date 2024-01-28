@@ -4,6 +4,7 @@ const render = @import("render.zig");
 const sdl = @import("sdl.zig");
 const ty = @import("types.zig");
 
+/// The initial game state.
 const init_state: ty.State = .{
     .board = ty.Board.init,
     .player = .black,
@@ -16,6 +17,7 @@ const init_state: ty.State = .{
 /// The target duration of one frame, in milliseconds.
 const one_frame: u32 = 1000 / render.fps;
 
+/// The main entry point to the game.
 pub fn main() !void {
     try sdl.sdlInit();
     defer c.SDL_Quit();
