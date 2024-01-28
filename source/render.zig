@@ -51,12 +51,14 @@ var core_piece_images: std.EnumMap(ty.Piece, [:0]const u8) = init: {
     for (@typeInfo(ty.Piece).Enum.fields) |field| {
         // Skip over kings, as we handle them seperately due to the need to
         // assign them different images for white and black.
-        if (field.value != @intFromEnum(ty.Piece.king)) {
+        if (field.value == @intFromEnum(ty.Piece.king)) {
+            continue;
+        }
+
             map.put(
                 @enumFromInt(field.value),
                 embedData(field.name ++ ".png"),
             );
-        }
     }
 
     break :init map;
