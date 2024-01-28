@@ -17,6 +17,7 @@ pub const RenderError = error{
     RenderClear,
     RenderCopy,
     RenderFillRect,
+    RenderFillCircle,
     RenderReadConstMemory,
     RenderLoadTexture,
 };

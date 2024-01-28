@@ -213,3 +213,31 @@ pub fn renderFillRect(
         return error.RenderFillRect;
     }
 }
+
+/// A wrapper around the C function `c.filledCircleRGBA`.
+pub fn renderFillCircle(
+    args: struct {
+        renderer: *c.SDL_Renderer,
+        colour: ty.Colour,
+        x: i16,
+        y: i16,
+        radius: i16,
+    },
+) RenderError!void {
+    if (c.filledCircleRGBA(
+        args.renderer,
+
+        args.x,
+        args.y,
+        args.radius,
+
+        args.colour.red,
+        args.colour.green,
+        args.colour.blue,
+        args.colour.alpha,
+    ) < 0) {
+        const msg = "Failed to fill circle";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg);
+        return error.RenderFillCircle;
+    }
+}
