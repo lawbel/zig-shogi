@@ -23,6 +23,7 @@
 //! * promoted lance (narikyō 成香)
 //! * promoted pawn (tokin と金), also known as a tokin.
 
+const rules = @import("rules.zig");
 const std = @import("std");
 const tile_size = @import("render.zig").tile_size;
 
@@ -68,8 +69,28 @@ pub const PixelPos = struct {
 };
 
 /// A position (x, y) on our board.
-pub const BoardPos =
-    struct { x: i8, y: i8 };
+pub const BoardPos = struct {
+    x: i8,
+    y: i8,
+
+    /// Check whether this position is actually valid for indexing into the
+    /// [`Board`].
+    pub fn isInBounds(this: @This()) bool {
+        const x_in_bounds = 0 <= this.x and this.x < Board.size;
+        const y_in_bounds = 0 <= this.y and this.y < Board.size;
+        return (x_in_bounds and y_in_bounds);
+    }
+
+    /// Apply a move to shift the given [`ty.BoardPos`], returning the
+    /// resulting position (or `null` if it would be out-of-bounds).
+    pub fn makeMove(this: @This(), move: rules.Move) ?@This() {
+        const target: @This() = .{
+            .x = this.x + move.x,
+            .y = this.y + move.y,
+        };
+        return if (target.isInBounds()) target else null;
+    }
+};
 
 /// An RGB colour, including an alpha (opacity) field.
 pub const Colour = struct {

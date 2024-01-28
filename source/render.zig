@@ -6,6 +6,7 @@
 //! error.
 
 const c = @import("c.zig");
+const rules = @import("rules.zig");
 const sdl = @import("sdl.zig");
 const std = @import("std");
 const ty = @import("types.zig");
@@ -238,12 +239,18 @@ fn getInitTexture(
     return tex;
 }
 
-const highlight_from: ty.Colour = .{
+/// The colour to highlight a selected piece in, that the player has started
+/// moving.
+const selected_colour: ty.Colour = .{
     .red = 0,
     .green = 0xAA,
     .blue = 0,
     .alpha = ty.Colour.@"opaque" / 4,
 };
+
+/// The colour to highlight a tile with, that is a possible option to move the
+/// piece to.
+const option_colour: ty.Colour = selected_colour;
 
 /// Show the current move (if there is one) on the board by highlighting the
 /// tile/square of the selected piece.
@@ -252,31 +259,67 @@ fn highlightCurrentMove(
     state: ty.State,
 ) RenderError!void {
     if (state.mouse.move.from) |from| {
-        const board_pos = from.toBoardPos();
-        const x: usize = @intCast(board_pos.x);
-        const y: usize = @intCast(board_pos.y);
-        const tile = state.board.tiles[y][x];
+        const tile = from.toBoardPos();
+        const x: usize = @intCast(tile.x);
+        const y: usize = @intCast(tile.y);
 
-        if (tile == null) {
-            return;
-        } else if (tile) |piece| {
+        if (state.board.tiles[y][x]) |piece| {
             const owner = @intFromEnum(piece.player);
             const player = @intFromEnum(state.player);
-            if (owner != player) {
-                return;
+            if (owner == player) {
+                try doHighlightCurrentMove(renderer, state, tile);
             }
         }
-
-        const offset = from.offsetFromGrid();
-        try sdl.renderFillRect(
-            renderer,
-            highlight_from,
-            &.{
-                .x = from.x - offset.x,
-                .y = from.y - offset.y,
-                .w = tile_size,
-                .h = tile_size,
-            },
-        );
     }
+}
+
+fn doHighlightCurrentMove(
+    renderer: *c.SDL_Renderer,
+    state: ty.State,
+    tile: ty.BoardPos,
+) RenderError!void {
+    try highlightTileSquare(renderer, tile, selected_colour);
+
+    const moves = rules.validMovesFor(state.player, tile, state.board);
+    for (moves.slice()) |move| {
+        if (tile.makeMove(move)) |dest| {
+            try highlightTileDot(renderer, dest, option_colour);
+        }
+    }
+}
+
+fn highlightTileSquare(
+    renderer: *c.SDL_Renderer,
+    tile: ty.BoardPos,
+    colour: ty.Colour,
+) RenderError!void {
+    try sdl.renderFillRect(
+        renderer,
+        colour,
+        &.{
+            .x = tile.x * tile_size,
+            .y = tile.y * tile_size,
+            .w = tile_size,
+            .h = tile_size,
+        },
+    );
+}
+
+fn highlightTileDot(
+    renderer: *c.SDL_Renderer,
+    tile: ty.BoardPos,
+    colour: ty.Colour,
+) RenderError!void {
+    const tile_size_i: i16 = @intCast(tile_size);
+    const tile_size_f: f32 = @floatFromInt(tile_size);
+    const x: f32 = @floatFromInt(tile.x);
+    const y: f32 = @floatFromInt(tile.y);
+
+    try sdl.renderFillCircle(.{
+        .renderer = renderer,
+        .colour = colour,
+        .x = @intFromFloat((x + 0.5) * tile_size_f),
+        .y = @intFromFloat((y + 0.5) * tile_size_f),
+        .radius = tile_size_i / 6,
+    });
 }
