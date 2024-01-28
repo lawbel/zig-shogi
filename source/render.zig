@@ -55,10 +55,10 @@ var core_piece_images: std.EnumMap(ty.Piece, [:0]const u8) = init: {
             continue;
         }
 
-            map.put(
-                @enumFromInt(field.value),
-                embedData(field.name ++ ".png"),
-            );
+        map.put(
+            @enumFromInt(field.value),
+            embedData(field.name ++ ".png"),
+        );
     }
 
     break :init map;
@@ -95,9 +95,9 @@ pub fn render(
     try sdl.renderClear(renderer);
 
     // Perform all the rendering logic.
-    try renderBoard(renderer);
-    try renderMoveHighlighted(renderer, state);
-    try renderPieces(renderer, state);
+    try drawBoard(renderer);
+    try highlightCurrentMove(renderer, state);
+    try drawPieces(renderer, state);
 
     // Take the rendered state and update the window with it.
     c.SDL_RenderPresent(renderer);
@@ -140,7 +140,7 @@ fn getPieceTexture(
 }
 
 /// Renders all the pieces on the board.
-fn renderPieces(
+fn drawPieces(
     renderer: *c.SDL_Renderer,
     state: ty.State,
 ) RenderError!void {
@@ -209,7 +209,7 @@ fn renderPiece(
 }
 
 /// Renders the game board.
-fn renderBoard(renderer: *c.SDL_Renderer) RenderError!void {
+fn drawBoard(renderer: *c.SDL_Renderer) RenderError!void {
     try sdl.renderCopy(.{
         .renderer = renderer,
         .texture = try getInitTexture(renderer, &board_texture, board_image),
@@ -246,7 +246,7 @@ const highlight_from: ty.Colour = .{
 
 /// Show the current move (if there is one) on the board by highlighting the
 /// tile/square of the selected piece.
-fn renderMoveHighlighted(
+fn highlightCurrentMove(
     renderer: *c.SDL_Renderer,
     state: ty.State,
 ) RenderError!void {
