@@ -74,14 +74,14 @@ pub const BoardPos = struct {
     y: i8,
 
     /// Check whether this position is actually valid for indexing into the
-    /// [`Board`].
+    /// `Board`.
     pub fn isInBounds(this: @This()) bool {
         const x_in_bounds = 0 <= this.x and this.x < Board.size;
         const y_in_bounds = 0 <= this.y and this.y < Board.size;
         return (x_in_bounds and y_in_bounds);
     }
 
-    /// Apply a move to shift the given [`ty.BoardPos`], returning the
+    /// Apply a move to shift the given `ty.BoardPos`, returning the
     /// resulting position (or `null` if it would be out-of-bounds).
     pub fn makeMove(this: @This(), move: rules.Move) ?@This() {
         const target: @This() = .{

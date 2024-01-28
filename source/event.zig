@@ -5,6 +5,7 @@ const ty = @import("types.zig");
 
 var event: c.SDL_Event = undefined;
 
+/// Whether to exit the main loop or not.
 pub const MaybeExit =
     enum { exit, pass };
 

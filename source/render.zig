@@ -105,7 +105,7 @@ pub fn render(
     c.SDL_RenderPresent(renderer);
 }
 
-/// Gets the appropriate texture for the given [`ty.PlayerPiece`], possibly
+/// Gets the appropriate texture for the given `ty.PlayerPiece`, possibly
 /// initializing it along the way if necessary.
 fn getPieceTexture(
     renderer: *c.SDL_Renderer,
