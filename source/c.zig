@@ -8,4 +8,6 @@ pub usingnamespace @cImport({
     @cInclude("SDL2/SDL.h");
     // From 'SDL2_image'.
     @cInclude("SDL2/SDL_image.h");
+    // From 'SDL2_gfx'.
+    @cInclude("SDL2/SDL2_gfxPrimitives.h");
 });
