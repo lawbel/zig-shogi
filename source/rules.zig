@@ -51,9 +51,7 @@ pub fn validMovesFor(
 }
 
 fn validMovesForBlack(pos: ty.BoardPos, board: ty.Board) Moves {
-    const x: usize = @intCast(pos.x);
-    const y: usize = @intCast(pos.y);
-    const player_piece = board.tiles[y][x] orelse {
+    const player_piece = board.get(pos) orelse {
         return Moves.init(0) catch unreachable;
     };
 
@@ -212,9 +210,7 @@ fn directMovesFrom(
     // way, then it is a possible move.
     for (moves) |move| {
         if (pos.makeMove(move)) |dest| {
-            const y: usize = @intCast(dest.y);
-            const x: usize = @intCast(dest.x);
-            if (board.tiles[y][x] == null) {
+            if (board.get(dest) == null) {
                 array.appendAssumeCapacity(move);
             }
         }
@@ -235,10 +231,7 @@ fn rangedMovesFromSteps(
 
         for (1..ty.Board.size) |_| {
             if (pos.makeMove(cur_step)) |dest| {
-                const y: usize = @intCast(dest.y);
-                const x: usize = @intCast(dest.x);
-
-                if (board.tiles[y][x] == null) {
+                if (board.get(dest) == null) {
                     array.appendAssumeCapacity(cur_step);
                 } else {
                     break;

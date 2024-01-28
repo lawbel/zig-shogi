@@ -253,4 +253,11 @@ pub const Board = struct {
             .black = .{},
         },
     };
+
+    pub fn get(this: @This(), pos: BoardPos) ?PlayerPiece {
+        const x: usize = @intCast(pos.x);
+        const y: usize = @intCast(pos.y);
+
+        return this.tiles[y][x];
+    }
 };

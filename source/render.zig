@@ -260,10 +260,8 @@ fn highlightCurrentMove(
 ) RenderError!void {
     if (state.mouse.move.from) |from| {
         const tile = from.toBoardPos();
-        const x: usize = @intCast(tile.x);
-        const y: usize = @intCast(tile.y);
 
-        if (state.board.tiles[y][x]) |piece| {
+        if (state.board.get(tile)) |piece| {
             const owner = @intFromEnum(piece.player);
             const player = @intFromEnum(state.player);
             if (owner == player) {
