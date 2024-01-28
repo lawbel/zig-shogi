@@ -1,5 +1,7 @@
 # Zig Shogi
 
+The Shogi game, implemented in Zig with the help of SDL2.
+
 Table of Contents:
 
 - [Source Documentation](#source-documentation)
@@ -37,7 +39,17 @@ lists of strings - for example, in fish they need changing to
 
 ## Build / Develop
 
-### Nix
+### Standard Method
+
+You will need the `zig` compiler and the C libraries SDL2, SDL2_image, and
+SDL2_gfx installed on your system. Then clone the repo, and:
+
+- To build the program, run `zig build` - this will dump the resulting binary
+  in `./zig-out/`
+- To build and the run the program, run `zig build run`. This will (re)build
+  the program if needed, and then run the executable right after.
+
+### With Nix
 
 If you have `nix` available, it will take care of providing `zig`, `zls`, and
 SDL2 for you:
@@ -52,12 +64,3 @@ SDL2 for you:
   system. This will dump the resulting binary in `./result/bin/`.
 - To build and run the program, simply `nix run` (which, again, will handle
   all dependencies itself).
-
-### Otherwise
-
-You will need `zig` and SDL2 installed on your system. Then:
-
-- To build the program, run `zig build` - this will dump the resulting binary
-  in `./zig-out/`
-- To build and the run the program, run `zig build run`. This will (re)build
-  the program if needed, and then run the executable right after.
