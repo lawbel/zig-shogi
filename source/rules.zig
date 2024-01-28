@@ -17,6 +17,25 @@ pub const Move = struct {
             .y = -this.y,
         };
     }
+
+    /// Is this move valid, considering the state of the `ty.Board` for this
+    /// player and the source position on the board.
+    pub fn isValid(
+        this: @This(),
+        pos: ty.BoardPos,
+        player: ty.Player,
+        board: ty.Board,
+    ) bool {
+        const valid = validMovesFor(player, pos, board);
+
+        for (valid.slice()) |move| {
+            if (move.x == this.x and move.y == this.y) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 };
 
 /// A collection of possible moves on the board.

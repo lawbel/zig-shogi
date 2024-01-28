@@ -264,7 +264,13 @@ pub const Board = struct {
     pub fn get(this: @This(), pos: BoardPos) ?PlayerPiece {
         const x: usize = @intCast(pos.x);
         const y: usize = @intCast(pos.y);
-
         return this.tiles[y][x];
+    }
+
+    /// Set (or delete) the piece present at the given position.
+    pub fn set(this: *@This(), pos: BoardPos, piece: ?PlayerPiece) void {
+        const x: usize = @intCast(pos.x);
+        const y: usize = @intCast(pos.y);
+        this.tiles[y][x] = piece;
     }
 };
