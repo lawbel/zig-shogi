@@ -200,8 +200,8 @@ fn renderPiece(
             .h = tile_size,
         },
         .angle = switch (args.player_piece.player) {
-            .white => 0,
-            .black => 180,
+            .white => 180,
+            .black => 0,
         },
     });
 }

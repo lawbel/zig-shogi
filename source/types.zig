@@ -165,15 +165,15 @@ pub const PlayerPiece = struct {
         const one = .{
             .player = player,
             .piece = switch (player) {
-                .white => .bishop,
-                .black => .rook,
+                .white => .rook,
+                .black => .bishop,
             },
         };
         const two = .{
             .player = player,
             .piece = switch (player) {
-                .white => .rook,
-                .black => .bishop,
+                .white => .bishop,
+                .black => .rook,
             },
         };
 
@@ -211,20 +211,20 @@ pub const Board = struct {
     /// The initial / starting state of the board.
     pub const init: @This() = .{
         .tiles = .{
-            // Black's territory.
-            PlayerPiece.backRow(.black),
-            PlayerPiece.middleRow(.black),
-            PlayerPiece.frontRow(.black),
+            // White's territory.
+            PlayerPiece.backRow(.white),
+            PlayerPiece.middleRow(.white),
+            PlayerPiece.frontRow(.white),
 
             // No-mans land.
             .{null} ** size,
             .{null} ** size,
             .{null} ** size,
 
-            // White's territory.
-            PlayerPiece.frontRow(.white),
-            PlayerPiece.middleRow(.white),
-            PlayerPiece.backRow(.white),
+            // Black's territory.
+            PlayerPiece.frontRow(.black),
+            PlayerPiece.middleRow(.black),
+            PlayerPiece.backRow(.black),
         },
 
         .hand = .{
