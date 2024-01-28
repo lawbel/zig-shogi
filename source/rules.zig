@@ -72,6 +72,123 @@ fn validMovesForBlack(pos: ty.BoardPos, board: ty.Board) Moves {
             );
         },
 
+        .promoted_rook => {
+            var ranged_moves = rangedMovesFromSteps(
+                pos,
+                board,
+                &[_]Move{
+                    .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
+                    .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
+                },
+            );
+            const direct_moves = directMovesFrom(
+                pos,
+                board,
+                &[_]Move{
+                    .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
+                    .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
+                },
+            );
+            for (direct_moves.slice()) |move| {
+                ranged_moves.appendAssumeCapacity(move);
+            }
+            return ranged_moves;
+        },
+
+        .promoted_bishop => {
+            var ranged_moves = rangedMovesFromSteps(
+                pos,
+                board,
+                &[_]Move{
+                    .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
+                    .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
+                },
+            );
+            const direct_moves = directMovesFrom(
+                pos,
+                board,
+                &[_]Move{
+                    .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
+                    .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
+                },
+            );
+            for (direct_moves.slice()) |move| {
+                ranged_moves.appendAssumeCapacity(move);
+            }
+            return ranged_moves;
+        },
+
+        .rook => {
+            return rangedMovesFromSteps(
+                pos,
+                board,
+                &[_]Move{
+                    .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
+                    .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
+                },
+            );
+        },
+
+        .bishop => {
+            return rangedMovesFromSteps(
+                pos,
+                board,
+                &[_]Move{
+                    .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
+                    .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
+                },
+            );
+        },
+
+        .gold,
+        .promoted_silver,
+        .promoted_knight,
+        .promoted_lance,
+        .promoted_pawn,
+        => {
+            return directMovesFrom(
+                pos,
+                board,
+                &[_]Move{
+                    .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
+                    .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 0 },
+                    .{ .x = 1, .y = 0 },   .{ .x = 0, .y = 1 },
+                },
+            );
+        },
+
+        .silver => {
+            return directMovesFrom(
+                pos,
+                board,
+                &[_]Move{
+                    .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
+                    .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 1 },
+                    .{ .x = 1, .y = 1 },
+                },
+            );
+        },
+
+        .knight => {
+            return directMovesFrom(
+                pos,
+                board,
+                &[_]Move{
+                    .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 },
+                },
+            );
+        },
+
+        .lance => {
+            return rangedMovesFromSteps(
+                pos,
+                board,
+                &[_]Move{
+                    .{ .x = 0, .y = -1 },
+                },
+            );
+        },
+
         .pawn => {
             return directMovesFrom(
                 pos,
@@ -81,8 +198,6 @@ fn validMovesForBlack(pos: ty.BoardPos, board: ty.Board) Moves {
                 },
             );
         },
-
-        else => unreachable, // TODO: implement.
     }
 }
 
@@ -101,6 +216,36 @@ fn directMovesFrom(
             const x: usize = @intCast(dest.x);
             if (board.tiles[y][x] == null) {
                 array.appendAssumeCapacity(move);
+            }
+        }
+    }
+
+    return array;
+}
+
+fn rangedMovesFromSteps(
+    pos: ty.BoardPos,
+    board: ty.Board,
+    steps: []const Move,
+) Moves {
+    var array = Moves.init(0) catch unreachable;
+
+    for (steps) |step| {
+        var cur_step = step;
+
+        for (1..ty.Board.size) |_| {
+            if (pos.makeMove(cur_step)) |dest| {
+                const y: usize = @intCast(dest.y);
+                const x: usize = @intCast(dest.x);
+
+                if (board.tiles[y][x] == null) {
+                    array.appendAssumeCapacity(cur_step);
+                } else {
+                    break;
+                }
+
+                cur_step.x += step.x;
+                cur_step.y += step.y;
             }
         }
     }
