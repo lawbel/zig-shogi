@@ -138,13 +138,11 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
                 .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 0 },
                 .{ .x = 1, .y = 0 },   .{ .x = 0, .y = 1 },
             };
-
             if (player_piece.player == .white) {
                 for (&moves) |*move| {
                     move.flipHoriz();
                 }
             }
-
             return directMovesFrom(pos, board, &moves);
         },
 
@@ -154,13 +152,11 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
                 .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 1 },
                 .{ .x = 1, .y = 1 },
             };
-
             if (player_piece.player == .white) {
                 for (&moves) |*move| {
                     move.flipHoriz();
                 }
             }
-
             return directMovesFrom(pos, board, &moves);
         },
 
@@ -168,33 +164,27 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             var moves = [_]Move{
                 .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 },
             };
-
             if (player_piece.player == .white) {
                 for (&moves) |*move| {
                     move.flipHoriz();
                 }
             }
-
             return directMovesFrom(pos, board, &moves);
         },
 
         .lance => {
             var move = Move{ .x = 0, .y = -1 };
-
             if (player_piece.player == .white) {
                 move.flipHoriz();
             }
-
             return rangedMovesFromSteps(pos, board, &.{move});
         },
 
         .pawn => {
             var move = Move{ .x = 0, .y = -1 };
-
             if (player_piece.player == .white) {
                 move.flipHoriz();
             }
-
             return directMovesFrom(pos, board, &.{move});
         },
     }
