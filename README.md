@@ -1,6 +1,6 @@
 # Zig Shogi
 
-The Shogi game, implemented in Zig with the help of SDL2.
+The game Shogi, implemented in Zig with the help of SDL2.
 
 Table of Contents:
 
