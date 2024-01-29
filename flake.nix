@@ -1,4 +1,6 @@
 {
+  description = "The game Shogi, implemented in Zig with the help of SDL2.";
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";

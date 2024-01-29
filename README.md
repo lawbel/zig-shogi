@@ -1,6 +1,6 @@
 # Zig Shogi
 
-The Shogi game, implemented in Zig with the help of SDL2.
+The game Shogi, implemented in Zig with the help of SDL2.
 
 Table of Contents:
 
@@ -52,13 +52,16 @@ SDL2_gfx installed on your system. Then clone the repo, and:
 ### With Nix
 
 If you have `nix` available, it will take care of providing `zig`, `zls`, and
-SDL2 for you:
+SDL2 for you. To try the program, you can simply do
+`nix run github:lawbel/zig-shogi` - this will fetch this repo and its
+dependencies, build it, and run the resulting executable. Alternatively, clone
+the repo and then to do other things:
 
 - To work on the source code, run `nix develop` (or if you use direnv, simply
   `direnv allow` and it will do this automatically when you enter the
-  directory) and you will get `zig`, `zls`, and the `SDL2` library available.
-  This way you can load up the project in your editor of choice and get good
-  tooling support.
+  directory) and you will get `zig`, `zls`, and the C `SDL2` libraries
+  available. This way you can load up the project in your editor of choice and
+  get good tooling support.
 - To build the program, run `nix build` and it will handle all the necessary
   dependencies, there is no need for you to have zig or SDL installed on your
   system. This will dump the resulting binary in `./result/bin/`.
