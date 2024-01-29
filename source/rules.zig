@@ -9,24 +9,16 @@ pub const Move = struct {
     x: i8,
     y: i8,
 
-    /// Swap this move to be valid for the opposite player (by flipping it
-    /// about the horizontal).
-    fn swapPlayer(this: @This()) @This() {
-        return .{
-            .x = this.x,
-            .y = -this.y,
-        };
+    /// Flip this move about the horizontal, effectively swapping the player
+    /// it is for.
+    fn flipHoriz(this: *@This()) void {
+        this.y *= -1;
     }
 
     /// Is this move valid, considering the state of the `ty.Board` for this
     /// player and the source position on the board.
-    pub fn isValid(
-        this: @This(),
-        pos: ty.BoardPos,
-        player: ty.Player,
-        board: ty.Board,
-    ) bool {
-        const valid = validMovesFor(player, pos, board);
+    pub fn isValid(this: @This(), pos: ty.BoardPos, board: ty.Board) bool {
+        const valid = validMoves(pos, board);
 
         for (valid.slice()) |move| {
             if (move.x == this.x and move.y == this.y) {
@@ -46,32 +38,8 @@ pub const Moves = std.BoundedArray(Move, max_moves);
 /// new piece onto a near-empty board.
 const max_moves: usize = ty.Board.size * ty.Board.size;
 
-/// Returns a list of all valid moves for the given `ty.Player`.
-pub fn validMovesFor(
-    player: ty.Player,
-    pos: ty.BoardPos,
-    board: ty.Board,
-) Moves {
-    var moves = validMovesForBlack(pos, board);
-
-    // If there are no valid moves, return the empty array now.
-    if (moves.len == 0) {
-        return moves;
-    }
-
-    if (player == .white) {
-        for (0..moves.len - 1) |i| {
-            const swapped = moves.get(i).swapPlayer();
-            moves.set(i, swapped);
-        }
-    }
-
-    return moves;
-}
-
-/// Returns a list of all valid moves for the piece at the given `ty.BoardPos`,
-/// assuming that the piece belongs to black.
-fn validMovesForBlack(pos: ty.BoardPos, board: ty.Board) Moves {
+/// Returns a list of all valid moves for the piece at the given position.
+pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
     const player_piece = board.get(pos) orelse {
         return Moves.init(0) catch unreachable;
     };
@@ -165,57 +133,69 @@ fn validMovesForBlack(pos: ty.BoardPos, board: ty.Board) Moves {
         .promoted_lance,
         .promoted_pawn,
         => {
-            return directMovesFrom(
-                pos,
-                board,
-                &[_]Move{
-                    .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
-                    .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 0 },
-                    .{ .x = 1, .y = 0 },   .{ .x = 0, .y = 1 },
-                },
-            );
+            var moves = [_]Move{
+                .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
+                .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 0 },
+                .{ .x = 1, .y = 0 },   .{ .x = 0, .y = 1 },
+            };
+
+            if (player_piece.player == .white) {
+                for (&moves) |*move| {
+                    move.flipHoriz();
+                }
+            }
+
+            return directMovesFrom(pos, board, &moves);
         },
 
         .silver => {
-            return directMovesFrom(
-                pos,
-                board,
-                &[_]Move{
-                    .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
-                    .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 1 },
-                    .{ .x = 1, .y = 1 },
-                },
-            );
+            var moves = [_]Move{
+                .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
+                .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 1 },
+                .{ .x = 1, .y = 1 },
+            };
+
+            if (player_piece.player == .white) {
+                for (&moves) |*move| {
+                    move.flipHoriz();
+                }
+            }
+
+            return directMovesFrom(pos, board, &moves);
         },
 
         .knight => {
-            return directMovesFrom(
-                pos,
-                board,
-                &[_]Move{
-                    .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 },
-                },
-            );
+            var moves = [_]Move{
+                .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 },
+            };
+
+            if (player_piece.player == .white) {
+                for (&moves) |*move| {
+                    move.flipHoriz();
+                }
+            }
+
+            return directMovesFrom(pos, board, &moves);
         },
 
         .lance => {
-            return rangedMovesFromSteps(
-                pos,
-                board,
-                &[_]Move{
-                    .{ .x = 0, .y = -1 },
-                },
-            );
+            var move = Move{ .x = 0, .y = -1 };
+
+            if (player_piece.player == .white) {
+                move.flipHoriz();
+            }
+
+            return rangedMovesFromSteps(pos, board, &.{move});
         },
 
         .pawn => {
-            return directMovesFrom(
-                pos,
-                board,
-                &[_]Move{
-                    .{ .x = 0, .y = -1 },
-                },
-            );
+            var move = Move{ .x = 0, .y = -1 };
+
+            if (player_piece.player == .white) {
+                move.flipHoriz();
+            }
+
+            return directMovesFrom(pos, board, &.{move});
         },
     }
 }

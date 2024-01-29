@@ -301,7 +301,7 @@ fn doHighlightCurrentMove(
 ) RenderError!void {
     try highlightTileSquare(renderer, tile, selected_colour);
 
-    const moves = rules.validMovesFor(state.player, tile, state.board);
+    const moves = rules.validMoves(tile, state.board);
     for (moves.slice()) |move| {
         if (tile.makeMove(move)) |dest| {
             try highlightTileDot(renderer, dest, option_colour);

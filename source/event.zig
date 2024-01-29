@@ -41,7 +41,7 @@ pub fn processEvents(state: *ty.State) MaybeExit {
                         .y = dest.y - src.y,
                     };
 
-                    if (move.isValid(src, state.player, state.board)) {
+                    if (move.isValid(src, state.board)) {
                         const src_piece = state.board.get(src);
                         state.board.set(src, null);
                         state.board.set(dest, src_piece);
