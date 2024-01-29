@@ -1,3 +1,6 @@
+//! Handle the events that come in every frame, updating the state as
+//! appropriate.
+
 const c = @import("c.zig");
 const render = @import("render.zig");
 const rules = @import("rules.zig");
