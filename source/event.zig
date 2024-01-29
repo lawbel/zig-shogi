@@ -3,7 +3,6 @@
 
 const c = @import("c.zig");
 const render = @import("render.zig");
-const rules = @import("rules.zig");
 const sdl = @import("sdl.zig");
 const ty = @import("types.zig");
 
@@ -36,7 +35,7 @@ pub fn processEvents(state: *ty.State) MaybeExit {
                         break :set;
                     };
                     const src = src_pix.toBoardPos();
-                    const move = rules.Move{
+                    const move = ty.Move{
                         .x = dest.x - src.x,
                         .y = dest.y - src.y,
                     };

@@ -4,34 +4,8 @@
 const std = @import("std");
 const ty = @import("types.zig");
 
-/// A vector `(x, y)` representing a move on our board.
-pub const Move = struct {
-    x: i8,
-    y: i8,
-
-    /// Flip this move about the horizontal, effectively swapping the player
-    /// it is for.
-    fn flipHoriz(this: *@This()) void {
-        this.y *= -1;
-    }
-
-    /// Is this move valid, considering the state of the `ty.Board` for this
-    /// player and the source position on the board.
-    pub fn isValid(this: @This(), pos: ty.BoardPos, board: ty.Board) bool {
-        const valid = validMoves(pos, board);
-
-        for (valid.slice()) |move| {
-            if (move.x == this.x and move.y == this.y) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-};
-
 /// A collection of possible moves on the board.
-pub const Moves = std.BoundedArray(Move, max_moves);
+pub const Moves = std.BoundedArray(ty.Move, max_moves);
 
 /// An upper bound on the maximum number of possible moves that any piece
 /// could have. The case which requires the most possible moves is dropping a
@@ -50,7 +24,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             return directMovesFrom(
                 pos,
                 board,
-                &[_]Move{
+                &[_]ty.Move{
                     .{ .x = 1, .y = 0 },  .{ .x = 1, .y = 1 },
                     .{ .x = 0, .y = 1 },  .{ .x = -1, .y = 1 },
                     .{ .x = -1, .y = 0 }, .{ .x = -1, .y = -1 },
@@ -63,7 +37,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             var ranged_moves = rangedMovesFromSteps(
                 pos,
                 board,
-                &[_]Move{
+                &[_]ty.Move{
                     .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                     .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
                 },
@@ -71,7 +45,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             const direct_moves = directMovesFrom(
                 pos,
                 board,
-                &[_]Move{
+                &[_]ty.Move{
                     .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                     .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
                 },
@@ -86,7 +60,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             var ranged_moves = rangedMovesFromSteps(
                 pos,
                 board,
-                &[_]Move{
+                &[_]ty.Move{
                     .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                     .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
                 },
@@ -94,7 +68,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             const direct_moves = directMovesFrom(
                 pos,
                 board,
-                &[_]Move{
+                &[_]ty.Move{
                     .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                     .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
                 },
@@ -109,7 +83,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             return rangedMovesFromSteps(
                 pos,
                 board,
-                &[_]Move{
+                &[_]ty.Move{
                     .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                     .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
                 },
@@ -120,7 +94,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             return rangedMovesFromSteps(
                 pos,
                 board,
-                &[_]Move{
+                &[_]ty.Move{
                     .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                     .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
                 },
@@ -133,7 +107,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
         .promoted_lance,
         .promoted_pawn,
         => {
-            var moves = [_]Move{
+            var moves = [_]ty.Move{
                 .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
                 .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 0 },
                 .{ .x = 1, .y = 0 },   .{ .x = 0, .y = 1 },
@@ -147,7 +121,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
         },
 
         .silver => {
-            var moves = [_]Move{
+            var moves = [_]ty.Move{
                 .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
                 .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 1 },
                 .{ .x = 1, .y = 1 },
@@ -161,7 +135,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
         },
 
         .knight => {
-            var moves = [_]Move{
+            var moves = [_]ty.Move{
                 .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 },
             };
             if (player_piece.player == .white) {
@@ -173,7 +147,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
         },
 
         .lance => {
-            var move = Move{ .x = 0, .y = -1 };
+            var move = ty.Move{ .x = 0, .y = -1 };
             if (player_piece.player == .white) {
                 move.flipHoriz();
             }
@@ -181,7 +155,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
         },
 
         .pawn => {
-            var move = Move{ .x = 0, .y = -1 };
+            var move = ty.Move{ .x = 0, .y = -1 };
             if (player_piece.player == .white) {
                 move.flipHoriz();
             }
@@ -196,7 +170,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
 fn directMovesFrom(
     pos: ty.BoardPos,
     board: ty.Board,
-    moves: []const Move,
+    moves: []const ty.Move,
 ) Moves {
     var array = Moves.init(0) catch unreachable;
 
@@ -220,7 +194,7 @@ fn directMovesFrom(
 fn rangedMovesFromSteps(
     pos: ty.BoardPos,
     board: ty.Board,
-    steps: []const Move,
+    steps: []const ty.Move,
 ) Moves {
     var array = Moves.init(0) catch unreachable;
 

@@ -46,6 +46,32 @@ pub const State = struct {
     player: Player,
 };
 
+/// A vector `(x, y)` representing a move on our board.
+pub const Move = struct {
+    x: i8,
+    y: i8,
+
+    /// Flip this move about the horizontal, effectively swapping the player
+    /// it is for.
+    pub fn flipHoriz(this: *@This()) void {
+        this.y *= -1;
+    }
+
+    /// Is this move valid, considering the state of the `Board` for this
+    /// player and the source position on the board.
+    pub fn isValid(this: @This(), pos: BoardPos, board: Board) bool {
+        const valid = rules.validMoves(pos, board);
+
+        for (valid.slice()) |move| {
+            if (move.x == this.x and move.y == this.y) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+};
+
 /// A position (x, y) in our game window. We use `i32` as the type, instead
 /// of an alternative like `u16`, for ease when interfacing with the SDL
 /// library.
@@ -87,7 +113,7 @@ pub const BoardPos = struct {
 
     /// Apply a move to shift the given `ty.BoardPos`, returning the
     /// resulting position (or `null` if it would be out-of-bounds).
-    pub fn makeMove(this: @This(), move: rules.Move) ?@This() {
+    pub fn makeMove(this: @This(), move: Move) ?@This() {
         const target: @This() = .{
             .x = this.x + move.x,
             .y = this.y + move.y,
