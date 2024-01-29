@@ -52,4 +52,6 @@ pub fn main() !void {
 
         last_frame = this_frame;
     }
+
+    render.freeTextures();
 }

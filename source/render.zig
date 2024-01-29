@@ -105,6 +105,25 @@ pub fn render(
     c.SDL_RenderPresent(renderer);
 }
 
+/// Frees the memory associated with the textures:
+///
+/// * `board_texture`
+/// * `white_king_texture`
+/// * `black_king_texture`
+/// * `core_piece_textures`
+pub fn freeTextures() void {
+    c.SDL_DestroyTexture(board_texture);
+    c.SDL_DestroyTexture(white_king_texture);
+    c.SDL_DestroyTexture(black_king_texture);
+
+    inline for (@typeInfo(ty.Piece).Enum.fields) |field| {
+        const piece: ty.Piece = @enumFromInt(field.value);
+        if (core_piece_textures.get(piece)) |texture| {
+            c.SDL_DestroyTexture(texture);
+        }
+    }
+}
+
 /// Gets the appropriate texture for the given `ty.PlayerPiece`, possibly
 /// initializing it along the way if necessary.
 fn getPieceTexture(
