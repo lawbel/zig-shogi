@@ -12,6 +12,7 @@ const init_state: ty.State = .{
         .pos = .{ .x = 0, .y = 0 },
         .move = .{ .from = null },
     },
+    .last = null,
 };
 
 /// The target duration of one frame, in milliseconds.

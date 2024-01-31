@@ -42,6 +42,11 @@ pub const State = struct {
             from: ?PixelPos,
         },
     },
+    /// The last move on the board (if any).
+    last: ?struct {
+        pos: BoardPos,
+        move: Move,
+    },
     /// Which colour is the player? The other will be the CPU.
     player: Player,
 };

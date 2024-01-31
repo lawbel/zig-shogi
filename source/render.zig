@@ -98,6 +98,7 @@ pub fn render(
 
     // Perform all the rendering logic.
     try drawBoard(renderer);
+    try highlightLastMove(renderer, state);
     try highlightCurrentMove(renderer, state);
     try drawPieces(renderer, state);
 
@@ -258,6 +259,14 @@ fn getInitTexture(
     return tex;
 }
 
+/// The colour to highlight the last move with (if there is one).
+const last_colour: ty.Colour = .{
+    .red = 0x11,
+    .green = 0x11,
+    .blue = 0x44,
+    .alpha = ty.Colour.@"opaque" / 4,
+};
+
 /// The colour to highlight a selected piece in, that the player has started
 /// moving.
 const selected_colour: ty.Colour = .{
@@ -270,6 +279,18 @@ const selected_colour: ty.Colour = .{
 /// The colour to highlight a tile with, that is a possible option to move the
 /// piece to.
 const option_colour: ty.Colour = selected_colour;
+
+/// Show the last move (if there is one) on the board by highlighting the
+/// tile/square that the piece moved from and moved to.
+fn highlightLastMove(
+    renderer: *c.SDL_Renderer,
+    state: ty.State,
+) RenderError!void {
+    if (state.last) |last| if (last.pos.makeMove(last.move)) |move| {
+        try highlightTileSquare(renderer, last.pos, last_colour);
+        try highlightTileSquare(renderer, move, last_colour);
+    };
+}
 
 /// Show the current move (if there is one) on the board by highlighting the
 /// tile/square of the selected piece, and any possible moves that piece could

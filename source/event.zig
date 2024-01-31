@@ -44,6 +44,7 @@ pub fn processEvents(state: *ty.State) MaybeExit {
                         const src_piece = state.board.get(src);
                         state.board.set(src, null);
                         state.board.set(dest, src_piece);
+                        state.last = .{ .pos = src, .move = move };
                     }
 
                     state.mouse.move.from = null;
