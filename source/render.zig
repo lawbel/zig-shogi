@@ -261,9 +261,9 @@ fn getInitTexture(
 
 /// The colour to highlight the last move with (if there is one).
 const last_colour: ty.Colour = .{
-    .red = 0x11,
-    .green = 0x11,
-    .blue = 0x44,
+    .red = 0,
+    .green = 0x33,
+    .blue = 0x22,
     .alpha = ty.Colour.@"opaque" / 4,
 };
 
@@ -279,6 +279,15 @@ const selected_colour: ty.Colour = .{
 /// The colour to highlight a tile with, that is a possible option to move the
 /// piece to.
 const option_colour: ty.Colour = selected_colour;
+
+/// The colour to highlight a tile with, when the piece on that tile can be
+/// captured.
+const capture_colour: ty.Colour = .{
+    .red = 0x77,
+    .green = 0,
+    .blue = 0,
+    .alpha = ty.Colour.@"opaque" / 4,
+};
 
 /// Show the last move (if there is one) on the board by highlighting the
 /// tile/square that the piece moved from and moved to.
@@ -325,7 +334,11 @@ fn doHighlightCurrentMove(
     const moves = rules.validMoves(tile, state.board);
     for (moves.slice()) |move| {
         if (tile.makeMove(move)) |dest| {
-            try highlightTileDot(renderer, dest, option_colour);
+            if (state.board.get(dest) == null) {
+                try highlightTileDot(renderer, dest, option_colour);
+            } else {
+                try highlightTileSquare(renderer, dest, capture_colour);
+            }
         }
     }
 }
