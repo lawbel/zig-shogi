@@ -21,35 +21,38 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
     switch (player_piece.piece) {
         .king => {
             // TODO: handle 'check' conditions.
-            return directMovesFrom(
-                pos,
-                board,
-                &[_]ty.Move{
+            return directMovesFrom(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .moves = &[_]ty.Move{
                     .{ .x = 1, .y = 0 },  .{ .x = 1, .y = 1 },
                     .{ .x = 0, .y = 1 },  .{ .x = -1, .y = 1 },
                     .{ .x = -1, .y = 0 }, .{ .x = -1, .y = -1 },
                     .{ .x = 0, .y = -1 }, .{ .x = 1, .y = -1 },
                 },
-            );
+            });
         },
 
         .promoted_rook => {
-            var ranged_moves = rangedMovesFromSteps(
-                pos,
-                board,
-                &[_]ty.Move{
+            var ranged_moves = rangedMovesFromSteps(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .steps = &[_]ty.Move{
                     .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                     .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
                 },
-            );
-            const direct_moves = directMovesFrom(
-                pos,
-                board,
-                &[_]ty.Move{
+            });
+            const direct_moves = directMovesFrom(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .moves = &[_]ty.Move{
                     .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                     .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
                 },
-            );
+            });
             for (direct_moves.slice()) |move| {
                 ranged_moves.appendAssumeCapacity(move);
             }
@@ -57,22 +60,24 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
         },
 
         .promoted_bishop => {
-            var ranged_moves = rangedMovesFromSteps(
-                pos,
-                board,
-                &[_]ty.Move{
+            var ranged_moves = rangedMovesFromSteps(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .steps = &[_]ty.Move{
                     .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                     .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
                 },
-            );
-            const direct_moves = directMovesFrom(
-                pos,
-                board,
-                &[_]ty.Move{
+            });
+            const direct_moves = directMovesFrom(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .moves = &[_]ty.Move{
                     .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                     .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
                 },
-            );
+            });
             for (direct_moves.slice()) |move| {
                 ranged_moves.appendAssumeCapacity(move);
             }
@@ -80,25 +85,27 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
         },
 
         .rook => {
-            return rangedMovesFromSteps(
-                pos,
-                board,
-                &[_]ty.Move{
+            return rangedMovesFromSteps(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .steps = &[_]ty.Move{
                     .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                     .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
                 },
-            );
+            });
         },
 
         .bishop => {
-            return rangedMovesFromSteps(
-                pos,
-                board,
-                &[_]ty.Move{
+            return rangedMovesFromSteps(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .steps = &[_]ty.Move{
                     .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                     .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
                 },
-            );
+            });
         },
 
         .gold,
@@ -117,7 +124,12 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
                     move.flipHoriz();
                 }
             }
-            return directMovesFrom(pos, board, &moves);
+            return directMovesFrom(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .moves = &moves,
+            });
         },
 
         .silver => {
@@ -131,7 +143,12 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
                     move.flipHoriz();
                 }
             }
-            return directMovesFrom(pos, board, &moves);
+            return directMovesFrom(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .moves = &moves,
+            });
         },
 
         .knight => {
@@ -143,7 +160,12 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
                     move.flipHoriz();
                 }
             }
-            return directMovesFrom(pos, board, &moves);
+            return directMovesFrom(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .moves = &moves,
+            });
         },
 
         .lance => {
@@ -151,7 +173,12 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             if (player_piece.player == .white) {
                 move.flipHoriz();
             }
-            return rangedMovesFromSteps(pos, board, &.{move});
+            return rangedMovesFromSteps(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .steps = &.{move},
+            });
         },
 
         .pawn => {
@@ -159,26 +186,39 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             if (player_piece.player == .white) {
                 move.flipHoriz();
             }
-            return directMovesFrom(pos, board, &.{move});
+            return directMovesFrom(.{
+                .player = player_piece.player,
+                .pos = pos,
+                .board = board,
+                .moves = &.{move},
+            });
         },
     }
 }
 
 /// Returns an array of possible `Move`s from the given position, by filtering
 /// the given argument `moves` based on whether the result of making that move
-/// would be in-bounds and the destination tile is vacant.
+/// would be in-bounds and the destination tile is vacant / occupied by an
+/// opponent's piece.
 fn directMovesFrom(
-    pos: ty.BoardPos,
-    board: ty.Board,
-    moves: []const ty.Move,
+    args: struct {
+        pos: ty.BoardPos,
+        player: ty.Player,
+        board: ty.Board,
+        moves: []const ty.Move,
+    },
 ) Moves {
     var array = Moves.init(0) catch unreachable;
 
-    // If the move would be in-bounds, and there's not a piece in the
-    // way, then it is a possible move.
-    for (moves) |move| {
-        if (pos.makeMove(move)) |dest| {
-            if (board.get(dest) == null) {
+    for (args.moves) |move| {
+        if (args.pos.makeMove(move)) |dest| {
+            if (args.board.get(dest)) |piece| {
+                // If there is an opponent's piece in the way, that is ok.
+                if (@intFromEnum(piece.player) != @intFromEnum(args.player)) {
+                    array.appendAssumeCapacity(move);
+                }
+            } else {
+                // If the tile is vacant, that is also ok.
                 array.appendAssumeCapacity(move);
             }
         }
@@ -190,23 +230,35 @@ fn directMovesFrom(
 /// Returns an array of possible `Move`s from the given position. For each
 /// step in the `steps` argument, applying the given step to the starting
 /// `pos` as many times as possible until it hits a tile that is out-of-bounds
-/// or is occupied by another piece.
+/// or is occupied by an opponent's piece.
 fn rangedMovesFromSteps(
-    pos: ty.BoardPos,
-    board: ty.Board,
-    steps: []const ty.Move,
+    args: struct {
+        pos: ty.BoardPos,
+        player: ty.Player,
+        board: ty.Board,
+        steps: []const ty.Move,
+    },
 ) Moves {
     var array = Moves.init(0) catch unreachable;
 
-    for (steps) |step| {
+    for (args.steps) |step| {
         var cur_step = step;
 
         for (1..ty.Board.size) |_| {
-            if (pos.makeMove(cur_step)) |dest| {
-                if (board.get(dest) == null) {
-                    array.appendAssumeCapacity(cur_step);
-                } else {
+            if (args.pos.makeMove(cur_step)) |dest| {
+                if (args.board.get(dest)) |piece| {
+                    // If there is an opponent's piece in the way, that is ok.
+                    if (@intFromEnum(piece.player) !=
+                        @intFromEnum(args.player))
+                    {
+                        array.appendAssumeCapacity(cur_step);
+                    }
+                    // We should break the loop no matter whose piece is in the
+                    // way, we can go no further.
                     break;
+                } else {
+                    // If the tile is vacant, that is also ok.
+                    array.appendAssumeCapacity(cur_step);
                 }
 
                 cur_step.x += step.x;

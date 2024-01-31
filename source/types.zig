@@ -51,7 +51,8 @@ pub const State = struct {
     player: Player,
 };
 
-/// A vector `(x, y)` representing a move on our board.
+/// A vector `(x, y)` representing a move on our board. This could be simply
+/// repositioning a piece, or it could be capturing another piece.
 pub const Move = struct {
     x: i8,
     y: i8,
