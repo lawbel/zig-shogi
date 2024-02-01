@@ -55,7 +55,14 @@ fn leftClickRelease(state: *ty.State) void {
         .y = dest.y - src.y,
     };
 
-    if (move.isValid(src, state.board)) {
+    var player_owns_piece = false;
+    if (state.board.get(src)) |piece| {
+        const owner = @intFromEnum(piece.player);
+        const player = @intFromEnum(state.player);
+        player_owns_piece = owner == player;
+    }
+
+    if (move.isValid(src, state.board) and player_owns_piece) {
         processMove(.{
             .state = state,
             .src = src,
