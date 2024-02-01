@@ -145,6 +145,7 @@ fn getPieceTexture(
                 image = black_king_image;
             },
         },
+
         else => {
             texture = core_piece_textures.getPtr(piece.sort) orelse {
                 return error.RenderLoadTexture;
@@ -164,19 +165,24 @@ fn drawPieces(
     state: ty.State,
 ) RenderError!void {
     var moved_piece: ?ty.Piece = null;
-    const moved_from: ?ty.BoardPos =
-        if (state.mouse.move.from) |pos| pos.toBoardPos() else null;
+    var moved_from: ?ty.BoardPos = null;
+
+    if (state.mouse.move.from) |pos| {
+        moved_from = pos.toBoardPos();
+    }
 
     // Render every piece on the board, except for the one (if any) that the
     // player is currently moving.
     for (state.board.tiles, 0..) |row, y| {
-        for (row, 0..) |val, x| if (val) |piece| render: {
+        for (row, 0..) |val, x| {
+            const piece = val orelse continue;
+
             if (moved_from) |pos| {
                 const owner = @intFromEnum(piece.player);
                 const player = @intFromEnum(state.player);
                 if (owner == player and x == pos.x and y == pos.y) {
                     moved_piece = piece;
-                    break :render;
+                    continue;
                 }
             }
 
@@ -186,20 +192,21 @@ fn drawPieces(
                 .x = tile_size * @as(c_int, @intCast(x)),
                 .y = tile_size * @as(c_int, @intCast(y)),
             });
-        };
+        }
     }
 
     // We need to render any piece the player may be moving last, so it
     // appears on top of everything else.
-    if (moved_piece) |piece| if (state.mouse.move.from) |from| {
-        const offset = from.offsetFromGrid();
-        try renderPiece(.{
-            .renderer = renderer,
-            .piece = piece,
-            .x = state.mouse.pos.x - offset.x,
-            .y = state.mouse.pos.y - offset.y,
-        });
-    };
+    const piece = moved_piece orelse return;
+    const from = state.mouse.move.from orelse return;
+    const offset = from.offsetFromGrid();
+
+    try renderPiece(.{
+        .renderer = renderer,
+        .piece = piece,
+        .x = state.mouse.pos.x - offset.x,
+        .y = state.mouse.pos.y - offset.y,
+    });
 }
 
 /// Renders the given piece at the given location.
@@ -211,9 +218,11 @@ fn renderPiece(
         y: c_int,
     },
 ) RenderError!void {
-    return sdl.renderCopy(.{
+    const tex = try getPieceTexture(args.renderer, args.piece);
+
+    try sdl.renderCopy(.{
         .renderer = args.renderer,
-        .texture = try getPieceTexture(args.renderer, args.piece),
+        .texture = tex,
         .dst_rect = &.{
             .x = args.x,
             .y = args.y,
@@ -229,10 +238,8 @@ fn renderPiece(
 
 /// Renders the game board.
 fn drawBoard(renderer: *c.SDL_Renderer) RenderError!void {
-    try sdl.renderCopy(.{
-        .renderer = renderer,
-        .texture = try getInitTexture(renderer, &board_texture, board_image),
-    });
+    const tex = try getInitTexture(renderer, &board_texture, board_image);
+    try sdl.renderCopy(.{ .renderer = renderer, .texture = tex });
 }
 
 /// Get the texture if it's there, or (if `null`) initialize it with the given
@@ -246,12 +253,14 @@ fn getInitTexture(
         return tex;
     }
 
+    const stream = try sdl.constMemToRw(raw_data);
     const tex = try sdl.rwToTexture(.{
         .renderer = renderer,
-        .stream = try sdl.constMemToRw(raw_data),
+        .stream = stream,
         .free_stream = true,
         .blend_mode = blend_mode,
     });
+
     texture.* = tex;
     return tex;
 }
@@ -292,10 +301,11 @@ fn highlightLastMove(
     renderer: *c.SDL_Renderer,
     state: ty.State,
 ) RenderError!void {
-    if (state.last) |last| if (last.pos.makeMove(last.move)) |move| {
-        try highlightTileSquare(renderer, last.pos, last_colour);
-        try highlightTileSquare(renderer, move, last_colour);
-    };
+    const last = state.last orelse return;
+    const move = last.pos.makeMove(last.move) orelse return;
+
+    try highlightTileSquare(renderer, last.pos, last_colour);
+    try highlightTileSquare(renderer, move, last_colour);
 }
 
 /// Show the current move (if there is one) on the board by highlighting the
@@ -305,16 +315,14 @@ fn highlightCurrentMove(
     renderer: *c.SDL_Renderer,
     state: ty.State,
 ) RenderError!void {
-    if (state.mouse.move.from) |from| {
-        const tile = from.toBoardPos();
+    const from_pix = state.mouse.move.from orelse return;
+    const from_pos = from_pix.toBoardPos();
+    const piece = state.board.get(from_pos) orelse return;
+    const owner = @intFromEnum(piece.player);
+    const player = @intFromEnum(state.player);
 
-        if (state.board.get(tile)) |piece| {
-            const owner = @intFromEnum(piece.player);
-            const player = @intFromEnum(state.player);
-            if (owner == player) {
-                try doHighlightCurrentMove(renderer, state, tile);
-            }
-        }
+    if (owner == player) {
+        try doHighlightCurrentMove(renderer, state, from_pos);
     }
 }
 
@@ -328,14 +336,13 @@ fn doHighlightCurrentMove(
 ) RenderError!void {
     try highlightTileSquare(renderer, tile, selected_colour);
 
-    const moves = rules.validMoves(tile, state.board);
-    for (moves.slice()) |move| {
-        if (tile.makeMove(move)) |dest| {
-            if (state.board.get(dest) == null) {
-                try highlightTileDot(renderer, dest, option_colour);
-            } else {
-                try highlightTileSquare(renderer, dest, capture_colour);
-            }
+    const moves = rules.validMoves(tile, state.board).slice();
+    for (moves) |move| {
+        const dest = tile.makeMove(move) orelse continue;
+        if (state.board.get(dest) == null) {
+            try highlightTileDot(renderer, dest, option_colour);
+        } else {
+            try highlightTileSquare(renderer, dest, capture_colour);
         }
     }
 }

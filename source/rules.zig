@@ -193,18 +193,18 @@ fn directMovesFrom(args: DirectArgs) Moves {
     var array = Moves.init(0) catch unreachable;
 
     for (args.moves) |move| {
-        if (args.pos.makeMove(move)) |dest| {
-            if (args.board.get(dest)) |piece| {
-                // If there is an opponent's piece in the way, that is ok.
-                const owner = @intFromEnum(piece.player);
-                const player = @intFromEnum(args.player);
-                if (owner != player) {
-                    array.appendAssumeCapacity(move);
-                }
-            } else {
-                // If the tile is vacant, that is also ok.
+        const dest = args.pos.makeMove(move) orelse continue;
+
+        if (args.board.get(dest)) |piece| {
+            // If there is an opponent's piece in the way, that is ok.
+            const owner = @intFromEnum(piece.player);
+            const player = @intFromEnum(args.player);
+            if (owner != player) {
                 array.appendAssumeCapacity(move);
             }
+        } else {
+            // If the tile is vacant, that is also ok.
+            array.appendAssumeCapacity(move);
         }
     }
 
@@ -230,26 +230,26 @@ fn rangedMovesFromSteps(args: RangedArgs) Moves {
         var cur_step = step;
 
         for (1..ty.Board.size) |_| {
-            if (args.pos.makeMove(cur_step)) |dest| {
-                if (args.board.get(dest)) |piece| {
-                    // If there is an opponent's piece in the way, that is ok.
-                    const owner = @intFromEnum(piece.player);
-                    const player = @intFromEnum(args.player);
-                    if (owner != player) {
-                        array.appendAssumeCapacity(cur_step);
-                    }
+            const dest = args.pos.makeMove(cur_step) orelse continue;
 
-                    // We should break the loop no matter whose piece is in the
-                    // way, we can go no further.
-                    break;
-                } else {
-                    // If the tile is vacant, that is also ok.
+            if (args.board.get(dest)) |piece| {
+                // If there is an opponent's piece in the way, that is ok.
+                const owner = @intFromEnum(piece.player);
+                const player = @intFromEnum(args.player);
+                if (owner != player) {
                     array.appendAssumeCapacity(cur_step);
                 }
 
-                cur_step.x += step.x;
-                cur_step.y += step.y;
+                // We should break the loop no matter whose piece is in the
+                // way, we can go no further.
+                break;
+            } else {
+                // If the tile is vacant, that is also ok.
+                array.appendAssumeCapacity(cur_step);
             }
+
+            cur_step.x += step.x;
+            cur_step.y += step.y;
         }
     }
 

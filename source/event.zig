@@ -97,18 +97,17 @@ fn processMove(
     };
 
     // Add the captured piece (if any) to the players hand.
-    if (dest_piece) |piece| {
-        var hand: *std.EnumMap(ty.Sort, i8) = undefined;
+    const piece = dest_piece orelse return;
+    const sort = piece.sort.demote();
 
-        if (args.state.player == .white) {
-            hand = &args.state.board.hand.white;
-        } else {
-            hand = &args.state.board.hand.black;
-        }
+    var hand: *std.EnumMap(ty.Sort, i8) = undefined;
+    if (args.state.player == .white) {
+        hand = &args.state.board.hand.white;
+    } else {
+        hand = &args.state.board.hand.black;
+    }
 
-        const sort = piece.sort.demote();
-        if (hand.getPtr(sort)) |count| {
-            count.* += 1;
-        }
+    if (hand.getPtr(sort)) |count| {
+        count.* += 1;
     }
 }
