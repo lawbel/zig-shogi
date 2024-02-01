@@ -197,6 +197,20 @@ pub const Piece = enum {
             else => this,
         };
     }
+
+    /// Demote this piece. If it is already demoted or cannot be demoted,
+    /// returns it as-is.
+    pub fn demote(this: @This()) @This() {
+        return switch (this) {
+            .promoted_rook => .rook,
+            .promoted_bishop => .bishop,
+            .promoted_silver => .silver,
+            .promoted_knight => .knight,
+            .promoted_lance => .lance,
+            .promoted_pawn => .pawn,
+            else => this,
+        };
+    }
 };
 
 /// This type combines a `Piece` and a `Player` in one type.
@@ -250,6 +264,16 @@ pub const PlayerPiece = struct {
     }
 };
 
+const empty_hand: std.EnumMap(Piece, i8) = init: {
+    var map: std.EnumMap(Piece, i8) = .{};
+
+    for (@typeInfo(Piece).Enum.fields) |field| {
+        map.put(@enumFromInt(field.value), 0);
+    }
+
+    break :init map;
+};
+
 /// This type represents the pure state of the board, and has some associated
 /// functionality.
 pub const Board = struct {
@@ -287,8 +311,8 @@ pub const Board = struct {
         },
 
         .hand = .{
-            .white = .{},
-            .black = .{},
+            .white = empty_hand,
+            .black = empty_hand,
         },
     };
 
