@@ -14,24 +14,24 @@ const max_moves: usize = ty.Board.size * ty.Board.size;
 
 /// Returns a list of all valid moves for the piece at the given position.
 pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
-    const player_piece = board.get(pos) orelse {
+    const piece = board.get(pos) orelse {
         return Moves.init(0) catch unreachable;
     };
 
     var direct_args: DirectArgs = .{
         .pos = pos,
-        .player = player_piece.player,
+        .player = piece.player,
         .board = board,
         .moves = undefined,
     };
     var ranged_args: RangedArgs = .{
-        .player = player_piece.player,
+        .player = piece.player,
         .pos = pos,
         .board = board,
         .steps = undefined,
     };
 
-    switch (player_piece.piece) {
+    switch (piece.sort) {
         .king => {
             // TODO: handle 'check' conditions.
             direct_args.moves = &[_]ty.Move{
@@ -111,7 +111,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
                 .{ .x = 1, .y = 0 },   .{ .x = 0, .y = 1 },
             };
 
-            if (player_piece.player == .white) {
+            if (piece.player == .white) {
                 for (&moves) |*move| {
                     move.flipHoriz();
                 }
@@ -128,7 +128,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
                 .{ .x = 1, .y = 1 },
             };
 
-            if (player_piece.player == .white) {
+            if (piece.player == .white) {
                 for (&moves) |*move| {
                     move.flipHoriz();
                 }
@@ -143,7 +143,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
                 .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 },
             };
 
-            if (player_piece.player == .white) {
+            if (piece.player == .white) {
                 for (&moves) |*move| {
                     move.flipHoriz();
                 }
@@ -155,7 +155,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
 
         .lance => {
             var move: ty.Move = .{ .x = 0, .y = -1 };
-            if (player_piece.player == .white) {
+            if (piece.player == .white) {
                 move.flipHoriz();
             }
 
@@ -165,7 +165,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
 
         .pawn => {
             var move: ty.Move = .{ .x = 0, .y = -1 };
-            if (player_piece.player == .white) {
+            if (piece.player == .white) {
                 move.flipHoriz();
             }
 

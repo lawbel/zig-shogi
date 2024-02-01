@@ -146,8 +146,9 @@ pub const Player = union(enum) {
     black,
 };
 
-/// A shogi piece. Includes promoted and non-promoted pieces.
-pub const Piece = enum {
+/// The different sorts of shogi pieces. Includes promoted and non-promoted
+/// pieces.
+pub const Sort = enum {
     /// The king (ōshō 王将 / gyokushō 玉将).
     king,
 
@@ -213,23 +214,24 @@ pub const Piece = enum {
     }
 };
 
-/// This type combines a `Piece` and a `Player` in one type.
-pub const PlayerPiece = struct {
+/// A piece belonging to a player - this type combines a `Sort` and a
+/// `Player` in one type.
+pub const Piece = struct {
     player: Player,
-    piece: Piece,
+    sort: Sort,
 
     /// The starting back row for a given player.
     pub fn backRow(player: Player) [Board.size]?@This() {
         return .{
-            .{ .player = player, .piece = .lance },
-            .{ .player = player, .piece = .knight },
-            .{ .player = player, .piece = .silver },
-            .{ .player = player, .piece = .gold },
-            .{ .player = player, .piece = .king },
-            .{ .player = player, .piece = .gold },
-            .{ .player = player, .piece = .silver },
-            .{ .player = player, .piece = .knight },
-            .{ .player = player, .piece = .lance },
+            .{ .player = player, .sort = .lance },
+            .{ .player = player, .sort = .knight },
+            .{ .player = player, .sort = .silver },
+            .{ .player = player, .sort = .gold },
+            .{ .player = player, .sort = .king },
+            .{ .player = player, .sort = .gold },
+            .{ .player = player, .sort = .silver },
+            .{ .player = player, .sort = .knight },
+            .{ .player = player, .sort = .lance },
         };
     }
 
@@ -237,14 +239,14 @@ pub const PlayerPiece = struct {
     pub fn middleRow(player: Player) [Board.size]?@This() {
         const one = .{
             .player = player,
-            .piece = switch (player) {
+            .sort = switch (player) {
                 .white => .rook,
                 .black => .bishop,
             },
         };
         const two = .{
             .player = player,
-            .piece = switch (player) {
+            .sort = switch (player) {
                 .white => .bishop,
                 .black => .rook,
             },
@@ -258,16 +260,16 @@ pub const PlayerPiece = struct {
         return .{
             .{
                 .player = player,
-                .piece = .pawn,
+                .sort = .pawn,
             },
         } ** Board.size;
     }
 };
 
-const empty_hand: std.EnumMap(Piece, i8) = init: {
-    var map: std.EnumMap(Piece, i8) = .{};
+const empty_hand: std.EnumMap(Sort, i8) = init: {
+    var map: std.EnumMap(Sort, i8) = .{};
 
-    for (@typeInfo(Piece).Enum.fields) |field| {
+    for (@typeInfo(Sort).Enum.fields) |field| {
         map.put(@enumFromInt(field.value), 0);
     }
 
@@ -277,15 +279,15 @@ const empty_hand: std.EnumMap(Piece, i8) = init: {
 /// This type represents the pure state of the board, and has some associated
 /// functionality.
 pub const Board = struct {
-    /// Which (if any) piece (a `PlayerPiece`) is on each square/tile.
-    tiles: [size][size]?PlayerPiece,
+    /// Which (if any) `Piece` is on each square/tile.
+    tiles: [size][size]?Piece,
 
     /// Which pieces does each player have in hand?
     hand: struct {
         /// What pieces does white have in hand, and how many of each?
-        white: std.EnumMap(Piece, i8),
+        white: std.EnumMap(Sort, i8),
         /// What pieces does black have in hand, and how many of each?
-        black: std.EnumMap(Piece, i8),
+        black: std.EnumMap(Sort, i8),
     },
 
     /// The size of the board (i.e. its width/height).
@@ -295,9 +297,9 @@ pub const Board = struct {
     pub const init: @This() = .{
         .tiles = .{
             // White's territory.
-            PlayerPiece.backRow(.white),
-            PlayerPiece.middleRow(.white),
-            PlayerPiece.frontRow(.white),
+            Piece.backRow(.white),
+            Piece.middleRow(.white),
+            Piece.frontRow(.white),
 
             // No-mans land.
             .{null} ** size,
@@ -305,9 +307,9 @@ pub const Board = struct {
             .{null} ** size,
 
             // Black's territory.
-            PlayerPiece.frontRow(.black),
-            PlayerPiece.middleRow(.black),
-            PlayerPiece.backRow(.black),
+            Piece.frontRow(.black),
+            Piece.middleRow(.black),
+            Piece.backRow(.black),
         },
 
         .hand = .{
@@ -316,15 +318,15 @@ pub const Board = struct {
         },
     };
 
-    /// Get the `PlayerPiece` (if any) at the given position.
-    pub fn get(this: @This(), pos: BoardPos) ?PlayerPiece {
+    /// Get the `Piece` (if any) at the given position.
+    pub fn get(this: @This(), pos: BoardPos) ?Piece {
         const x: usize = @intCast(pos.x);
         const y: usize = @intCast(pos.y);
         return this.tiles[y][x];
     }
 
-    /// Set (or delete) the piece present at the given position.
-    pub fn set(this: *@This(), pos: BoardPos, piece: ?PlayerPiece) void {
+    /// Set (or delete) the `Piece` present at the given position.
+    pub fn set(this: *@This(), pos: BoardPos, piece: ?Piece) void {
         const x: usize = @intCast(pos.x);
         const y: usize = @intCast(pos.y);
         this.tiles[y][x] = piece;

@@ -47,13 +47,13 @@ const white_king_image: [:0]const u8 = embedData("white_king.png");
 const black_king_image: [:0]const u8 = embedData("black_king.png");
 
 /// The images for all 'core' pieces - every piece except for the kings.
-var core_piece_images: std.EnumMap(ty.Piece, [:0]const u8) = init: {
-    var map: std.EnumMap(ty.Piece, [:0]const u8) = .{};
+var core_piece_images: std.EnumMap(ty.Sort, [:0]const u8) = init: {
+    var map: std.EnumMap(ty.Sort, [:0]const u8) = .{};
 
-    for (@typeInfo(ty.Piece).Enum.fields) |field| {
+    for (@typeInfo(ty.Sort).Enum.fields) |field| {
         // Skip over kings, as we handle them seperately due to the need to
         // assign them different images for white and black.
-        if (field.value == @intFromEnum(ty.Piece.king)) {
+        if (field.value == @intFromEnum(ty.Sort.king)) {
             continue;
         }
 
@@ -76,11 +76,11 @@ var white_king_texture: ?*c.SDL_Texture = null;
 var black_king_texture: ?*c.SDL_Texture = null;
 
 /// The textures for all 'core' pieces - every piece except for the kings.
-var core_piece_textures: std.EnumMap(ty.Piece, ?*c.SDL_Texture) = init: {
-    var map: std.EnumMap(ty.Piece, ?*c.SDL_Texture) = .{};
+var core_piece_textures: std.EnumMap(ty.Sort, ?*c.SDL_Texture) = init: {
+    var map: std.EnumMap(ty.Sort, ?*c.SDL_Texture) = .{};
 
     // We want every key to be initialized so indexing is always safe.
-    for (@typeInfo(ty.Piece).Enum.fields) |field| {
+    for (@typeInfo(ty.Sort).Enum.fields) |field| {
         map.put(@enumFromInt(field.value), null);
     }
 
@@ -117,28 +117,25 @@ pub fn freeTextures() void {
     c.SDL_DestroyTexture(white_king_texture);
     c.SDL_DestroyTexture(black_king_texture);
 
-    inline for (@typeInfo(ty.Piece).Enum.fields) |field| {
-        const piece: ty.Piece = @enumFromInt(field.value);
+    inline for (@typeInfo(ty.Sort).Enum.fields) |field| {
+        const piece: ty.Sort = @enumFromInt(field.value);
         if (core_piece_textures.get(piece)) |texture| {
             c.SDL_DestroyTexture(texture);
         }
     }
 }
 
-/// Gets the appropriate texture for the given `ty.PlayerPiece`, possibly
+/// Gets the appropriate texture for the given `ty.Piece`, possibly
 /// initializing it along the way if necessary.
 fn getPieceTexture(
     renderer: *c.SDL_Renderer,
-    player_piece: ty.PlayerPiece,
+    piece: ty.Piece,
 ) RenderError!*c.SDL_Texture {
-    const player = player_piece.player;
-    const piece = player_piece.piece;
-
     var texture: *?*c.SDL_Texture = undefined;
     var image: [:0]const u8 = undefined;
 
-    switch (piece) {
-        .king => switch (player) {
+    switch (piece.sort) {
+        .king => switch (piece.player) {
             .white => {
                 texture = &white_king_texture;
                 image = white_king_image;
@@ -149,10 +146,10 @@ fn getPieceTexture(
             },
         },
         else => {
-            texture = core_piece_textures.getPtr(piece) orelse {
+            texture = core_piece_textures.getPtr(piece.sort) orelse {
                 return error.RenderLoadTexture;
             };
-            image = core_piece_images.get(piece) orelse {
+            image = core_piece_images.get(piece.sort) orelse {
                 return error.RenderReadConstMemory;
             };
         },
@@ -166,7 +163,7 @@ fn drawPieces(
     renderer: *c.SDL_Renderer,
     state: ty.State,
 ) RenderError!void {
-    var moved_piece: ?ty.PlayerPiece = null;
+    var moved_piece: ?ty.Piece = null;
     const moved_from: ?ty.BoardPos =
         if (state.mouse.move.from) |pos| pos.toBoardPos() else null;
 
@@ -185,7 +182,7 @@ fn drawPieces(
 
             try renderPiece(.{
                 .renderer = renderer,
-                .player_piece = piece,
+                .piece = piece,
                 .x = tile_size * @as(c_int, @intCast(x)),
                 .y = tile_size * @as(c_int, @intCast(y)),
             });
@@ -198,7 +195,7 @@ fn drawPieces(
         const offset = from.offsetFromGrid();
         try renderPiece(.{
             .renderer = renderer,
-            .player_piece = piece,
+            .piece = piece,
             .x = state.mouse.pos.x - offset.x,
             .y = state.mouse.pos.y - offset.y,
         });
@@ -209,21 +206,21 @@ fn drawPieces(
 fn renderPiece(
     args: struct {
         renderer: *c.SDL_Renderer,
-        player_piece: ty.PlayerPiece,
+        piece: ty.Piece,
         x: c_int,
         y: c_int,
     },
 ) RenderError!void {
     return sdl.renderCopy(.{
         .renderer = args.renderer,
-        .texture = try getPieceTexture(args.renderer, args.player_piece),
+        .texture = try getPieceTexture(args.renderer, args.piece),
         .dst_rect = &.{
             .x = args.x,
             .y = args.y,
             .w = tile_size,
             .h = tile_size,
         },
-        .angle = switch (args.player_piece.player) {
+        .angle = switch (args.piece.player) {
             .white => 180,
             .black => 0,
         },
