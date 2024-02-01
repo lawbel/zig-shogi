@@ -159,7 +159,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
                 move.flipHoriz();
             }
 
-            direct_args.moves = &.{move};
+            ranged_args.steps = &.{move};
             return rangedMovesFromSteps(ranged_args);
         },
 
