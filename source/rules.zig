@@ -54,13 +54,14 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             };
 
             const direct_moves = directMovesFrom(direct_args);
-            var ranged_moves = rangedMovesFromSteps(ranged_args);
+            const ranged_moves = rangedMovesFromSteps(ranged_args);
 
+            var all_moves = ranged_moves;
             for (direct_moves.slice()) |move| {
-                ranged_moves.appendAssumeCapacity(move);
+                all_moves.appendAssumeCapacity(move);
             }
 
-            return ranged_moves;
+            return all_moves;
         },
 
         .promoted_bishop => {
@@ -74,13 +75,14 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
             };
 
             const direct_moves = directMovesFrom(direct_args);
-            var ranged_moves = rangedMovesFromSteps(ranged_args);
+            const ranged_moves = rangedMovesFromSteps(ranged_args);
 
+            var all_moves = ranged_moves;
             for (direct_moves.slice()) |move| {
-                ranged_moves.appendAssumeCapacity(move);
+                all_moves.appendAssumeCapacity(move);
             }
 
-            return ranged_moves;
+            return all_moves;
         },
 
         .rook => {
