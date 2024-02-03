@@ -320,24 +320,16 @@ fn highlightCurrentMove(
     const piece = state.board.get(from_pos) orelse return;
     const owner_is_user = ty.Player.eq(piece.player, state.user);
 
-    if (owner_is_user) {
-        try doHighlightCurrentMove(renderer, state, from_pos);
+    if (!owner_is_user) {
+        return;
     }
-}
 
-/// Does the main work for the `highlightCurrentMove` function, by highlighting
-/// the given position and any possible valid moves that the piece at that
-/// position could make.
-fn doHighlightCurrentMove(
-    renderer: *c.SDL_Renderer,
-    state: ty.State,
-    tile: ty.BoardPos,
-) RenderError!void {
-    try highlightTileSquare(renderer, tile, selected_colour);
+    try highlightTileSquare(renderer, from_pos, selected_colour);
 
-    const moves = rules.validMoves(tile, state.board).slice();
+    const moves = rules.validMoves(from_pos, state.board).slice();
+
     for (moves) |move| {
-        const dest = tile.makeMove(move) orelse continue;
+        const dest = from_pos.makeMove(move) orelse continue;
         if (state.board.get(dest) == null) {
             try highlightTileDot(renderer, dest, option_colour);
         } else {
