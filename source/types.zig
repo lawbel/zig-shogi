@@ -97,10 +97,7 @@ test "Move.flipHoriz does nothing when y = 0" {
 test "Move.isValid permits moving starting pawns" {
     const max_index = Board.size - 1;
     const rows = [_]i8{ 2, max_index - 2 };
-    const moves = [_]Move{
-        .{ .x = 0, .y = 1 },
-        .{ .x = 0, .y = -1 },
-    };
+    const moves = [_]Move{ .{ .x = 0, .y = 1 }, .{ .x = 0, .y = -1 } };
 
     for (rows, moves) |row, move| {
         for (0..max_index) |n| {
@@ -125,14 +122,8 @@ test "Move.isValid forbids moving starting knights" {
     };
 
     const move_opts = [2][2]Move{
-        .{
-            .{ .x = 1, .y = 2 },
-            .{ .x = -1, .y = 2 },
-        },
-        .{
-            .{ .x = 1, .y = -2 },
-            .{ .x = -1, .y = -2 },
-        },
+        .{ .{ .x = 1, .y = 2 }, .{ .x = -1, .y = 2 } },
+        .{ .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 } },
     };
 
     for (pos_opts, move_opts) |positions, moves| {
