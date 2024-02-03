@@ -170,6 +170,22 @@ pub const PixelPos = struct {
     }
 };
 
+test "PixelPos.toBoardPos(n*size, n*size) returns (n, n)" {
+    for (0..Board.size - 1) |n| {
+        const n_float: f32 = @floatFromInt(n);
+        const tile_size_float: f32 = @floatFromInt(tile_size);
+
+        // A pixel dead-centre in the middle of the intended tile.
+        const pix: PixelPos = .{
+            .x = @intFromFloat((n_float + 0.5) * tile_size_float),
+            .y = @intFromFloat((n_float + 0.5) * tile_size_float),
+        };
+        const pos: BoardPos = .{ .x = @intCast(n), .y = @intCast(n) };
+
+        try std.testing.expectEqual(pix.toBoardPos(), pos);
+    }
+}
+
 /// A position (x, y) on our board.
 pub const BoardPos = struct {
     x: i8,
