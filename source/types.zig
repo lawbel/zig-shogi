@@ -206,9 +206,9 @@ pub const Colour = struct {
     red: u8 = 0,
     green: u8 = 0,
     blue: u8 = 0,
-    alpha: u8 = @"opaque",
+    alpha: u8 = max_opacity,
 
-    pub const @"opaque" = std.math.maxInt(u8);
+    pub const max_opacity = std.math.maxInt(u8);
 };
 
 /// The possible players of the game.

@@ -270,7 +270,7 @@ const last_colour: ty.Colour = .{
     .red = 0,
     .green = 0x77,
     .blue = 0,
-    .alpha = ty.Colour.@"opaque" / 4,
+    .alpha = ty.Colour.max_opacity / 4,
 };
 
 /// The colour to highlight a selected piece in, that the user has started
@@ -279,7 +279,7 @@ const selected_colour: ty.Colour = .{
     .red = 0,
     .green = 0x33,
     .blue = 0x22,
-    .alpha = ty.Colour.@"opaque" / 4,
+    .alpha = ty.Colour.max_opacity / 4,
 };
 
 /// The colour to highlight a tile with, that is a possible option to move the
