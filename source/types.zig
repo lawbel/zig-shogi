@@ -47,8 +47,8 @@ pub const State = struct {
         pos: BoardPos,
         move: Move,
     },
-    /// Which colour is the player? The other will be the CPU.
-    player: Player,
+    /// The colour of the human player. The other colour will be the CPU.
+    user: Player,
 };
 
 /// A vector `(x, y)` representing a move on our board. This could be simply

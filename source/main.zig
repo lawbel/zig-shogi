@@ -7,7 +7,7 @@ const ty = @import("types.zig");
 /// The initial game state.
 const init_state: ty.State = .{
     .board = ty.Board.init,
-    .player = .black,
+    .user = .black,
     .mouse = .{
         .pos = .{ .x = 0, .y = 0 },
         .move = .{ .from = null },

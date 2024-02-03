@@ -20,12 +20,12 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
 
     var direct_args: DirectArgs = .{
         .pos = pos,
-        .player = piece.player,
+        .user = piece.player,
         .board = board,
         .moves = undefined,
     };
     var ranged_args: RangedArgs = .{
-        .player = piece.player,
+        .user = piece.player,
         .pos = pos,
         .board = board,
         .steps = undefined,
@@ -180,7 +180,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
 /// The arguments to `directMovesFrom`.
 const DirectArgs = struct {
     pos: ty.BoardPos,
-    player: ty.Player,
+    user: ty.Player,
     board: ty.Board,
     moves: []const ty.Move,
 };
@@ -198,8 +198,8 @@ fn directMovesFrom(args: DirectArgs) Moves {
         if (args.board.get(dest)) |piece| {
             // If there is an opponent's piece in the way, that is ok.
             const owner = @intFromEnum(piece.player);
-            const player = @intFromEnum(args.player);
-            if (owner != player) {
+            const user = @intFromEnum(args.user);
+            if (owner != user) {
                 array.appendAssumeCapacity(move);
             }
         } else {
@@ -214,7 +214,7 @@ fn directMovesFrom(args: DirectArgs) Moves {
 /// The arguments to `rangedMovesFromSteps`.
 const RangedArgs = struct {
     pos: ty.BoardPos,
-    player: ty.Player,
+    user: ty.Player,
     board: ty.Board,
     steps: []const ty.Move,
 };
@@ -235,8 +235,8 @@ fn rangedMovesFromSteps(args: RangedArgs) Moves {
             if (args.board.get(dest)) |piece| {
                 // If there is an opponent's piece in the way, that is ok.
                 const owner = @intFromEnum(piece.player);
-                const player = @intFromEnum(args.player);
-                if (owner != player) {
+                const user = @intFromEnum(args.user);
+                if (owner != user) {
                     array.appendAssumeCapacity(cur_step);
                 }
 

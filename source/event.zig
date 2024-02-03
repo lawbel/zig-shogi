@@ -55,14 +55,14 @@ fn leftClickRelease(state: *ty.State) void {
         .y = dest.y - src.y,
     };
 
-    var player_owns_piece = false;
+    var user_owns_piece = false;
     if (state.board.get(src)) |piece| {
         const owner = @intFromEnum(piece.player);
-        const player = @intFromEnum(state.player);
-        player_owns_piece = owner == player;
+        const user = @intFromEnum(state.user);
+        user_owns_piece = owner == user;
     }
 
-    if (move.isValid(src, state.board) and player_owns_piece) {
+    if (move.isValid(src, state.board) and user_owns_piece) {
         processMove(.{
             .state = state,
             .src = src,
@@ -101,7 +101,7 @@ fn processMove(
     const sort = piece.sort.demote();
 
     var hand: *std.EnumMap(ty.Sort, i8) = undefined;
-    if (args.state.player == .white) {
+    if (args.state.user == .white) {
         hand = &args.state.board.hand.white;
     } else {
         hand = &args.state.board.hand.black;

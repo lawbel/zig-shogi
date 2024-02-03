@@ -172,15 +172,15 @@ fn drawPieces(
     }
 
     // Render every piece on the board, except for the one (if any) that the
-    // player is currently moving.
+    // user is currently moving.
     for (state.board.tiles, 0..) |row, y| {
         for (row, 0..) |val, x| {
             const piece = val orelse continue;
 
             if (moved_from) |pos| {
                 const owner = @intFromEnum(piece.player);
-                const player = @intFromEnum(state.player);
-                if (owner == player and x == pos.x and y == pos.y) {
+                const user = @intFromEnum(state.user);
+                if (owner == user and x == pos.x and y == pos.y) {
                     moved_piece = piece;
                     continue;
                 }
@@ -195,7 +195,7 @@ fn drawPieces(
         }
     }
 
-    // We need to render any piece the player may be moving last, so it
+    // We need to render any piece the user may be moving last, so it
     // appears on top of everything else.
     const piece = moved_piece orelse return;
     const from = state.mouse.move.from orelse return;
@@ -273,7 +273,7 @@ const last_colour: ty.Colour = .{
     .alpha = ty.Colour.@"opaque" / 4,
 };
 
-/// The colour to highlight a selected piece in, that the player has started
+/// The colour to highlight a selected piece in, that the user has started
 /// moving.
 const selected_colour: ty.Colour = .{
     .red = 0,
@@ -319,9 +319,9 @@ fn highlightCurrentMove(
     const from_pos = from_pix.toBoardPos();
     const piece = state.board.get(from_pos) orelse return;
     const owner = @intFromEnum(piece.player);
-    const player = @intFromEnum(state.player);
+    const user = @intFromEnum(state.user);
 
-    if (owner == player) {
+    if (owner == user) {
         try doHighlightCurrentMove(renderer, state, from_pos);
     }
 }
