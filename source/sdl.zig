@@ -214,15 +214,20 @@ pub fn renderFillRect(
     }
 }
 
+/// A pixel position on the screen. This is conceptually the same as
+/// `ty.PixelPos`, but uses `i16` instead of `i32` as some SDL functions
+/// require that integer type instead.
+pub const Vertex = struct {
+    x: i16,
+    y: i16,
+};
+
 /// A wrapper around the C function `c.filledCircleRGBA` from SDL_gfx.
 pub fn renderFillCircle(
     args: struct {
         renderer: *c.SDL_Renderer,
         colour: ty.Colour,
-        centre: struct {
-            x: i16,
-            y: i16,
-        },
+        centre: Vertex,
         radius: i16,
     },
 ) RenderError!void {
@@ -248,10 +253,7 @@ pub fn renderFillCircle(
 pub fn renderFillTriangle(
     args: struct {
         renderer: *c.SDL_Renderer,
-        vertices: [3]struct {
-            x: i16,
-            y: i16,
-        },
+        vertices: [3]Vertex,
         colour: ty.Colour,
     },
 ) RenderError!void {

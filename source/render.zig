@@ -268,8 +268,8 @@ fn getInitTexture(
 /// The colour to highlight the last move with (if there is one).
 const last_colour: ty.Colour = .{
     .red = 0,
-    .green = 0x33,
-    .blue = 0x22,
+    .green = 0x77,
+    .blue = 0,
     .alpha = ty.Colour.@"opaque" / 4,
 };
 
@@ -277,23 +277,14 @@ const last_colour: ty.Colour = .{
 /// moving.
 const selected_colour: ty.Colour = .{
     .red = 0,
-    .green = 0xAA,
-    .blue = 0,
+    .green = 0x33,
+    .blue = 0x22,
     .alpha = ty.Colour.@"opaque" / 4,
 };
 
 /// The colour to highlight a tile with, that is a possible option to move the
 /// piece to.
 const option_colour: ty.Colour = selected_colour;
-
-/// The colour to highlight a tile with, when the piece on that tile can be
-/// captured.
-const capture_colour: ty.Colour = .{
-    .red = 0x77,
-    .green = 0,
-    .blue = 0,
-    .alpha = ty.Colour.@"opaque" / 4,
-};
 
 /// Show the last move (if there is one) on the board by highlighting the
 /// tile/square that the piece moved from and moved to.
@@ -333,7 +324,7 @@ fn highlightCurrentMove(
         if (state.board.get(dest) == null) {
             try highlightTileDot(renderer, dest, option_colour);
         } else {
-            try highlightTileSquare(renderer, dest, capture_colour);
+            try highlightTileCorners(renderer, dest, option_colour);
         }
     }
 }
@@ -377,4 +368,84 @@ fn highlightTileDot(
         },
         .radius = tile_size_i / 6,
     });
+}
+
+/// The length (in pixels) of the 'baseline' sides of the triangls drawn by
+/// `highlightTileCorners`. That is, the length of the sides along the x and y
+/// axis. The length of the hypotenuse will then be `sqrt(2)` times this
+/// length, as it always cuts at 45 degrees across the corner.
+const triangle_size: i16 = 20;
+
+/// Renders a triangle in each corner of the tile at the given position on the
+/// board.
+fn highlightTileCorners(
+    renderer: *c.SDL_Renderer,
+    tile: ty.BoardPos,
+    colour: ty.Colour,
+) RenderError!void {
+    const Corner = struct {
+        base: sdl.Vertex,
+        x_offset: i16,
+        y_offset: i16,
+    };
+
+    const corners = [_]Corner{
+        // Top left corner.
+        .{
+            .base = .{
+                .x = @intCast(tile_size * tile.x),
+                .y = @intCast(tile_size * tile.y),
+            },
+            .x_offset = 1,
+            .y_offset = 1,
+        },
+
+        // Top right corner.
+        .{
+            .base = .{
+                .x = @intCast(tile_size * (tile.x + 1)),
+                .y = @intCast(tile_size * tile.y),
+            },
+            .x_offset = -1,
+            .y_offset = 1,
+        },
+
+        // Bottom left corner.
+        .{
+            .base = .{
+                .x = @intCast(tile_size * tile.x),
+                .y = @intCast(tile_size * (tile.y + 1)),
+            },
+            .x_offset = 1,
+            .y_offset = -1,
+        },
+
+        // Bottom right corner.
+        .{
+            .base = .{
+                .x = @intCast(tile_size * (tile.x + 1)),
+                .y = @intCast(tile_size * (tile.y + 1)),
+            },
+            .x_offset = -1,
+            .y_offset = -1,
+        },
+    };
+
+    inline for (corners) |corner| {
+        try sdl.renderFillTriangle(.{
+            .renderer = renderer,
+            .colour = colour,
+            .vertices = .{
+                corner.base,
+                .{
+                    .x = corner.base.x + (triangle_size * corner.x_offset),
+                    .y = corner.base.y,
+                },
+                .{
+                    .x = corner.base.x,
+                    .y = corner.base.y + (triangle_size * corner.y_offset),
+                },
+            },
+        });
+    }
 }
