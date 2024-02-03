@@ -57,9 +57,7 @@ fn leftClickRelease(state: *ty.State) void {
 
     var user_owns_piece = false;
     if (state.board.get(src)) |piece| {
-        const owner = @intFromEnum(piece.player);
-        const user = @intFromEnum(state.user);
-        user_owns_piece = owner == user;
+        user_owns_piece = ty.Player.eq(piece.player, state.user);
     }
 
     if (move.isValid(src, state.board) and user_owns_piece) {

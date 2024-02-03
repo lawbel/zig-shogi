@@ -197,9 +197,8 @@ fn directMovesFrom(args: DirectArgs) Moves {
 
         if (args.board.get(dest)) |piece| {
             // If there is an opponent's piece in the way, that is ok.
-            const owner = @intFromEnum(piece.player);
-            const user = @intFromEnum(args.user);
-            if (owner != user) {
+            const owner_is_opp = ty.Player.not_eq(piece.player, args.user);
+            if (owner_is_opp) {
                 array.appendAssumeCapacity(move);
             }
         } else {
@@ -234,9 +233,8 @@ fn rangedMovesFromSteps(args: RangedArgs) Moves {
 
             if (args.board.get(dest)) |piece| {
                 // If there is an opponent's piece in the way, that is ok.
-                const owner = @intFromEnum(piece.player);
-                const user = @intFromEnum(args.user);
-                if (owner != user) {
+                const owner_is_opp = ty.Player.not_eq(piece.player, args.user);
+                if (owner_is_opp) {
                     array.appendAssumeCapacity(cur_step);
                 }
 

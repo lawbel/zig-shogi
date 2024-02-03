@@ -178,9 +178,8 @@ fn drawPieces(
             const piece = val orelse continue;
 
             if (moved_from) |pos| {
-                const owner = @intFromEnum(piece.player);
-                const user = @intFromEnum(state.user);
-                if (owner == user and x == pos.x and y == pos.y) {
+                const owner_is_user = ty.Player.eq(piece.player, state.user);
+                if (owner_is_user and x == pos.x and y == pos.y) {
                     moved_piece = piece;
                     continue;
                 }
@@ -318,10 +317,9 @@ fn highlightCurrentMove(
     const from_pix = state.mouse.move.from orelse return;
     const from_pos = from_pix.toBoardPos();
     const piece = state.board.get(from_pos) orelse return;
-    const owner = @intFromEnum(piece.player);
-    const user = @intFromEnum(state.user);
+    const owner_is_user = ty.Player.eq(piece.player, state.user);
 
-    if (owner == user) {
+    if (owner_is_user) {
         try doHighlightCurrentMove(renderer, state, from_pos);
     }
 }

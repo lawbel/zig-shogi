@@ -144,6 +144,16 @@ pub const Player = union(enum) {
     white,
     /// Typically called black in English; sente (先手) in Japanese. Goes first.
     black,
+
+    /// Are the two players equal?
+    pub fn eq(this: @This(), other: @This()) bool {
+        return @intFromEnum(this) == @intFromEnum(other);
+    }
+
+    /// Are the two players different?
+    pub fn not_eq(this: @This(), other: @This()) bool {
+        return @intFromEnum(this) != @intFromEnum(other);
+    }
 };
 
 /// The different sorts of shogi pieces. Includes promoted and non-promoted
