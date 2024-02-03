@@ -8,6 +8,7 @@ const ty = @import("types.zig");
 const init_state: ty.State = .{
     .board = ty.Board.init,
     .user = .black,
+    .current = .black,
     .mouse = .{
         .pos = .{ .x = 0, .y = 0 },
         .move = .{ .from = null },

@@ -46,6 +46,13 @@ pub fn processEvents(state: *ty.State) MaybeExit {
 
 /// Process the left-mouse button being released.
 fn leftClickRelease(state: *ty.State) void {
+    defer state.mouse.move.from = null;
+
+    // If the user is not the current player, then we ignore their move input.
+    if (ty.Player.not_eq(state.current, state.user)) {
+        return;
+    }
+
     const dest = state.mouse.pos.toBoardPos();
     const src_pix = (state.mouse.move.from) orelse return;
 
@@ -69,7 +76,7 @@ fn leftClickRelease(state: *ty.State) void {
         });
     }
 
-    state.mouse.move.from = null;
+    state.current.swap();
 }
 
 /// Process the given `ty.Move` by updating the state as appropriate.

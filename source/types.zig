@@ -49,6 +49,8 @@ pub const State = struct {
     },
     /// The colour of the human player. The other colour will be the CPU.
     user: Player,
+    /// The current player.
+    current: Player,
 };
 
 /// A vector `(x, y)` representing a move on our board. This could be simply
@@ -153,6 +155,16 @@ pub const Player = union(enum) {
     /// Are the two players different?
     pub fn not_eq(this: @This(), other: @This()) bool {
         return @intFromEnum(this) != @intFromEnum(other);
+    }
+
+    /// Changes this player to the other possibility - if this was `.white`
+    /// before calling `swap()`, then it will be `.black` after, and vice
+    /// versa.
+    pub fn swap(this: *@This()) void {
+        this.* = switch (this.*) {
+            .white => .black,
+            .black => .white,
+        };
     }
 };
 
