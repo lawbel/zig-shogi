@@ -80,6 +80,70 @@ pub const Move = struct {
     }
 };
 
+test "Move.flipHoriz flips y" {
+    var move: Move = .{ .x = 1, .y = 2 };
+    move.flipHoriz();
+    const result: Move = .{ .x = 1, .y = -2 };
+    try std.testing.expectEqual(move, result);
+}
+
+test "Move.flipHoriz does nothing when y = 0" {
+    const before: Move = .{ .x = -5, .y = 0 };
+    var after = before;
+    after.flipHoriz();
+    try std.testing.expectEqual(before, after);
+}
+
+test "Move.isValid permits moving starting pawns" {
+    const max_index = Board.size - 1;
+    const rows = [_]i8{ 2, max_index - 2 };
+    const moves = [_]Move{
+        .{ .x = 0, .y = 1 },
+        .{ .x = 0, .y = -1 },
+    };
+
+    for (rows, moves) |row, move| {
+        for (0..max_index) |n| {
+            const pos: BoardPos = .{ .x = @intCast(n), .y = row };
+            try std.testing.expect(move.isValid(pos, Board.init));
+        }
+    }
+}
+
+test "Move.isValid forbids moving starting knights" {
+    const max_index = Board.size - 1;
+
+    const pos_opts = [2][2]BoardPos{
+        .{
+            .{ .x = 0, .y = 1 },
+            .{ .x = 0, .y = max_index - 1 },
+        },
+        .{
+            .{ .x = max_index, .y = 1 },
+            .{ .x = max_index, .y = max_index - 1 },
+        },
+    };
+
+    const move_opts = [2][2]Move{
+        .{
+            .{ .x = 1, .y = 2 },
+            .{ .x = -1, .y = 2 },
+        },
+        .{
+            .{ .x = 1, .y = -2 },
+            .{ .x = -1, .y = -2 },
+        },
+    };
+
+    for (pos_opts, move_opts) |positions, moves| {
+        for (positions) |pos| {
+            for (moves) |move| {
+                try std.testing.expect(!move.isValid(pos, Board.init));
+            }
+        }
+    }
+}
+
 /// A position (x, y) in our game window. We use `i32` as the type, instead
 /// of an alternative like `u16`, for ease when interfacing with the SDL
 /// library.
