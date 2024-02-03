@@ -1,6 +1,11 @@
 const std = @import("std");
 
-pub fn build(builder: *std.build.Builder) void {
+// This is needed so that we can have our source files under `source/`
+// and other files in another folder like `data/` for example.
+const main_mod_path: std.build.LazyPath = .{ .path = "." };
+
+/// Builds this project.
+pub fn build(builder: *std.Build) void {
     // Take standard zig CLI options.
     const target = builder.standardTargetOptions(.{});
     const optimize = builder.standardOptimizeOption(.{});
@@ -9,11 +14,7 @@ pub fn build(builder: *std.build.Builder) void {
     const exe = builder.addExecutable(.{
         .name = "shogi",
         .root_source_file = .{ .path = "source/main.zig" },
-
-        // This is needed so that we can have our source files under `source/`
-        // and other files in another folder like `data/` for example.
-        .main_pkg_path = .{ .path = "." },
-
+        .main_mod_path = main_mod_path,
         .target = target,
         .optimize = optimize,
     });
@@ -27,10 +28,21 @@ pub fn build(builder: *std.build.Builder) void {
     // Install the executable.
     builder.installArtifact(exe);
 
-    // Add a CLI option `run` for convenience, which (re)builds if necessary
-    // and then runs the executable.
-    const run_step = builder.step("run", "Run the program");
-    const run_exe = builder.addRunArtifact(exe);
-    run_step.dependOn(&run_exe.step);
-    run_exe.step.dependOn(builder.getInstallStep());
+    // Add a 'step' for the executable.
+    const exe_run = builder.addRunArtifact(exe);
+    const exe_step = builder.step("run", "Run the program");
+    exe_step.dependOn(&exe_run.step);
+
+    // Test suite.
+    const tester = builder.addTest(.{
+        .root_source_file = .{ .path = "source/test.zig" },
+        // .main_mod_path = main_mod_path,
+        .target = target,
+        .optimize = optimize,
+    });
+
+    // Add a 'step' for the test suite.
+    const tester_run = builder.addRunArtifact(tester);
+    const tester_step = builder.step("test", "Run the test suite");
+    tester_step.dependOn(&tester_run.step);
 }
