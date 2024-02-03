@@ -214,21 +214,23 @@ pub fn renderFillRect(
     }
 }
 
-/// A wrapper around the C function `c.filledCircleRGBA`.
+/// A wrapper around the C function `c.filledCircleRGBA` from SDL_gfx.
 pub fn renderFillCircle(
     args: struct {
         renderer: *c.SDL_Renderer,
         colour: ty.Colour,
-        x: i16,
-        y: i16,
+        centre: struct {
+            x: i16,
+            y: i16,
+        },
         radius: i16,
     },
 ) RenderError!void {
     if (c.filledCircleRGBA(
         args.renderer,
 
-        args.x,
-        args.y,
+        args.centre.x,
+        args.centre.y,
         args.radius,
 
         args.colour.red,

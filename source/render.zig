@@ -379,8 +379,10 @@ fn highlightTileDot(
     try sdl.renderFillCircle(.{
         .renderer = renderer,
         .colour = colour,
-        .x = @intFromFloat((x + 0.5) * tile_size_f),
-        .y = @intFromFloat((y + 0.5) * tile_size_f),
+        .centre = .{
+            .x = @intFromFloat((x + 0.5) * tile_size_f),
+            .y = @intFromFloat((y + 0.5) * tile_size_f),
+        },
         .radius = tile_size_i / 6,
     });
 }
