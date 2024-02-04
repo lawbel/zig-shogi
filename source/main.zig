@@ -5,18 +5,6 @@ const render = @import("render.zig");
 const sdl = @import("sdl.zig");
 const ty = @import("types.zig");
 
-/// The initial game state.
-const init_state: ty.State = .{
-    .board = ty.Board.init,
-    .user = .black,
-    .current = .black,
-    .mouse = .{
-        .pos = .{ .x = 0, .y = 0 },
-        .move = .{ .from = null },
-    },
-    .last = null,
-};
-
 /// The target duration of one frame, in milliseconds.
 const one_frame: u32 = 1000 / render.fps;
 
@@ -31,8 +19,11 @@ pub fn main() !void {
     const renderer = try init.createRenderer(.{ .window = window });
     defer c.SDL_DestroyRenderer(renderer);
 
-    var state: ty.State = init_state;
     var last_frame: u32 = c.SDL_GetTicks();
+    var state: ty.State = ty.State.init(.{
+        .user = .black,
+        .current = .black,
+    });
 
     main_loop: while (true) {
         // Process any events since the last frame.

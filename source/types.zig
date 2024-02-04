@@ -51,6 +51,25 @@ pub const State = struct {
     user: Player,
     /// The current player.
     current: Player,
+
+    /// Create an initial game state.
+    pub fn init(
+        args: struct {
+            user: Player,
+            current: Player,
+        },
+    ) @This() {
+        return .{
+            .board = Board.init,
+            .user = args.user,
+            .current = args.current,
+            .mouse = .{
+                .pos = .{ .x = 0, .y = 0 },
+                .move = .{ .from = null },
+            },
+            .last = null,
+        };
+    }
 };
 
 /// A vector `(x, y)` representing a move on our board. This could be simply
