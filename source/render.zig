@@ -432,20 +432,19 @@ fn highlightTileCorners(
     };
 
     inline for (corners) |corner| {
+        const horiz_pt = .{
+            .x = corner.base.x + (triangle_size * corner.x_offset),
+            .y = corner.base.y,
+        };
+        const vert_pt = .{
+            .x = corner.base.x,
+            .y = corner.base.y + (triangle_size * corner.y_offset),
+        };
+
         try sdl.renderFillTriangle(.{
             .renderer = renderer,
             .colour = colour,
-            .vertices = .{
-                corner.base,
-                .{
-                    .x = corner.base.x + (triangle_size * corner.x_offset),
-                    .y = corner.base.y,
-                },
-                .{
-                    .x = corner.base.x,
-                    .y = corner.base.y + (triangle_size * corner.y_offset),
-                },
-            },
+            .vertices = .{ corner.base, horiz_pt, vert_pt },
         });
     }
 }
