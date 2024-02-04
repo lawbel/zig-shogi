@@ -8,92 +8,7 @@
 
 const c = @import("c.zig");
 const ty = @import("types.zig");
-const tile_size = @import("render.zig").tile_size;
 const RenderError = @import("render.zig").RenderError;
-
-/// Any kind of error that can happen during initialization of SDL.
-pub const InitError = error{
-    Initialization,
-    InitCreateWindow,
-    InitCreateRenderer,
-    InitSetDrawBlendMode,
-};
-
-/// Flags to use for SDL initialization; can be used to enable various
-/// subsystems.
-pub const sdl_init_flags: u32 =
-    c.SDL_INIT_VIDEO | c.SDL_INIT_TIMER | c.SDL_INIT_EVENTS;
-
-/// A wrapper around the C function `SDL_Init`.
-pub fn sdlInit() InitError!void {
-    if (c.SDL_Init(sdl_init_flags) < 0) {
-        const msg = "Failed to initialize SDL: %s";
-        c.SDL_LogError(c.SDL_LOG_CATEGORY_SYSTEM, msg, c.SDL_GetError());
-        return error.Initialization;
-    }
-}
-
-/// This type represents the various configuration options that can be set
-/// when creating the game window.
-pub const WindowOpts = struct {
-    /// Flags to use when creating the main window.
-    flags: u32 = 0,
-    /// The title of the main window.
-    title: [:0]const u8,
-    /// The window width.
-    width: c_int,
-    /// The window height.
-    height: c_int,
-};
-
-/// Our chosen `WindowOpts` that we use in `createWindow`.
-pub const window_opts: WindowOpts = .{
-    .title = "Zig Shogi",
-    .width = tile_size * ty.Board.size,
-    .height = tile_size * ty.Board.size,
-};
-
-/// A wrapper around the C function `SDL_CreateWindow`.
-pub fn createWindow() InitError!*c.SDL_Window {
-    return c.SDL_CreateWindow(
-        window_opts.title,
-        c.SDL_WINDOWPOS_UNDEFINED,
-        c.SDL_WINDOWPOS_UNDEFINED,
-        window_opts.width,
-        window_opts.height,
-        window_opts.flags,
-    ) orelse {
-        const msg = "Failed to create window: %s";
-        c.SDL_LogError(c.SDL_LOG_CATEGORY_VIDEO, msg, c.SDL_GetError());
-        return error.InitCreateWindow;
-    };
-}
-
-/// A wrapper around the C function `SDL_CreateRenderer`.
-pub fn createRenderer(
-    window: *c.SDL_Window,
-    blend_mode: c.SDL_BlendMode,
-) InitError!*c.SDL_Renderer {
-    const use_any_rendering_driver: c_int = -1;
-
-    const renderer = c.SDL_CreateRenderer(
-        window,
-        use_any_rendering_driver,
-        c.SDL_RENDERER_ACCELERATED,
-    ) orelse {
-        const msg = "Failed to create renderer: %s";
-        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.InitCreateRenderer;
-    };
-
-    if (c.SDL_SetRenderDrawBlendMode(renderer, blend_mode) < 0) {
-        const msg = "Failed to set draw blend mode: %s";
-        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.InitSetDrawBlendMode;
-    }
-
-    return renderer;
-}
 
 /// A wrapper around the C function `SDL_RenderCopyEx`. As that function has a
 /// lot of arguments, in order to easily keep track of them we take them in as
@@ -251,9 +166,9 @@ pub fn renderFillCircle(
 
 /// A wrapper around the C function `c.filledTrigonRGBA` from SDL_gfx.
 pub fn renderFillTriangle(
-        renderer: *c.SDL_Renderer,
-        vertices: [3]Vertex,
-        colour: ty.Colour,
+    renderer: *c.SDL_Renderer,
+    vertices: [3]Vertex,
+    colour: ty.Colour,
 ) RenderError!void {
     if (c.filledTrigonRGBA(
         renderer,

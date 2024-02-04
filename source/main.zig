@@ -1,5 +1,6 @@
 const c = @import("c.zig");
 const event = @import("event.zig");
+const init = @import("init.zig");
 const render = @import("render.zig");
 const sdl = @import("sdl.zig");
 const ty = @import("types.zig");
@@ -21,13 +22,13 @@ const one_frame: u32 = 1000 / render.fps;
 
 /// The main entry point to the game.
 pub fn main() !void {
-    try sdl.sdlInit();
-    defer c.SDL_Quit();
+    try init.sdlInit();
+    defer init.sdlQuit();
 
-    const window = try sdl.createWindow();
+    const window = try init.createWindow(.{ .title = "Zig Shogi" });
     defer c.SDL_DestroyWindow(window);
 
-    const renderer = try sdl.createRenderer(window, render.blend_mode);
+    const renderer = try init.createRenderer(.{ .window = window });
     defer c.SDL_DestroyRenderer(renderer);
 
     var state: ty.State = init_state;
