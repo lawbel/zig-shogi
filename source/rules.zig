@@ -10,7 +10,7 @@ pub const Moves = std.BoundedArray(ty.Move, max_moves);
 /// An upper bound on the maximum number of possible moves that any piece
 /// could have. The case which requires the most possible moves is dropping a
 /// new piece onto a near-empty board.
-const max_moves: usize = ty.Board.size * ty.Board.size;
+pub const max_moves: usize = ty.Board.size * ty.Board.size;
 
 /// Returns a list of all valid moves for the piece at the given position.
 pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
