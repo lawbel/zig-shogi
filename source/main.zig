@@ -25,10 +25,10 @@ pub fn main() !void {
         .current = .black,
     });
 
-    main_loop: while (true) {
+    while (true) {
         // Process any events since the last frame.
         switch (event.processEvents(&state)) {
-            .exit => break :main_loop,
+            .exit => break,
             .pass => {},
         }
 
