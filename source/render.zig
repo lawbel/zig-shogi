@@ -186,12 +186,14 @@ fn drawPieces(
                 }
             }
 
-            try renderPiece(.{
-                .renderer = renderer,
-                .piece = piece,
-                .x = tile_size * @as(c_int, @intCast(x)),
-                .y = tile_size * @as(c_int, @intCast(y)),
-            });
+            try renderPiece(
+                renderer,
+                piece,
+                .{
+                    .x = tile_size * @as(c_int, @intCast(x)),
+                    .y = tile_size * @as(c_int, @intCast(y)),
+                },
+            );
         }
     }
 
@@ -201,35 +203,37 @@ fn drawPieces(
     const from = state.mouse.move.from orelse return;
     const offset = from.offsetFromGrid();
 
-    try renderPiece(.{
-        .renderer = renderer,
-        .piece = piece,
-        .x = state.mouse.pos.x - offset.x,
-        .y = state.mouse.pos.y - offset.y,
-    });
+    try renderPiece(
+        renderer,
+        piece,
+        .{
+            .x = state.mouse.pos.x - offset.x,
+            .y = state.mouse.pos.y - offset.y,
+        },
+    );
 }
 
 /// Renders the given piece at the given location.
 fn renderPiece(
-    args: struct {
-        renderer: *c.SDL_Renderer,
-        piece: ty.Piece,
+    renderer: *c.SDL_Renderer,
+    piece: ty.Piece,
+    pos: struct {
         x: c_int,
         y: c_int,
     },
 ) RenderError!void {
-    const tex = try getPieceTexture(args.renderer, args.piece);
+    const tex = try getPieceTexture(renderer, piece);
 
     try sdl.renderCopy(.{
-        .renderer = args.renderer,
+        .renderer = renderer,
         .texture = tex,
         .dst_rect = &.{
-            .x = args.x,
-            .y = args.y,
+            .x = pos.x,
+            .y = pos.y,
             .w = tile_size,
             .h = tile_size,
         },
-        .angle = switch (args.piece.player) {
+        .angle = switch (piece.player) {
             .white => 180,
             .black => 0,
         },
