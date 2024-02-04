@@ -251,28 +251,26 @@ pub fn renderFillCircle(
 
 /// A wrapper around the C function `c.filledTrigonRGBA` from SDL_gfx.
 pub fn renderFillTriangle(
-    args: struct {
         renderer: *c.SDL_Renderer,
         vertices: [3]Vertex,
         colour: ty.Colour,
-    },
 ) RenderError!void {
     if (c.filledTrigonRGBA(
-        args.renderer,
+        renderer,
 
-        args.vertices[0].x,
-        args.vertices[0].y,
+        vertices[0].x,
+        vertices[0].y,
 
-        args.vertices[1].x,
-        args.vertices[1].y,
+        vertices[1].x,
+        vertices[1].y,
 
-        args.vertices[2].x,
-        args.vertices[2].y,
+        vertices[2].x,
+        vertices[2].y,
 
-        args.colour.red,
-        args.colour.green,
-        args.colour.blue,
-        args.colour.alpha,
+        colour.red,
+        colour.green,
+        colour.blue,
+        colour.alpha,
     ) < 0) {
         const msg = "Failed to fill triangle";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg);

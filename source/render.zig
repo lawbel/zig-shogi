@@ -441,10 +441,10 @@ fn highlightTileCorners(
             .y = corner.base.y + (triangle_size * corner.y_offset),
         };
 
-        try sdl.renderFillTriangle(.{
-            .renderer = renderer,
-            .colour = colour,
-            .vertices = .{ corner.base, horiz_pt, vert_pt },
-        });
+        try sdl.renderFillTriangle(
+            renderer,
+            .{ corner.base, horiz_pt, vert_pt },
+            colour,
+        );
     }
 }
