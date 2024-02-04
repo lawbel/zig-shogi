@@ -147,12 +147,13 @@ pub fn renderFillCircle(
     },
 ) RenderError!void {
     if (c.filledCircleRGBA(
+        // The renderer.
         args.renderer,
-
+        // Coordinates.
         args.centre.x,
         args.centre.y,
         args.radius,
-
+        // Colour values.
         args.colour.red,
         args.colour.green,
         args.colour.blue,
@@ -171,17 +172,18 @@ pub fn renderFillTriangle(
     colour: ty.Colour,
 ) RenderError!void {
     if (c.filledTrigonRGBA(
+        // The renderer.
         renderer,
-
+        // First vertex.
         vertices[0].x,
         vertices[0].y,
-
+        // Second vertex.
         vertices[1].x,
         vertices[1].y,
-
+        // Third vertex.
         vertices[2].x,
         vertices[2].y,
-
+        // Colour values.
         colour.red,
         colour.green,
         colour.blue,

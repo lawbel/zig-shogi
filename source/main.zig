@@ -8,7 +8,9 @@ const ty = @import("types.zig");
 /// The target duration of one frame, in milliseconds.
 const one_frame: u32 = 1000 / render.fps;
 
-/// The main entry point to the game.
+/// The main entry point to the game. We chose to free allocated SDL resources,
+/// but they could just as well be intentionally leaked as they will be
+/// promptly freed by the OS once the process exits.
 pub fn main() !void {
     try init.sdlInit();
     defer init.sdlQuit();

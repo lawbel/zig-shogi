@@ -378,6 +378,7 @@ pub const Piece = struct {
     }
 };
 
+/// The empty hand, with every key intialized to zero.
 const empty_hand: std.EnumMap(Sort, i8) = init: {
     var map: std.EnumMap(Sort, i8) = .{};
 
