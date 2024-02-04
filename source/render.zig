@@ -293,10 +293,10 @@ fn highlightLastMove(
     state: ty.State,
 ) RenderError!void {
     const last = state.last orelse return;
-    const move = last.pos.makeMove(last.move) orelse return;
+    const dest = last.pos.applyMotion(last.motion) orelse return;
 
     try highlightTileSquare(renderer, last.pos, last_colour);
-    try highlightTileSquare(renderer, move, last_colour);
+    try highlightTileSquare(renderer, dest, last_colour);
 }
 
 /// Show the current move (if there is one) on the board by highlighting the
@@ -317,10 +317,10 @@ fn highlightCurrentMove(
 
     try highlightTileSquare(renderer, from_pos, selected_colour);
 
-    const moves = rules.validMoves(from_pos, state.board).slice();
+    const motions = rules.validMotions(from_pos, state.board).slice();
 
-    for (moves) |move| {
-        const dest = from_pos.makeMove(move) orelse continue;
+    for (motions) |motion| {
+        const dest = from_pos.applyMotion(motion) orelse continue;
         if (state.board.get(dest) == null) {
             try highlightTileDot(renderer, dest, option_colour);
         } else {

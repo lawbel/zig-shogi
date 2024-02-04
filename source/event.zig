@@ -57,9 +57,12 @@ fn leftClickRelease(state: *ty.State) void {
     const src_pix = (state.mouse.move.from) orelse return;
 
     const src = src_pix.toBoardPos();
-    const move = ty.Move{
-        .x = dest.x - src.x,
-        .y = dest.y - src.y,
+    const move: ty.Move = .{
+        .pos = src,
+        .motion = .{
+            .x = dest.x - src.x,
+            .y = dest.y - src.y,
+        },
     };
 
     var user_owns_piece = false;
@@ -67,13 +70,8 @@ fn leftClickRelease(state: *ty.State) void {
         user_owns_piece = ty.Player.eq(piece.player, state.user);
     }
 
-    if (move.isValid(src, state.board) and user_owns_piece) {
-        processMove(.{
-            .state = state,
-            .src = src,
-            .dest = dest,
-            .move = move,
-        });
+    if (move.isValid(state.board) and user_owns_piece) {
+        processMove(state, move);
     }
 
     state.current.swap();
@@ -81,35 +79,29 @@ fn leftClickRelease(state: *ty.State) void {
 
 /// Process the given `ty.Move` by updating the state as appropriate.
 fn processMove(
-    args: struct {
-        state: *ty.State,
-        src: ty.BoardPos,
-        dest: ty.BoardPos,
-        move: ty.Move,
-    },
+    state: *ty.State,
+    move: ty.Move,
 ) void {
-    const src_piece = args.state.board.get(args.src);
-    const dest_piece = args.state.board.get(args.dest);
+    const src_piece = state.board.get(move.pos);
+    const dest = move.pos.applyMotion(move.motion) orelse return;
+    const dest_piece = state.board.get(dest);
 
     // Update the board.
-    args.state.board.set(args.src, null);
-    args.state.board.set(args.dest, src_piece);
+    state.board.set(move.pos, null);
+    state.board.set(dest, src_piece);
 
     // Update the last move.
-    args.state.last = .{
-        .pos = args.src,
-        .move = args.move,
-    };
+    state.last = move;
 
     // Add the captured piece (if any) to the players hand.
     const piece = dest_piece orelse return;
     const sort = piece.sort.demote();
 
     var hand: *std.EnumMap(ty.Sort, i8) = undefined;
-    if (args.state.user == .white) {
-        hand = &args.state.board.hand.white;
+    if (state.user == .white) {
+        hand = &state.board.hand.white;
     } else {
-        hand = &args.state.board.hand.black;
+        hand = &state.board.hand.black;
     }
 
     if (hand.getPtr(sort)) |count| {

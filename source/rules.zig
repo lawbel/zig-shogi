@@ -5,24 +5,38 @@ const std = @import("std");
 const ty = @import("types.zig");
 
 /// A collection of possible moves on the board.
-pub const Moves = std.BoundedArray(ty.Move, max_moves);
+pub const Moves = struct {
+    pos: ty.BoardPos,
+    motions: Motions,
+};
 
-/// An upper bound on the maximum number of possible moves that any piece
-/// could have. The case which requires the most possible moves is dropping a
-/// new piece onto a near-empty board.
+/// A collection of possible motions on the board.
+pub const Motions = std.BoundedArray(ty.Motion, max_moves);
+
+/// An upper bound on the maximum number of possible moves/motions that any
+/// piece could have. The case which requires the most possible moves is
+/// dropping a new piece onto a near-empty board.
 pub const max_moves: usize = ty.Board.size * ty.Board.size;
 
 /// Returns a list of all valid moves for the piece at the given position.
 pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
+    return .{
+        .pos = pos,
+        .motions = validMotions(pos, board),
+    };
+}
+
+/// Returns a list of all valid motions for the piece at the given position.
+pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
     const piece = board.get(pos) orelse {
-        return Moves.init(0) catch unreachable;
+        return Motions.init(0) catch unreachable;
     };
 
     var direct_args: DirectArgs = .{
         .pos = pos,
         .user = piece.player,
         .board = board,
-        .moves = undefined,
+        .motions = undefined,
     };
     var ranged_args: RangedArgs = .{
         .user = piece.player,
@@ -34,71 +48,71 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
     switch (piece.sort) {
         .king => {
             // TODO: handle 'check' conditions.
-            direct_args.moves = &[_]ty.Move{
+            direct_args.motions = &[_]ty.Motion{
                 .{ .x = 1, .y = 0 },  .{ .x = 1, .y = 1 },
                 .{ .x = 0, .y = 1 },  .{ .x = -1, .y = 1 },
                 .{ .x = -1, .y = 0 }, .{ .x = -1, .y = -1 },
                 .{ .x = 0, .y = -1 }, .{ .x = 1, .y = -1 },
             };
-            return directMovesFrom(direct_args);
+            return directMotionsFrom(direct_args);
         },
 
         .promoted_rook => {
-            ranged_args.steps = &[_]ty.Move{
+            ranged_args.steps = &[_]ty.Motion{
                 .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                 .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
             };
-            direct_args.moves = &[_]ty.Move{
+            direct_args.motions = &[_]ty.Motion{
                 .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                 .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
             };
 
-            const direct_moves = directMovesFrom(direct_args);
-            const ranged_moves = rangedMovesFromSteps(ranged_args);
+            const direct_motions = directMotionsFrom(direct_args);
+            const ranged_motions = rangedMotionsFromSteps(ranged_args);
 
-            var all_moves = ranged_moves;
-            for (direct_moves.slice()) |move| {
-                all_moves.appendAssumeCapacity(move);
+            var all_motions = ranged_motions;
+            for (direct_motions.slice()) |motion| {
+                all_motions.appendAssumeCapacity(motion);
             }
 
-            return all_moves;
+            return all_motions;
         },
 
         .promoted_bishop => {
-            ranged_args.steps = &[_]ty.Move{
+            ranged_args.steps = &[_]ty.Motion{
                 .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                 .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
             };
-            direct_args.moves = &[_]ty.Move{
+            direct_args.motions = &[_]ty.Motion{
                 .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                 .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
             };
 
-            const direct_moves = directMovesFrom(direct_args);
-            const ranged_moves = rangedMovesFromSteps(ranged_args);
+            const direct_motions = directMotionsFrom(direct_args);
+            const ranged_motions = rangedMotionsFromSteps(ranged_args);
 
-            var all_moves = ranged_moves;
-            for (direct_moves.slice()) |move| {
-                all_moves.appendAssumeCapacity(move);
+            var all_motions = ranged_motions;
+            for (direct_motions.slice()) |motion| {
+                all_motions.appendAssumeCapacity(motion);
             }
 
-            return all_moves;
+            return all_motions;
         },
 
         .rook => {
-            ranged_args.steps = &[_]ty.Move{
+            ranged_args.steps = &[_]ty.Motion{
                 .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                 .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
             };
-            return rangedMovesFromSteps(ranged_args);
+            return rangedMotionsFromSteps(ranged_args);
         },
 
         .bishop => {
-            ranged_args.steps = &[_]ty.Move{
+            ranged_args.steps = &[_]ty.Motion{
                 .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                 .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
             };
-            return rangedMovesFromSteps(ranged_args);
+            return rangedMotionsFromSteps(ranged_args);
         },
 
         .gold,
@@ -107,135 +121,135 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
         .promoted_lance,
         .promoted_pawn,
         => {
-            var moves = [_]ty.Move{
+            var motions = [_]ty.Motion{
                 .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
                 .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 0 },
                 .{ .x = 1, .y = 0 },   .{ .x = 0, .y = 1 },
             };
 
             if (piece.player == .white) {
-                for (&moves) |*move| {
-                    move.flipHoriz();
+                for (&motions) |*motion| {
+                    motion.flipHoriz();
                 }
             }
 
-            direct_args.moves = &moves;
-            return directMovesFrom(direct_args);
+            direct_args.motions = &motions;
+            return directMotionsFrom(direct_args);
         },
 
         .silver => {
-            var moves = [_]ty.Move{
+            var motions = [_]ty.Motion{
                 .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
                 .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 1 },
                 .{ .x = 1, .y = 1 },
             };
 
             if (piece.player == .white) {
-                for (&moves) |*move| {
-                    move.flipHoriz();
+                for (&motions) |*motion| {
+                    motion.flipHoriz();
                 }
             }
 
-            direct_args.moves = &moves;
-            return directMovesFrom(direct_args);
+            direct_args.motions = &motions;
+            return directMotionsFrom(direct_args);
         },
 
         .knight => {
-            var moves = [_]ty.Move{
+            var motions = [_]ty.Motion{
                 .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 },
             };
 
             if (piece.player == .white) {
-                for (&moves) |*move| {
-                    move.flipHoriz();
+                for (&motions) |*motion| {
+                    motion.flipHoriz();
                 }
             }
 
-            direct_args.moves = &moves;
-            return directMovesFrom(direct_args);
+            direct_args.motions = &motions;
+            return directMotionsFrom(direct_args);
         },
 
         .lance => {
-            var move: ty.Move = .{ .x = 0, .y = -1 };
+            var motion: ty.Motion = .{ .x = 0, .y = -1 };
             if (piece.player == .white) {
-                move.flipHoriz();
+                motion.flipHoriz();
             }
 
-            ranged_args.steps = &.{move};
-            return rangedMovesFromSteps(ranged_args);
+            ranged_args.steps = &.{motion};
+            return rangedMotionsFromSteps(ranged_args);
         },
 
         .pawn => {
-            var move: ty.Move = .{ .x = 0, .y = -1 };
+            var motion: ty.Motion = .{ .x = 0, .y = -1 };
             if (piece.player == .white) {
-                move.flipHoriz();
+                motion.flipHoriz();
             }
 
-            direct_args.moves = &.{move};
-            return directMovesFrom(direct_args);
+            direct_args.motions = &.{motion};
+            return directMotionsFrom(direct_args);
         },
     }
 }
 
-/// The arguments to `directMovesFrom`.
+/// The arguments to `directMotionsFrom`.
 const DirectArgs = struct {
     pos: ty.BoardPos,
     user: ty.Player,
     board: ty.Board,
-    moves: []const ty.Move,
+    motions: []const ty.Motion,
 };
 
-/// Returns an array of possible `Move`s from the given position, by filtering
-/// the given argument `moves` based on whether the result of making that move
+/// Returns an array of possible `Motions` from the given position, by filtering
+/// the given argument `motions` based on whether the result of making that move
 /// would be in-bounds and the destination tile is vacant / occupied by an
 /// opponent's piece.
-fn directMovesFrom(args: DirectArgs) Moves {
-    var array = Moves.init(0) catch unreachable;
+fn directMotionsFrom(args: DirectArgs) Motions {
+    var motions = Motions.init(0) catch unreachable;
 
-    for (args.moves) |move| {
-        const dest = args.pos.makeMove(move) orelse continue;
+    for (args.motions) |motion| {
+        const dest = args.pos.applyMotion(motion) orelse continue;
 
         if (args.board.get(dest)) |piece| {
             // If there is an opponent's piece in the way, that is ok.
             const owner_is_opp = ty.Player.not_eq(piece.player, args.user);
             if (owner_is_opp) {
-                array.appendAssumeCapacity(move);
+                motions.appendAssumeCapacity(motion);
             }
         } else {
             // If the tile is vacant, that is also ok.
-            array.appendAssumeCapacity(move);
+            motions.appendAssumeCapacity(motion);
         }
     }
 
-    return array;
+    return motions;
 }
 
-/// The arguments to `rangedMovesFromSteps`.
+/// The arguments to `rangedMotionsFromSteps`.
 const RangedArgs = struct {
     pos: ty.BoardPos,
     user: ty.Player,
     board: ty.Board,
-    steps: []const ty.Move,
+    steps: []const ty.Motion,
 };
 
-/// Returns an array of possible `Move`s from the given position. For each
+/// Returns an array of possible `Motions` from the given position. For each
 /// step in the `steps` argument, applying the given step to the starting
 /// `pos` as many times as possible until it hits a tile that is out-of-bounds
 /// or is occupied by an opponent's piece.
-fn rangedMovesFromSteps(args: RangedArgs) Moves {
-    var array = Moves.init(0) catch unreachable;
+fn rangedMotionsFromSteps(args: RangedArgs) Motions {
+    var motions = Motions.init(0) catch unreachable;
 
     for (args.steps) |step| {
         var cur_step = step;
 
         for (1..ty.Board.size) |_| {
-            const dest = args.pos.makeMove(cur_step) orelse continue;
+            const dest = args.pos.applyMotion(cur_step) orelse continue;
 
             if (args.board.get(dest)) |piece| {
                 // If there is an opponent's piece in the way, that is ok.
                 const owner_is_opp = ty.Player.not_eq(piece.player, args.user);
                 if (owner_is_opp) {
-                    array.appendAssumeCapacity(cur_step);
+                    motions.appendAssumeCapacity(cur_step);
                 }
 
                 // We should break the loop no matter whose piece is in the
@@ -243,7 +257,7 @@ fn rangedMovesFromSteps(args: RangedArgs) Moves {
                 break;
             } else {
                 // If the tile is vacant, that is also ok.
-                array.appendAssumeCapacity(cur_step);
+                motions.appendAssumeCapacity(cur_step);
             }
 
             cur_step.x += step.x;
@@ -251,5 +265,5 @@ fn rangedMovesFromSteps(args: RangedArgs) Moves {
         }
     }
 
-    return array;
+    return motions;
 }

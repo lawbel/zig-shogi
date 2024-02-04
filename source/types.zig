@@ -43,10 +43,7 @@ pub const State = struct {
         },
     },
     /// The last move on the board (if any).
-    last: ?struct {
-        pos: BoardPos,
-        move: Move,
-    },
+    last: ?Move = null,
     /// The colour of the human player. The other colour will be the CPU.
     user: Player,
     /// The current player.
@@ -67,30 +64,23 @@ pub const State = struct {
                 .pos = .{ .x = 0, .y = 0 },
                 .move = .{ .from = null },
             },
-            .last = null,
         };
     }
 };
 
-/// A vector `(x, y)` representing a move on our board. This could be simply
-/// repositioning a piece, or it could be capturing another piece.
+/// A choice of move to make on the board. Used for the CPU player.
+/// TODO: handle drops.
 pub const Move = struct {
-    x: i8,
-    y: i8,
-
-    /// Flip this move about the horizontal, effectively swapping the player
-    /// it is for.
-    pub fn flipHoriz(this: *@This()) void {
-        this.y *= -1;
-    }
+    pos: BoardPos,
+    motion: Motion,
 
     /// Is this move valid, considering the state of the `Board` for this
     /// player and the source position on the board.
-    pub fn isValid(this: @This(), pos: BoardPos, board: Board) bool {
-        const valid = rules.validMoves(pos, board);
+    pub fn isValid(this: @This(), board: Board) bool {
+        const motions = rules.validMotions(this.pos, board);
 
-        for (valid.slice()) |move| {
-            if (move.x == this.x and move.y == this.y) {
+        for (motions.slice()) |motion| {
+            if (motion.x == this.motion.x and motion.y == this.motion.y) {
                 return true;
             }
         }
@@ -99,15 +89,28 @@ pub const Move = struct {
     }
 };
 
-test "Move.flipHoriz flips y" {
-    var move: Move = .{ .x = 1, .y = 2 };
+/// A vector `(x, y)` representing a motion on our board. This could be simply
+/// repositioning a piece, or it could be capturing another piece.
+pub const Motion = struct {
+    x: i8,
+    y: i8,
+
+    /// Flip this motion about the horizontal, effectively swapping the player
+    /// it is for.
+    pub fn flipHoriz(this: *@This()) void {
+        this.y *= -1;
+    }
+};
+
+test "Motion.flipHoriz flips y" {
+    var move: Motion = .{ .x = 1, .y = 2 };
     move.flipHoriz();
-    const result: Move = .{ .x = 1, .y = -2 };
+    const result: Motion = .{ .x = 1, .y = -2 };
     try std.testing.expectEqual(move, result);
 }
 
-test "Move.flipHoriz does nothing when y = 0" {
-    const before: Move = .{ .x = -5, .y = 0 };
+test "Motion.flipHoriz does nothing when y = 0" {
+    const before: Motion = .{ .x = -5, .y = 0 };
     var after = before;
     after.flipHoriz();
     try std.testing.expectEqual(before, after);
@@ -116,12 +119,13 @@ test "Move.flipHoriz does nothing when y = 0" {
 test "Move.isValid permits moving starting pawns" {
     const max_index = Board.size - 1;
     const rows = [_]i8{ 2, max_index - 2 };
-    const moves = [_]Move{ .{ .x = 0, .y = 1 }, .{ .x = 0, .y = -1 } };
+    const motions = [_]Motion{ .{ .x = 0, .y = 1 }, .{ .x = 0, .y = -1 } };
 
-    for (rows, moves) |row, move| {
+    for (rows, motions) |row, motion| {
         for (0..max_index) |n| {
             const pos: BoardPos = .{ .x = @intCast(n), .y = row };
-            try std.testing.expect(move.isValid(pos, Board.init));
+            const move: Move = .{ .motion = motion, .pos = pos };
+            try std.testing.expect(move.isValid(Board.init));
         }
     }
 }
@@ -140,15 +144,16 @@ test "Move.isValid forbids moving starting knights" {
         },
     };
 
-    const move_opts = [2][2]Move{
+    const motion_opts = [2][2]Motion{
         .{ .{ .x = 1, .y = 2 }, .{ .x = -1, .y = 2 } },
         .{ .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 } },
     };
 
-    for (pos_opts, move_opts) |positions, moves| {
+    for (pos_opts, motion_opts) |positions, motions| {
         for (positions) |pos| {
-            for (moves) |move| {
-                try std.testing.expect(!move.isValid(pos, Board.init));
+            for (motions) |motion| {
+                const move: Move = .{ .motion = motion, .pos = pos };
+                try std.testing.expect(!move.isValid(Board.init));
             }
         }
     }
@@ -209,12 +214,12 @@ pub const BoardPos = struct {
         return (x_in_bounds and y_in_bounds);
     }
 
-    /// Apply a move to shift the given `ty.BoardPos`, returning the
+    /// Apply a motion to shift the given `ty.BoardPos`, returning the
     /// resulting position (or `null` if it would be out-of-bounds).
-    pub fn makeMove(this: @This(), move: Move) ?@This() {
+    pub fn applyMotion(this: @This(), motion: Motion) ?@This() {
         const target: @This() = .{
-            .x = this.x + move.x,
-            .y = this.y + move.y,
+            .x = this.x + motion.x,
+            .y = this.y + motion.y,
         };
         return if (target.isInBounds()) target else null;
     }
