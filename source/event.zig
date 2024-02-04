@@ -11,11 +11,11 @@ const ty = @import("types.zig");
 var event: c.SDL_Event = undefined;
 
 /// Whether to exit the main loop or not.
-pub const MaybeExit =
-    enum { exit, pass };
+pub const QuitOrPass =
+    enum { quit, pass };
 
 /// Process all events that occured since the last frame.
-pub fn processEvents(state: *ty.State) MaybeExit {
+pub fn processEvents(state: *ty.State) QuitOrPass {
     while (c.SDL_PollEvent(&event) != 0) {
         switch (event.type) {
             c.SDL_MOUSEMOTION => {
@@ -35,7 +35,7 @@ pub fn processEvents(state: *ty.State) MaybeExit {
                 }
             },
 
-            c.SDL_QUIT => return .exit,
+            c.SDL_QUIT => return .quit,
 
             else => {},
         }

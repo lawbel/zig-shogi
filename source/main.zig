@@ -28,7 +28,7 @@ pub fn main() !void {
     while (true) {
         // Process any events since the last frame.
         switch (event.processEvents(&state)) {
-            .exit => break,
+            .quit => break,
             .pass => {},
         }
 
