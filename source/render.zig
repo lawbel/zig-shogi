@@ -179,7 +179,7 @@ fn drawPieces(
             const piece = val orelse continue;
 
             if (moved_from) |pos| {
-                const owner_is_user = model.Player.eq(piece.player, state.user);
+                const owner_is_user = piece.player.eq(state.user);
                 if (owner_is_user and x == pos.x and y == pos.y) {
                     moved_piece = piece;
                     continue;
@@ -313,7 +313,7 @@ fn highlightCurrentMove(
     const from_pix = state.mouse.move.from orelse return;
     const from_pos = from_pix.toBoardPos();
     const piece = state.board.get(from_pos) orelse return;
-    const owner_is_user = model.Player.eq(piece.player, state.user);
+    const owner_is_user = piece.player.eq(state.user);
 
     if (!owner_is_user) {
         return;

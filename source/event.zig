@@ -49,7 +49,7 @@ fn leftClickRelease(state: *model.State) void {
     defer state.mouse.move.from = null;
 
     // If the user is not the current player, then we ignore their move input.
-    if (model.Player.not_eq(state.current, state.user)) {
+    if (state.current.not_eq(state.user)) {
         return;
     }
 
@@ -67,7 +67,7 @@ fn leftClickRelease(state: *model.State) void {
 
     var user_owns_piece = false;
     if (state.board.get(src)) |piece| {
-        user_owns_piece = model.Player.eq(piece.player, state.user);
+        user_owns_piece = piece.player.eq(state.user);
     }
 
     if (move.isValid(state.board) and user_owns_piece) {
