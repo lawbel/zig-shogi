@@ -7,7 +7,7 @@
 //! what happened) and `SDL_LogError` (to do the logging).
 
 const c = @import("c.zig");
-const ty = @import("types.zig");
+const model = @import("model.zig");
 const RenderError = @import("render.zig").RenderError;
 
 /// A wrapper around the C function `SDL_RenderCopyEx`. As that function has a
@@ -85,7 +85,7 @@ pub fn constMemToRw(data: [:0]const u8) RenderError!*c.SDL_RWops {
 /// A wrapper around the C function `SDL_SetRenderDrawColor`.
 pub fn setRenderDrawColour(
     renderer: *c.SDL_Renderer,
-    colour: ty.Colour,
+    colour: model.Colour,
 ) RenderError!void {
     if (c.SDL_SetRenderDrawColor(
         renderer,
@@ -103,7 +103,7 @@ pub fn setRenderDrawColour(
 /// A wrapper around the C function `SDL_RenderClear`. Note: may change the
 /// render draw colour.
 pub fn renderClear(renderer: *c.SDL_Renderer) RenderError!void {
-    const black = ty.Colour{};
+    const black = model.Colour{};
     try setRenderDrawColour(renderer, black);
 
     if (c.SDL_RenderClear(renderer) < 0) {
@@ -117,7 +117,7 @@ pub fn renderClear(renderer: *c.SDL_Renderer) RenderError!void {
 /// the render draw colour.
 pub fn renderFillRect(
     renderer: *c.SDL_Renderer,
-    colour: ty.Colour,
+    colour: model.Colour,
     rect: ?*const c.SDL_Rect,
 ) RenderError!void {
     try setRenderDrawColour(renderer, colour);
@@ -130,7 +130,7 @@ pub fn renderFillRect(
 }
 
 /// A pixel position on the screen. This is conceptually the same as
-/// `ty.PixelPos`, but uses `i16` instead of `i32` as some SDL functions
+/// `model.PixelPos`, but uses `i16` instead of `i32` as some SDL functions
 /// require that integer type instead.
 pub const Vertex = struct {
     x: i16,
@@ -141,7 +141,7 @@ pub const Vertex = struct {
 pub fn renderFillCircle(
     args: struct {
         renderer: *c.SDL_Renderer,
-        colour: ty.Colour,
+        colour: model.Colour,
         centre: Vertex,
         radius: i16,
     },
@@ -169,7 +169,7 @@ pub fn renderFillCircle(
 pub fn renderFillTriangle(
     renderer: *c.SDL_Renderer,
     vertices: [3]Vertex,
-    colour: ty.Colour,
+    colour: model.Colour,
 ) RenderError!void {
     if (c.filledTrigonRGBA(
         // The renderer.

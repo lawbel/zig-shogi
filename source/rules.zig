@@ -2,24 +2,24 @@
 //! constitutes a valid move.
 
 const std = @import("std");
-const ty = @import("types.zig");
+const model = @import("model.zig");
 
 /// A collection of possible moves on the board.
 pub const Moves = struct {
-    pos: ty.BoardPos,
+    pos: model.BoardPos,
     motions: Motions,
 };
 
 /// A collection of possible motions on the board.
-pub const Motions = std.BoundedArray(ty.Motion, max_moves);
+pub const Motions = std.BoundedArray(model.Motion, max_moves);
 
 /// An upper bound on the maximum number of possible moves/motions that any
 /// piece could have. The case which requires the most possible moves is
 /// dropping a new piece onto a near-empty board.
-pub const max_moves: usize = ty.Board.size * ty.Board.size;
+pub const max_moves: usize = model.Board.size * model.Board.size;
 
 /// Returns a list of all valid moves for the piece at the given position.
-pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
+pub fn validMoves(pos: model.BoardPos, board: model.Board) Moves {
     return .{
         .pos = pos,
         .motions = validMotions(pos, board),
@@ -27,7 +27,7 @@ pub fn validMoves(pos: ty.BoardPos, board: ty.Board) Moves {
 }
 
 /// Returns a list of all valid motions for the piece at the given position.
-pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
+pub fn validMotions(pos: model.BoardPos, board: model.Board) Motions {
     const piece = board.get(pos) orelse {
         return Motions.init(0) catch unreachable;
     };
@@ -48,7 +48,7 @@ pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
     switch (piece.sort) {
         .king => {
             // TODO: handle 'check' conditions.
-            direct_args.motions = &[_]ty.Motion{
+            direct_args.motions = &[_]model.Motion{
                 .{ .x = 1, .y = 0 },  .{ .x = 1, .y = 1 },
                 .{ .x = 0, .y = 1 },  .{ .x = -1, .y = 1 },
                 .{ .x = -1, .y = 0 }, .{ .x = -1, .y = -1 },
@@ -58,11 +58,11 @@ pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
         },
 
         .promoted_rook => {
-            ranged_args.steps = &[_]ty.Motion{
+            ranged_args.steps = &[_]model.Motion{
                 .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                 .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
             };
-            direct_args.motions = &[_]ty.Motion{
+            direct_args.motions = &[_]model.Motion{
                 .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                 .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
             };
@@ -79,11 +79,11 @@ pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
         },
 
         .promoted_bishop => {
-            ranged_args.steps = &[_]ty.Motion{
+            ranged_args.steps = &[_]model.Motion{
                 .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                 .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
             };
-            direct_args.motions = &[_]ty.Motion{
+            direct_args.motions = &[_]model.Motion{
                 .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                 .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
             };
@@ -100,7 +100,7 @@ pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
         },
 
         .rook => {
-            ranged_args.steps = &[_]ty.Motion{
+            ranged_args.steps = &[_]model.Motion{
                 .{ .x = -1, .y = 0 }, .{ .x = 1, .y = 0 },
                 .{ .x = 0, .y = -1 }, .{ .x = 0, .y = 1 },
             };
@@ -108,7 +108,7 @@ pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
         },
 
         .bishop => {
-            ranged_args.steps = &[_]ty.Motion{
+            ranged_args.steps = &[_]model.Motion{
                 .{ .x = -1, .y = -1 }, .{ .x = 1, .y = -1 },
                 .{ .x = -1, .y = 1 },  .{ .x = 1, .y = 1 },
             };
@@ -121,7 +121,7 @@ pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
         .promoted_lance,
         .promoted_pawn,
         => {
-            var motions = [_]ty.Motion{
+            var motions = [_]model.Motion{
                 .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
                 .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 0 },
                 .{ .x = 1, .y = 0 },   .{ .x = 0, .y = 1 },
@@ -138,7 +138,7 @@ pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
         },
 
         .silver => {
-            var motions = [_]ty.Motion{
+            var motions = [_]model.Motion{
                 .{ .x = -1, .y = -1 }, .{ .x = 0, .y = -1 },
                 .{ .x = 1, .y = -1 },  .{ .x = -1, .y = 1 },
                 .{ .x = 1, .y = 1 },
@@ -155,7 +155,7 @@ pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
         },
 
         .knight => {
-            var motions = [_]ty.Motion{
+            var motions = [_]model.Motion{
                 .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 },
             };
 
@@ -170,7 +170,7 @@ pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
         },
 
         .lance => {
-            var motion: ty.Motion = .{ .x = 0, .y = -1 };
+            var motion: model.Motion = .{ .x = 0, .y = -1 };
             if (piece.player == .white) {
                 motion.flipHoriz();
             }
@@ -180,7 +180,7 @@ pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
         },
 
         .pawn => {
-            var motion: ty.Motion = .{ .x = 0, .y = -1 };
+            var motion: model.Motion = .{ .x = 0, .y = -1 };
             if (piece.player == .white) {
                 motion.flipHoriz();
             }
@@ -193,10 +193,10 @@ pub fn validMotions(pos: ty.BoardPos, board: ty.Board) Motions {
 
 /// The arguments to `directMotionsFrom`.
 const DirectArgs = struct {
-    pos: ty.BoardPos,
-    user: ty.Player,
-    board: ty.Board,
-    motions: []const ty.Motion,
+    pos: model.BoardPos,
+    user: model.Player,
+    board: model.Board,
+    motions: []const model.Motion,
 };
 
 /// Returns an array of possible `Motions` from the given position, by filtering
@@ -211,7 +211,7 @@ fn directMotionsFrom(args: DirectArgs) Motions {
 
         if (args.board.get(dest)) |piece| {
             // If there is an opponent's piece in the way, that is ok.
-            const owner_is_opp = ty.Player.not_eq(piece.player, args.user);
+            const owner_is_opp = model.Player.not_eq(piece.player, args.user);
             if (owner_is_opp) {
                 motions.appendAssumeCapacity(motion);
             }
@@ -226,10 +226,10 @@ fn directMotionsFrom(args: DirectArgs) Motions {
 
 /// The arguments to `rangedMotionsFromSteps`.
 const RangedArgs = struct {
-    pos: ty.BoardPos,
-    user: ty.Player,
-    board: ty.Board,
-    steps: []const ty.Motion,
+    pos: model.BoardPos,
+    user: model.Player,
+    board: model.Board,
+    steps: []const model.Motion,
 };
 
 /// Returns an array of possible `Motions` from the given position. For each
@@ -242,12 +242,12 @@ fn rangedMotionsFromSteps(args: RangedArgs) Motions {
     for (args.steps) |step| {
         var cur_step = step;
 
-        for (1..ty.Board.size) |_| {
+        for (1..model.Board.size) |_| {
             const dest = args.pos.applyMotion(cur_step) orelse continue;
 
             if (args.board.get(dest)) |piece| {
                 // If there is an opponent's piece in the way, that is ok.
-                const owner_is_opp = ty.Player.not_eq(piece.player, args.user);
+                const owner_is_opp = model.Player.not_eq(piece.player, args.user);
                 if (owner_is_opp) {
                     motions.appendAssumeCapacity(cur_step);
                 }

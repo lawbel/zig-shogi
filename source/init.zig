@@ -2,7 +2,7 @@
 
 const c = @import("c.zig");
 const render = @import("render.zig");
-const ty = @import("types.zig");
+const model = @import("model.zig");
 
 /// Any kind of error that can happen during initialization of SDL.
 pub const InitError = error{
@@ -34,8 +34,8 @@ pub fn sdlQuit() void {
 
 /// The default window size.
 pub const window_size = .{
-    .width = render.tile_size * ty.Board.size,
-    .height = render.tile_size * ty.Board.size,
+    .width = render.tile_size * model.Board.size,
+    .height = render.tile_size * model.Board.size,
 };
 
 /// The default window position.

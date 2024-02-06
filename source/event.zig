@@ -5,7 +5,7 @@ const c = @import("c.zig");
 const render = @import("render.zig");
 const sdl = @import("sdl.zig");
 const std = @import("std");
-const ty = @import("types.zig");
+const model = @import("model.zig");
 
 /// A scratch variable used for processing SDL events.
 var event: c.SDL_Event = undefined;
@@ -15,7 +15,7 @@ pub const QuitOrPass =
     enum { quit, pass };
 
 /// Process all events that occured since the last frame.
-pub fn processEvents(state: *ty.State) QuitOrPass {
+pub fn processEvents(state: *model.State) QuitOrPass {
     while (c.SDL_PollEvent(&event) != 0) {
         switch (event.type) {
             c.SDL_MOUSEMOTION => {
@@ -45,11 +45,11 @@ pub fn processEvents(state: *ty.State) QuitOrPass {
 }
 
 /// Process the left-mouse button being released.
-fn leftClickRelease(state: *ty.State) void {
+fn leftClickRelease(state: *model.State) void {
     defer state.mouse.move.from = null;
 
     // If the user is not the current player, then we ignore their move input.
-    if (ty.Player.not_eq(state.current, state.user)) {
+    if (model.Player.not_eq(state.current, state.user)) {
         return;
     }
 
@@ -57,7 +57,7 @@ fn leftClickRelease(state: *ty.State) void {
     const src_pix = (state.mouse.move.from) orelse return;
 
     const src = src_pix.toBoardPos();
-    const move: ty.Move = .{
+    const move: model.Move = .{
         .pos = src,
         .motion = .{
             .x = dest.x - src.x,
@@ -67,7 +67,7 @@ fn leftClickRelease(state: *ty.State) void {
 
     var user_owns_piece = false;
     if (state.board.get(src)) |piece| {
-        user_owns_piece = ty.Player.eq(piece.player, state.user);
+        user_owns_piece = model.Player.eq(piece.player, state.user);
     }
 
     if (move.isValid(state.board) and user_owns_piece) {
@@ -77,10 +77,10 @@ fn leftClickRelease(state: *ty.State) void {
     state.current.swap();
 }
 
-/// Process the given `ty.Move` by updating the state as appropriate.
+/// Process the given `model.Move` by updating the state as appropriate.
 fn processMove(
-    state: *ty.State,
-    move: ty.Move,
+    state: *model.State,
+    move: model.Move,
 ) void {
     const src_piece = state.board.get(move.pos);
     const dest = move.pos.applyMotion(move.motion) orelse return;
@@ -97,7 +97,7 @@ fn processMove(
     const piece = dest_piece orelse return;
     const sort = piece.sort.demote();
 
-    var hand: *std.EnumMap(ty.Sort, i8) = undefined;
+    var hand: *std.EnumMap(model.Sort, i8) = undefined;
     if (state.user == .white) {
         hand = &state.board.hand.white;
     } else {

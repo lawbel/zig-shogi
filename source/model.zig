@@ -28,7 +28,7 @@ const std = @import("std");
 const tile_size = @import("render.zig").tile_size;
 
 /// Our entire game state, which includes a mix of core types like `Board`
-/// from `types.zig` and things relating to window/mouse state.
+/// and things relating to window/mouse state.
 pub const State = struct {
     /// The state of the board.
     board: Board,
@@ -214,7 +214,7 @@ pub const BoardPos = struct {
         return (x_in_bounds and y_in_bounds);
     }
 
-    /// Apply a motion to shift the given `ty.BoardPos`, returning the
+    /// Apply a motion to shift the given `BoardPos`, returning the
     /// resulting position (or `null` if it would be out-of-bounds).
     pub fn applyMotion(this: @This(), motion: Motion) ?@This() {
         const target: @This() = .{
@@ -395,7 +395,7 @@ const empty_hand: std.EnumMap(Sort, i8) = init: {
 };
 
 /// This type represents the pure state of the board, and has some associated
-/// functionality.
+/// functionalimodel.
 pub const Board = struct {
     /// Which (if any) `Piece` is on each square/tile.
     tiles: [size][size]?Piece,
