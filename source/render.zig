@@ -154,7 +154,7 @@ fn drawPieces(
     var moved_piece: ?model.Piece = null;
     var moved_from: ?model.BoardPos = null;
 
-    if (state.mouse.move.from) |pos| {
+    if (state.mouse.move_from) |pos| {
         moved_from = model.BoardPos.fromPixelPos(pos);
     }
 
@@ -186,7 +186,7 @@ fn drawPieces(
     // We need to render any piece the user may be moving last, so it
     // appears on top of everything else.
     const piece = moved_piece orelse return;
-    const from = state.mouse.move.from orelse return;
+    const from = state.mouse.move_from orelse return;
     const offset = from.offsetFromGrid();
 
     try renderPiece(
@@ -282,7 +282,7 @@ fn highlightLastMove(
     renderer: *c.SDL_Renderer,
     state: State,
 ) sdl.SdlError!void {
-    const last = state.last orelse return;
+    const last = state.last_move orelse return;
     const dest = last.pos.applyMotion(last.motion) orelse return;
 
     try highlightTileSquare(renderer, last.pos, last_colour);
@@ -296,7 +296,7 @@ fn highlightCurrentMove(
     renderer: *c.SDL_Renderer,
     state: State,
 ) sdl.SdlError!void {
-    const from_pix = state.mouse.move.from orelse return;
+    const from_pix = state.mouse.move_from orelse return;
     const from_pos = model.BoardPos.fromPixelPos(from_pix);
     const piece = state.board.get(from_pos) orelse return;
     const owner_is_user = piece.player.eq(state.user);

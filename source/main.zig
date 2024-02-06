@@ -25,7 +25,7 @@ pub fn main() !void {
     var last_frame: u32 = c.SDL_GetTicks();
     var state = State.init(.{
         .user = .black,
-        .current = .black,
+        .current_player = .black,
     });
 
     while (true) {

@@ -27,7 +27,7 @@ pub fn processEvents(state: *State) QuitOrPass {
 
             c.SDL_MOUSEBUTTONDOWN => {
                 if (event.button.button == c.SDL_BUTTON_LEFT) {
-                    state.mouse.move.from = state.mouse.pos;
+                    state.mouse.move_from = state.mouse.pos;
                 }
             },
 
@@ -48,15 +48,15 @@ pub fn processEvents(state: *State) QuitOrPass {
 
 /// Process the left-mouse button being released.
 fn leftClickRelease(state: *State) void {
-    defer state.mouse.move.from = null;
+    defer state.mouse.move_from = null;
 
     // If the user is not the current player, then we ignore their move input.
-    if (state.current.not_eq(state.user)) {
+    if (state.current_player.not_eq(state.user)) {
         return;
     }
 
     const dest = model.BoardPos.fromPixelPos(state.mouse.pos);
-    const src_pix = (state.mouse.move.from) orelse return;
+    const src_pix = (state.mouse.move_from) orelse return;
 
     const src = model.BoardPos.fromPixelPos(src_pix);
     const move: model.Move = .{
@@ -76,7 +76,7 @@ fn leftClickRelease(state: *State) void {
         processMove(state, move);
     }
 
-    state.current.swap();
+    state.current_player.swap();
 }
 
 /// Process the given `model.Move` by updating the state as appropriate.
@@ -93,7 +93,7 @@ fn processMove(
     state.board.set(dest, src_piece);
 
     // Update the last move.
-    state.last = move;
+    state.last_move = move;
 
     // Add the captured piece (if any) to the players hand.
     const piece = dest_piece orelse return;
