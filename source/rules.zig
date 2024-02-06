@@ -26,6 +26,63 @@ pub fn validMoves(pos: model.BoardPos, board: model.Board) Moves {
     };
 }
 
+/// Is this move valid, considering the state of the `Board` for this
+/// player and the source position on the board.
+pub fn isValid(move: model.Move, board: model.Board) bool {
+    const motions = validMotions(move.pos, board);
+
+    for (motions.slice()) |motion| {
+        if (motion.x == move.motion.x and motion.y == move.motion.y) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+test "isValid permits moving starting pawns" {
+    const max_index = model.Board.size - 1;
+    const rows = [_]i8{ 2, max_index - 2 };
+    const motions = [_]model.Motion{ .{ .x = 0, .y = 1 }, .{ .x = 0, .y = -1 } };
+
+    for (rows, motions) |row, motion| {
+        for (0..max_index) |n| {
+            const pos: model.BoardPos = .{ .x = @intCast(n), .y = row };
+            const move: model.Move = .{ .motion = motion, .pos = pos };
+            try std.testing.expect(isValid(move, model.Board.init));
+        }
+    }
+}
+
+test "isValid forbids moving starting knights" {
+    const max_index = model.Board.size - 1;
+
+    const pos_opts = [2][2]model.BoardPos{
+        .{
+            .{ .x = 0, .y = 1 },
+            .{ .x = 0, .y = max_index - 1 },
+        },
+        .{
+            .{ .x = max_index, .y = 1 },
+            .{ .x = max_index, .y = max_index - 1 },
+        },
+    };
+
+    const motion_opts = [2][2]model.Motion{
+        .{ .{ .x = 1, .y = 2 }, .{ .x = -1, .y = 2 } },
+        .{ .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 } },
+    };
+
+    for (pos_opts, motion_opts) |positions, motions| {
+        for (positions) |pos| {
+            for (motions) |motion| {
+                const move: model.Move = .{ .motion = motion, .pos = pos };
+                try std.testing.expect(!isValid(move, model.Board.init));
+            }
+        }
+    }
+}
+
 /// Returns a list of all valid motions for the piece at the given position.
 pub fn validMotions(pos: model.BoardPos, board: model.Board) Motions {
     const piece = board.get(pos) orelse {

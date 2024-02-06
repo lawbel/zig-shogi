@@ -6,6 +6,8 @@ const render = @import("render.zig");
 const sdl = @import("sdl.zig");
 const std = @import("std");
 const model = @import("model.zig");
+const rules = @import("rules.zig");
+const State = @import("state.zig").State;
 
 /// A scratch variable used for processing SDL events.
 var event: c.SDL_Event = undefined;
@@ -15,7 +17,7 @@ pub const QuitOrPass =
     enum { quit, pass };
 
 /// Process all events that occured since the last frame.
-pub fn processEvents(state: *model.State) QuitOrPass {
+pub fn processEvents(state: *State) QuitOrPass {
     while (c.SDL_PollEvent(&event) != 0) {
         switch (event.type) {
             c.SDL_MOUSEMOTION => {
@@ -45,7 +47,7 @@ pub fn processEvents(state: *model.State) QuitOrPass {
 }
 
 /// Process the left-mouse button being released.
-fn leftClickRelease(state: *model.State) void {
+fn leftClickRelease(state: *State) void {
     defer state.mouse.move.from = null;
 
     // If the user is not the current player, then we ignore their move input.
@@ -53,10 +55,10 @@ fn leftClickRelease(state: *model.State) void {
         return;
     }
 
-    const dest = state.mouse.pos.toBoardPos();
+    const dest = model.BoardPos.fromPixelPos(state.mouse.pos);
     const src_pix = (state.mouse.move.from) orelse return;
 
-    const src = src_pix.toBoardPos();
+    const src = model.BoardPos.fromPixelPos(src_pix);
     const move: model.Move = .{
         .pos = src,
         .motion = .{
@@ -70,7 +72,7 @@ fn leftClickRelease(state: *model.State) void {
         user_owns_piece = piece.player.eq(state.user);
     }
 
-    if (move.isValid(state.board) and user_owns_piece) {
+    if (rules.isValid(move, state.board) and user_owns_piece) {
         processMove(state, move);
     }
 
@@ -79,7 +81,7 @@ fn leftClickRelease(state: *model.State) void {
 
 /// Process the given `model.Move` by updating the state as appropriate.
 fn processMove(
-    state: *model.State,
+    state: *State,
     move: model.Move,
 ) void {
     const src_piece = state.board.get(move.pos);

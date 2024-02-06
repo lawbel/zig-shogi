@@ -1,6 +1,7 @@
 //! This module handles initialization and termination of SDL.
 
 const c = @import("c.zig");
+const pixel = @import("pixel.zig");
 const render = @import("render.zig");
 const model = @import("model.zig");
 
@@ -34,8 +35,8 @@ pub fn sdlQuit() void {
 
 /// The default window size.
 pub const window_size = .{
-    .width = render.tile_size * model.Board.size,
-    .height = render.tile_size * model.Board.size,
+    .width = pixel.tile_size * model.Board.size,
+    .height = pixel.tile_size * model.Board.size,
 };
 
 /// The default window position.

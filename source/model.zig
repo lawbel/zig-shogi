@@ -23,70 +23,14 @@
 //! * promoted lance (narikyō 成香)
 //! * promoted pawn (tokin と金), also known as a tokin.
 
-const rules = @import("rules.zig");
+const pixel = @import("pixel.zig");
 const std = @import("std");
-const tile_size = @import("render.zig").tile_size;
-
-/// Our entire game state, which includes a mix of core types like `Board`
-/// and things relating to window/mouse state.
-pub const State = struct {
-    /// The state of the board.
-    board: Board,
-    /// Information needed for mouse interactions.
-    mouse: struct {
-        /// The current position of the mouse.
-        pos: PixelPos,
-        /// Whether there is a move currently being made with the mouse.
-        move: struct {
-            /// Where the move started - where left-click was first held down.
-            from: ?PixelPos,
-        },
-    },
-    /// The last move on the board (if any).
-    last: ?Move = null,
-    /// The colour of the human player. The other colour will be the CPU.
-    user: Player,
-    /// The current player.
-    current: Player,
-
-    /// Create an initial game state.
-    pub fn init(
-        args: struct {
-            user: Player,
-            current: Player,
-        },
-    ) @This() {
-        return .{
-            .board = Board.init,
-            .user = args.user,
-            .current = args.current,
-            .mouse = .{
-                .pos = .{ .x = 0, .y = 0 },
-                .move = .{ .from = null },
-            },
-        };
-    }
-};
 
 /// A choice of move to make on the board. Used for the CPU player.
 /// TODO: handle drops.
 pub const Move = struct {
     pos: BoardPos,
     motion: Motion,
-
-    /// Is this move valid, considering the state of the `Board` for this
-    /// player and the source position on the board.
-    pub fn isValid(this: @This(), board: Board) bool {
-        const motions = rules.validMotions(this.pos, board);
-
-        for (motions.slice()) |motion| {
-            if (motion.x == this.motion.x and motion.y == this.motion.y) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 };
 
 /// A vector `(x, y)` representing a motion on our board. This could be simply
@@ -116,95 +60,18 @@ test "Motion.flipHoriz does nothing when y = 0" {
     try std.testing.expectEqual(before, after);
 }
 
-test "Move.isValid permits moving starting pawns" {
-    const max_index = Board.size - 1;
-    const rows = [_]i8{ 2, max_index - 2 };
-    const motions = [_]Motion{ .{ .x = 0, .y = 1 }, .{ .x = 0, .y = -1 } };
-
-    for (rows, motions) |row, motion| {
-        for (0..max_index) |n| {
-            const pos: BoardPos = .{ .x = @intCast(n), .y = row };
-            const move: Move = .{ .motion = motion, .pos = pos };
-            try std.testing.expect(move.isValid(Board.init));
-        }
-    }
-}
-
-test "Move.isValid forbids moving starting knights" {
-    const max_index = Board.size - 1;
-
-    const pos_opts = [2][2]BoardPos{
-        .{
-            .{ .x = 0, .y = 1 },
-            .{ .x = 0, .y = max_index - 1 },
-        },
-        .{
-            .{ .x = max_index, .y = 1 },
-            .{ .x = max_index, .y = max_index - 1 },
-        },
-    };
-
-    const motion_opts = [2][2]Motion{
-        .{ .{ .x = 1, .y = 2 }, .{ .x = -1, .y = 2 } },
-        .{ .{ .x = 1, .y = -2 }, .{ .x = -1, .y = -2 } },
-    };
-
-    for (pos_opts, motion_opts) |positions, motions| {
-        for (positions) |pos| {
-            for (motions) |motion| {
-                const move: Move = .{ .motion = motion, .pos = pos };
-                try std.testing.expect(!move.isValid(Board.init));
-            }
-        }
-    }
-}
-
-/// A position (x, y) in our game window. We use `i32` as the type, instead
-/// of an alternative like `u16`, for ease when interfacing with the SDL
-/// library.
-pub const PixelPos = struct {
-    x: i32,
-    y: i32,
-
-    /// Returns the position on the board at this location on the screen.
-    pub fn toBoardPos(this: @This()) BoardPos {
-        return .{
-            .x = @intCast(@divFloor(this.x, tile_size)),
-            .y = @intCast(@divFloor(this.y, tile_size)),
-        };
-    }
-
-    /// Returns the offset of this position from the board grid. For example,
-    /// if this position is right in the middle of a tile, it would return
-    /// `(tile_size / 2, tile_size / 2)`.
-    pub fn offsetFromGrid(this: @This()) @This() {
-        return .{
-            .x = @mod(this.x, tile_size),
-            .y = @mod(this.y, tile_size),
-        };
-    }
-};
-
-test "PixelPos.toBoardPos(n*size, n*size) returns (n, n)" {
-    for (0..Board.size - 1) |n| {
-        const n_float: f32 = @floatFromInt(n);
-        const tile_size_float: f32 = @floatFromInt(tile_size);
-
-        // A pixel dead-centre in the middle of the intended tile.
-        const pix: PixelPos = .{
-            .x = @intFromFloat((n_float + 0.5) * tile_size_float),
-            .y = @intFromFloat((n_float + 0.5) * tile_size_float),
-        };
-        const pos: BoardPos = .{ .x = @intCast(n), .y = @intCast(n) };
-
-        try std.testing.expectEqual(pix.toBoardPos(), pos);
-    }
-}
-
 /// A position (x, y) on our board.
 pub const BoardPos = struct {
     x: i8,
     y: i8,
+
+    /// Returns the position on the board at this location on the screen.
+    pub fn fromPixelPos(pos: pixel.PixelPos) @This() {
+        return .{
+            .x = @intCast(@divFloor(pos.x, pixel.tile_size)),
+            .y = @intCast(@divFloor(pos.y, pixel.tile_size)),
+        };
+    }
 
     /// Check whether this position is actually valid for indexing into the
     /// `Board`.
@@ -225,15 +92,21 @@ pub const BoardPos = struct {
     }
 };
 
-/// An RGB colour, including an alpha (opacity) field.
-pub const Colour = struct {
-    red: u8 = 0,
-    green: u8 = 0,
-    blue: u8 = 0,
-    alpha: u8 = max_opacity,
+test "BoardPos.fromPixelPos(n*size, n*size) returns (n, n)" {
+    for (0..Board.size - 1) |n| {
+        const n_float: f32 = @floatFromInt(n);
+        const tile_size_float: f32 = @floatFromInt(pixel.tile_size);
 
-    pub const max_opacity = std.math.maxInt(u8);
-};
+        // A pixel dead-centre in the middle of the intended tile.
+        const pix: pixel.PixelPos = .{
+            .x = @intFromFloat((n_float + 0.5) * tile_size_float),
+            .y = @intFromFloat((n_float + 0.5) * tile_size_float),
+        };
+        const pos: BoardPos = .{ .x = @intCast(n), .y = @intCast(n) };
+
+        try std.testing.expectEqual(BoardPos.fromPixelPos(pix), pos);
+    }
+}
 
 /// The possible players of the game.
 pub const Player = union(enum) {

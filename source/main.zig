@@ -4,6 +4,7 @@ const init = @import("init.zig");
 const render = @import("render.zig");
 const sdl = @import("sdl.zig");
 const model = @import("model.zig");
+const State = @import("state.zig").State;
 
 /// The target duration of one frame, in milliseconds.
 const one_frame: u32 = 1000 / render.fps;
@@ -22,7 +23,7 @@ pub fn main() !void {
     defer c.SDL_DestroyRenderer(renderer);
 
     var last_frame: u32 = c.SDL_GetTicks();
-    var state: model.State = model.State.init(.{
+    var state = State.init(.{
         .user = .black,
         .current = .black,
     });

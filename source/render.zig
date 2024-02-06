@@ -6,32 +6,18 @@
 //! error.
 
 const c = @import("c.zig");
+const pixel = @import("pixel.zig");
 const rules = @import("rules.zig");
 const sdl = @import("sdl.zig");
 const std = @import("std");
 const model = @import("model.zig");
-
-/// Any kind of error that can happen during rendering.
-pub const RenderError = error{
-    RenderSetDrawColour,
-    RenderSetDrawBlendMode,
-    RenderClear,
-    RenderCopy,
-    RenderFillRect,
-    RenderFillCircle,
-    RenderFillTriangle,
-    RenderReadConstMemory,
-    RenderLoadTexture,
-};
+const State = @import("state.zig").State;
 
 /// Target frames per second.
 pub const fps: u32 = 60;
 
 /// The blending mode to use for all rendering.
 pub const blend_mode: c_int = c.SDL_BLENDMODE_BLEND;
-
-/// The size (in pixels) of one tile/square on the game board.
-pub const tile_size: c_int = 70;
 
 /// Embed a file in the `data` directory.
 fn embedData(comptime path: [:0]const u8) [:0]const u8 {
@@ -92,8 +78,8 @@ var core_piece_textures: std.EnumMap(model.Sort, ?*c.SDL_Texture) = init: {
 /// calling out to helper functions.
 pub fn render(
     renderer: *c.SDL_Renderer,
-    state: model.State,
-) RenderError!void {
+    state: State,
+) sdl.SdlError!void {
     // Clear the renderer for this frame.
     try sdl.renderClear(renderer);
 
@@ -131,7 +117,7 @@ pub fn freeTextures() void {
 fn getPieceTexture(
     renderer: *c.SDL_Renderer,
     piece: model.Piece,
-) RenderError!*c.SDL_Texture {
+) sdl.SdlError!*c.SDL_Texture {
     var texture: *?*c.SDL_Texture = undefined;
     var image: [:0]const u8 = undefined;
 
@@ -149,10 +135,10 @@ fn getPieceTexture(
 
         else => {
             texture = core_piece_textures.getPtr(piece.sort) orelse {
-                return error.RenderLoadTexture;
+                return error.SdlLoadTexture;
             };
             image = core_piece_images.get(piece.sort) orelse {
-                return error.RenderReadConstMemory;
+                return error.SdlReadConstMemory;
             };
         },
     }
@@ -163,13 +149,13 @@ fn getPieceTexture(
 /// Renders all the pieces on the board.
 fn drawPieces(
     renderer: *c.SDL_Renderer,
-    state: model.State,
-) RenderError!void {
+    state: State,
+) sdl.SdlError!void {
     var moved_piece: ?model.Piece = null;
     var moved_from: ?model.BoardPos = null;
 
     if (state.mouse.move.from) |pos| {
-        moved_from = pos.toBoardPos();
+        moved_from = model.BoardPos.fromPixelPos(pos);
     }
 
     // Render every piece on the board, except for the one (if any) that the
@@ -190,8 +176,8 @@ fn drawPieces(
                 renderer,
                 piece,
                 .{
-                    .x = tile_size * @as(c_int, @intCast(x)),
-                    .y = tile_size * @as(c_int, @intCast(y)),
+                    .x = pixel.tile_size * @as(c_int, @intCast(x)),
+                    .y = pixel.tile_size * @as(c_int, @intCast(y)),
                 },
             );
         }
@@ -221,7 +207,7 @@ fn renderPiece(
         x: c_int,
         y: c_int,
     },
-) RenderError!void {
+) sdl.SdlError!void {
     const tex = try getPieceTexture(renderer, piece);
 
     try sdl.renderCopy(.{
@@ -230,8 +216,8 @@ fn renderPiece(
         .dst_rect = &.{
             .x = pos.x,
             .y = pos.y,
-            .w = tile_size,
-            .h = tile_size,
+            .w = pixel.tile_size,
+            .h = pixel.tile_size,
         },
         .angle = switch (piece.player) {
             .white => 180,
@@ -241,7 +227,7 @@ fn renderPiece(
 }
 
 /// Renders the game board.
-fn drawBoard(renderer: *c.SDL_Renderer) RenderError!void {
+fn drawBoard(renderer: *c.SDL_Renderer) sdl.SdlError!void {
     const tex = try getInitTexture(renderer, &board_texture, board_image);
     try sdl.renderCopy(.{ .renderer = renderer, .texture = tex });
 }
@@ -252,7 +238,7 @@ fn getInitTexture(
     renderer: *c.SDL_Renderer,
     texture: *?*c.SDL_Texture,
     raw_data: [:0]const u8,
-) RenderError!*c.SDL_Texture {
+) sdl.SdlError!*c.SDL_Texture {
     if (texture.*) |tex| {
         return tex;
     }
@@ -270,32 +256,32 @@ fn getInitTexture(
 }
 
 /// The colour to highlight the last move with (if there is one).
-const last_colour: model.Colour = .{
+const last_colour: pixel.Colour = .{
     .red = 0,
     .green = 0x77,
     .blue = 0,
-    .alpha = model.Colour.max_opacity / 4,
+    .alpha = pixel.Colour.max_opacity / 4,
 };
 
 /// The colour to highlight a selected piece in, that the user has started
 /// moving.
-const selected_colour: model.Colour = .{
+const selected_colour: pixel.Colour = .{
     .red = 0,
     .green = 0x33,
     .blue = 0x22,
-    .alpha = model.Colour.max_opacity / 4,
+    .alpha = pixel.Colour.max_opacity / 4,
 };
 
 /// The colour to highlight a tile with, that is a possible option to move the
 /// piece to.
-const option_colour: model.Colour = selected_colour;
+const option_colour: pixel.Colour = selected_colour;
 
 /// Show the last move (if there is one) on the board by highlighting the
 /// tile/square that the piece moved from and moved to.
 fn highlightLastMove(
     renderer: *c.SDL_Renderer,
-    state: model.State,
-) RenderError!void {
+    state: State,
+) sdl.SdlError!void {
     const last = state.last orelse return;
     const dest = last.pos.applyMotion(last.motion) orelse return;
 
@@ -308,10 +294,10 @@ fn highlightLastMove(
 /// make.
 fn highlightCurrentMove(
     renderer: *c.SDL_Renderer,
-    state: model.State,
-) RenderError!void {
+    state: State,
+) sdl.SdlError!void {
     const from_pix = state.mouse.move.from orelse return;
-    const from_pos = from_pix.toBoardPos();
+    const from_pos = model.BoardPos.fromPixelPos(from_pix);
     const piece = state.board.get(from_pos) orelse return;
     const owner_is_user = piece.player.eq(state.user);
 
@@ -338,16 +324,16 @@ fn highlightCurrentMove(
 fn highlightTileSquare(
     renderer: *c.SDL_Renderer,
     tile: model.BoardPos,
-    colour: model.Colour,
-) RenderError!void {
+    colour: pixel.Colour,
+) sdl.SdlError!void {
     try sdl.renderFillRect(
         renderer,
         colour,
         &.{
-            .x = tile.x * tile_size,
-            .y = tile.y * tile_size,
-            .w = tile_size,
-            .h = tile_size,
+            .x = tile.x * pixel.tile_size,
+            .y = tile.y * pixel.tile_size,
+            .w = pixel.tile_size,
+            .h = pixel.tile_size,
         },
     );
 }
@@ -356,10 +342,10 @@ fn highlightTileSquare(
 fn highlightTileDot(
     renderer: *c.SDL_Renderer,
     tile: model.BoardPos,
-    colour: model.Colour,
-) RenderError!void {
-    const tile_size_i: i16 = @intCast(tile_size);
-    const tile_size_f: f32 = @floatFromInt(tile_size);
+    colour: pixel.Colour,
+) sdl.SdlError!void {
+    const tile_size_i: i16 = @intCast(pixel.tile_size);
+    const tile_size_f: f32 = @floatFromInt(pixel.tile_size);
     const x: f32 = @floatFromInt(tile.x);
     const y: f32 = @floatFromInt(tile.y);
 
@@ -385,8 +371,8 @@ const triangle_size: i16 = 20;
 fn highlightTileCorners(
     renderer: *c.SDL_Renderer,
     tile: model.BoardPos,
-    colour: model.Colour,
-) RenderError!void {
+    colour: pixel.Colour,
+) sdl.SdlError!void {
     const Corner = struct {
         base: sdl.Vertex,
         x_offset: i16,
@@ -397,8 +383,8 @@ fn highlightTileCorners(
         // Top left corner.
         .{
             .base = .{
-                .x = @intCast(tile_size * tile.x),
-                .y = @intCast(tile_size * tile.y),
+                .x = @intCast(pixel.tile_size * tile.x),
+                .y = @intCast(pixel.tile_size * tile.y),
             },
             .x_offset = 1,
             .y_offset = 1,
@@ -407,8 +393,8 @@ fn highlightTileCorners(
         // Top right corner.
         .{
             .base = .{
-                .x = @intCast(tile_size * (tile.x + 1)),
-                .y = @intCast(tile_size * tile.y),
+                .x = @intCast(pixel.tile_size * (tile.x + 1)),
+                .y = @intCast(pixel.tile_size * tile.y),
             },
             .x_offset = -1,
             .y_offset = 1,
@@ -417,8 +403,8 @@ fn highlightTileCorners(
         // Bottom left corner.
         .{
             .base = .{
-                .x = @intCast(tile_size * tile.x),
-                .y = @intCast(tile_size * (tile.y + 1)),
+                .x = @intCast(pixel.tile_size * tile.x),
+                .y = @intCast(pixel.tile_size * (tile.y + 1)),
             },
             .x_offset = 1,
             .y_offset = -1,
@@ -427,8 +413,8 @@ fn highlightTileCorners(
         // Bottom right corner.
         .{
             .base = .{
-                .x = @intCast(tile_size * (tile.x + 1)),
-                .y = @intCast(tile_size * (tile.y + 1)),
+                .x = @intCast(pixel.tile_size * (tile.x + 1)),
+                .y = @intCast(pixel.tile_size * (tile.y + 1)),
             },
             .x_offset = -1,
             .y_offset = -1,

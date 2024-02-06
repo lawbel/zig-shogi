@@ -12,5 +12,6 @@ test {
     // Thus, to run all test cases from each module, we simply `@import` them
     // here and ignore the result.
 
+    _ = @import("rules.zig");
     _ = @import("model.zig");
 }
