@@ -2,6 +2,7 @@
 //! appropriate.
 
 const c = @import("c.zig");
+const cpu = @import("cpu.zig");
 const render = @import("render.zig");
 const sdl = @import("sdl.zig");
 const std = @import("std");
@@ -16,8 +17,13 @@ var event: c.SDL_Event = undefined;
 pub const QuitOrPass =
     enum { quit, pass };
 
-/// Process all events that occured since the last frame.
-pub fn processEvents(state: *State) QuitOrPass {
+pub const EventError = error{
+    EventThread,
+};
+
+/// Process all events that occured since the last frame. Can throw errors due
+/// to a (transitive) call to `std.Thread.spawn`.
+pub fn processEvents(state: *State) EventError!QuitOrPass {
     while (c.SDL_PollEvent(&event) != 0) {
         switch (event.type) {
             c.SDL_MOUSEMOTION => {
@@ -33,7 +39,7 @@ pub fn processEvents(state: *State) QuitOrPass {
 
             c.SDL_MOUSEBUTTONUP => {
                 if (event.button.button == c.SDL_BUTTON_LEFT) {
-                    leftClickRelease(state);
+                    try leftClickRelease(state);
                 }
             },
 
@@ -47,7 +53,12 @@ pub fn processEvents(state: *State) QuitOrPass {
 }
 
 /// Process the left-mouse button being released.
-fn leftClickRelease(state: *State) void {
+fn leftClickRelease(state: *State) EventError!void {
+    try applyUserMove(state);
+    try queueCpuMove(state);
+}
+
+fn applyUserMove(state: *State) EventError!void {
     defer state.mouse.move_from = null;
 
     // If the user is not the current player, then we ignore their move input.
@@ -73,40 +84,27 @@ fn leftClickRelease(state: *State) void {
     }
 
     if (rules.isValid(move, state.board) and user_owns_piece) {
-        processMove(state, move);
+        state.board.applyMove(move);
+        state.last_move = move;
     }
 
-    state.current_player.swap();
+    state.current_player = state.current_player.swap();
 }
 
-/// Process the given `model.Move` by updating the state as appropriate.
-fn processMove(
-    state: *State,
-    move: model.Move,
-) void {
-    const src_piece = state.board.get(move.pos);
-    const dest = move.pos.applyMotion(move.motion) orelse return;
-    const dest_piece = state.board.get(dest);
+fn queueCpuMove(state: *State) EventError!void {
+    const thread_config = .{};
 
-    // Update the board.
-    state.board.set(move.pos, null);
-    state.board.set(dest, src_piece);
+    const thread = std.Thread.spawn(
+        thread_config,
+        cpu.queueMove,
+        .{
+            state.user.swap(),
+            state.board,
+            &state.cpu_pending_move,
+        },
+    ) catch {
+        return error.EventThread;
+    };
 
-    // Update the last move.
-    state.last_move = move;
-
-    // Add the captured piece (if any) to the players hand.
-    const piece = dest_piece orelse return;
-    const sort = piece.sort.demote();
-
-    var hand: *std.EnumMap(model.Sort, i8) = undefined;
-    if (state.user == .white) {
-        hand = &state.board.hand.white;
-    } else {
-        hand = &state.board.hand.black;
-    }
-
-    if (hand.getPtr(sort)) |count| {
-        count.* += 1;
-    }
+    thread.detach();
 }

@@ -128,8 +128,8 @@ pub const Player = union(enum) {
     /// Changes this player to the other possibility - if this was `.white`
     /// before calling `swap()`, then it will be `.black` after, and vice
     /// versa.
-    pub fn swap(this: *@This()) void {
-        this.* = switch (this.*) {
+    pub fn swap(this: @This()) @This() {
+        return switch (this) {
             .white => .black,
             .black => .white,
         };
@@ -321,5 +321,31 @@ pub const Board = struct {
         const x: usize = @intCast(pos.x);
         const y: usize = @intCast(pos.y);
         this.tiles[y][x] = piece;
+    }
+
+    /// Process the given `Move` by updating the board as appropriate.
+    pub fn applyMove(this: *@This(), move: Move) void {
+        const src_piece = this.get(move.pos) orelse return;
+        const dest = move.pos.applyMotion(move.motion) orelse return;
+        const dest_piece = this.get(dest);
+
+        // Update the board.
+        this.set(move.pos, null);
+        this.set(dest, src_piece);
+
+        // Add the captured piece (if any) to the players hand.
+        const piece = dest_piece orelse return;
+        const sort = piece.sort.demote();
+
+        var hand: *std.EnumMap(Sort, i8) = undefined;
+        if (src_piece.player == .white) {
+            hand = &this.hand.white;
+        } else {
+            hand = &this.hand.black;
+        }
+
+        if (hand.getPtr(sort)) |count| {
+            count.* += 1;
+        }
     }
 };

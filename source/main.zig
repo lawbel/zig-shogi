@@ -1,4 +1,5 @@
 const c = @import("c.zig");
+const cpu = @import("cpu.zig");
 const event = @import("event.zig");
 const init = @import("init.zig");
 const render = @import("render.zig");
@@ -29,11 +30,16 @@ pub fn main() !void {
     });
 
     while (true) {
-        // Process any events since the last frame.
-        switch (event.processEvents(&state)) {
+        // Process any events since the last frame. May spawn a thread for the
+        // CPU to calculate its move.
+        const result = try event.processEvents(&state);
+        switch (result) {
             .quit => break,
             .pass => {},
         }
+
+        // If the CPU has decided on a move, update the game state with it.
+        cpu.applyQueuedMove(&state);
 
         // Render the current game state.
         try render.render(renderer, state);
