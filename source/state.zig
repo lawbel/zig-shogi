@@ -4,6 +4,7 @@
 const rules = @import("rules.zig");
 const pixel = @import("pixel.zig");
 const model = @import("model.zig");
+const mutex = @import("mutex.zig");
 const std = @import("std");
 
 /// Our entire game state, which includes a mix of core types like `Board`
@@ -26,12 +27,18 @@ pub const State = struct {
     user: model.Player,
     /// The current player.
     current_player: model.Player,
+    /// A move that the CPU player has decided on, that has not yet been
+    /// applied to update the board.
+    cpu_pending_move: mutex.MutexGuard(model.Move),
+    /// The time at which the last frame was shipped out.
+    last_frame: u32,
 
     /// Create an initial game state.
     pub fn init(
         args: struct {
             user: model.Player,
             current_player: model.Player,
+            init_frame: u32,
         },
     ) @This() {
         return .{
@@ -41,6 +48,8 @@ pub const State = struct {
             .mouse = .{
                 .pos = .{ .x = 0, .y = 0 },
             },
+            .cpu_pending_move = mutex.MutexGuard(model.Move).init(null),
+            .last_frame = args.init_frame,
         };
     }
 };

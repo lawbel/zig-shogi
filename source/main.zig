@@ -6,8 +6,8 @@ const sdl = @import("sdl.zig");
 const model = @import("model.zig");
 const State = @import("state.zig").State;
 
-/// The target duration of one frame, in milliseconds.
-const one_frame: u32 = 1000 / render.fps;
+/// Target frames per second.
+const fps: u32 = 60;
 
 /// The main entry point to the game. We chose to free allocated SDL resources,
 /// but they could just as well be intentionally leaked as they will be
@@ -22,10 +22,10 @@ pub fn main() !void {
     const renderer = try init.createRenderer(.{ .window = window });
     defer c.SDL_DestroyRenderer(renderer);
 
-    var last_frame: u32 = c.SDL_GetTicks();
     var state = State.init(.{
         .user = .black,
         .current_player = .black,
+        .init_frame = c.SDL_GetTicks(),
     });
 
     while (true) {
@@ -38,17 +38,26 @@ pub fn main() !void {
         // Render the current game state.
         try render.render(renderer, state);
 
-        // If we used less time than needed to hit our target `fps`, then delay
-        // for the left-over time before starting on the next frame.
-        const this_frame = c.SDL_GetTicks();
-        const time_spent = this_frame - last_frame;
-
-        if (time_spent < one_frame) {
-            c.SDL_Delay(one_frame - time_spent);
-        }
-
-        last_frame = this_frame;
+        // Possible sleep for a short while.
+        sleepToMatchFps(&state.last_frame);
     }
 
     render.freeTextures();
+}
+
+/// If we used less time than needed to hit our target `fps`, then delay
+/// for the left-over time before starting on the next frame.
+fn sleepToMatchFps(last_frame: *u32) void {
+    // The target duration of one frame, in milliseconds.
+    const one_frame: u32 = 1000 / fps;
+
+    // for the left-over time before starting on the next frame.
+    const this_frame = c.SDL_GetTicks();
+    const time_spent = this_frame - last_frame.*;
+
+    if (time_spent < one_frame) {
+        c.SDL_Delay(one_frame - time_spent);
+    }
+
+    last_frame.* = this_frame;
 }

@@ -13,9 +13,6 @@ const std = @import("std");
 const model = @import("model.zig");
 const State = @import("state.zig").State;
 
-/// Target frames per second.
-pub const fps: u32 = 60;
-
 /// The blending mode to use for all rendering.
 pub const blend_mode: c_int = c.SDL_BLENDMODE_BLEND;
 
