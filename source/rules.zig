@@ -41,12 +41,11 @@ pub fn isValid(move: model.Move, board: model.Board) bool {
 }
 
 test "isValid permits moving starting pawns" {
-    const max_index = model.Board.size - 1;
-    const rows = [_]i8{ 2, max_index - 2 };
+    const rows = [_]i8{ 2, model.Board.size - 3 };
     const motions = [_]model.Motion{ .{ .x = 0, .y = 1 }, .{ .x = 0, .y = -1 } };
 
     for (rows, motions) |row, motion| {
-        for (0..max_index) |n| {
+        for (0..model.Board.size) |n| {
             const pos: model.BoardPos = .{ .x = @intCast(n), .y = row };
             const move: model.Move = .{ .motion = motion, .pos = pos };
             try std.testing.expect(isValid(move, model.Board.init));

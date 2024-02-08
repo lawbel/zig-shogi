@@ -58,8 +58,8 @@ pub fn randomMove(player: model.Player, board: model.Board) model.Move {
     var moves = Moves.init(0) catch unreachable;
     const seed = random.randomSeed();
 
-    for (board.tiles, 0..model.Board.size) |row, y| {
-        for (row, 0..model.Board.size) |tile, x| {
+    for (board.tiles, 0..) |row, y| {
+        for (row, 0..) |tile, x| {
             const piece = tile orelse continue;
             if (piece.player.not_eq(player)) continue;
 
@@ -76,8 +76,9 @@ pub fn randomMove(player: model.Player, board: model.Board) model.Move {
         }
     }
 
+    // TODO: add logic for case where there are zero valid moves.
     var prng = std.rand.DefaultPrng.init(seed);
-    const choice = prng.random().intRangeAtMost(usize, 0, moves.len);
+    const choice = prng.random().intRangeLessThan(usize, 0, moves.len);
 
     return moves.get(choice);
 }

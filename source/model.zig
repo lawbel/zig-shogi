@@ -93,7 +93,7 @@ pub const BoardPos = struct {
 };
 
 test "BoardPos.fromPixelPos(n*size, n*size) returns (n, n)" {
-    for (0..Board.size - 1) |n| {
+    for (0..Board.size) |n| {
         const n_float: f32 = @floatFromInt(n);
         const tile_size_float: f32 = @floatFromInt(pixel.tile_size);
 
