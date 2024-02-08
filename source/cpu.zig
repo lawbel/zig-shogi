@@ -7,6 +7,7 @@ const model = @import("model.zig");
 const mutex = @import("mutex.zig");
 const state = @import("state.zig");
 const random = @import("random.zig");
+const time = @import("time.zig");
 
 /// An array with enough space to accomodate all possible `model.Move`s from a
 /// given position.
@@ -25,6 +26,11 @@ pub fn applyQueuedMove(cur_state: *state.State) void {
     cur_state.last_move = move;
 }
 
+/// The minimum time for the CPU to appear to be thinking about it's move. The
+/// UX is strange if they respond instantly, so it's better to insert a small
+/// delay if needed.
+pub const min_cpu_thinking_time_s: f32 = 0.4;
+
 /// Choose a move for the CPU (may take a not-insignificant amount of time),
 /// and then write it to the given `mutex.MutexGuard`.
 pub fn queueMove(
@@ -32,7 +38,12 @@ pub fn queueMove(
     board: model.Board,
     dest: *mutex.MutexGuard(model.Move),
 ) void {
-    const move = chooseMove(player, board);
+    const move = time.callTakeAtLeast(
+        min_cpu_thinking_time_s,
+        chooseMove,
+        .{ player, board },
+    );
+
     dest.setValue(move);
 }
 
