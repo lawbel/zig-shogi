@@ -1,6 +1,10 @@
 //! Helpers for working with timers and delay/sleeping.
 
+const c = @import("c.zig");
 const std = @import("std");
+
+/// Target frames per second.
+const fps: u32 = 60;
 
 /// Implements a 'stopwatch' - it can be started, and the current time can be
 /// read off. Tries to use `std.time.Timer`; if that isn't supported, falls
@@ -50,4 +54,21 @@ pub fn callTakeAtLeast(
     }
 
     return result;
+}
+
+/// If we used less time than needed to hit our target `fps`, then delay
+/// for the left-over time before starting on the next frame.
+pub fn sleepToMatchFps(last_frame: *u32) void {
+    // The target duration of one frame, in milliseconds.
+    const one_frame: u32 = 1000 / fps;
+
+    // for the left-over time before starting on the next frame.
+    const this_frame = c.SDL_GetTicks();
+    const time_spent = this_frame - last_frame.*;
+
+    if (time_spent < one_frame) {
+        c.SDL_Delay(one_frame - time_spent);
+    }
+
+    last_frame.* = this_frame;
 }
