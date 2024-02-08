@@ -32,15 +32,17 @@ pub fn processEvents(state: *State) EventError!QuitOrPass {
             },
 
             c.SDL_MOUSEBUTTONDOWN => {
-                if (event.button.button == c.SDL_BUTTON_LEFT) {
-                    state.mouse.move_from = state.mouse.pos;
-                }
+                state.mouse.move_from = state.mouse.pos;
             },
 
             c.SDL_MOUSEBUTTONUP => {
-                if (event.button.button == c.SDL_BUTTON_LEFT) {
-                    try leftClickRelease(state);
-                }
+                defer state.mouse.move_from = null;
+
+                if (event.button.button != c.SDL_BUTTON_LEFT) continue;
+                if (state.current_player.not_eq(state.user)) continue;
+
+                const moved = try applyUserMove(state);
+                if (moved) try queueCpuMove(state);
             },
 
             c.SDL_QUIT => return .quit,
@@ -52,24 +54,15 @@ pub fn processEvents(state: *State) EventError!QuitOrPass {
     return .pass;
 }
 
-/// Process the left-mouse button being released.
-fn leftClickRelease(state: *State) EventError!void {
-    try applyUserMove(state);
-    try queueCpuMove(state);
-}
-
-fn applyUserMove(state: *State) EventError!void {
-    defer state.mouse.move_from = null;
-
-    // If the user is not the current player, then we ignore their move input.
-    if (state.current_player.not_eq(state.user)) {
-        return;
-    }
-
+/// Assumes that the user is currently the one whose turn it is. It works out
+/// the move the user has inputted based on the mouse movement, and then tries
+/// to apply that move to the board. Returns `true` if the move was valid and
+/// successfully applied, or `false` otherwise.
+fn applyUserMove(state: *State) EventError!bool {
     const dest = model.BoardPos.fromPixelPos(state.mouse.pos);
-    const src_pix = (state.mouse.move_from) orelse return;
-
+    const src_pix = state.mouse.move_from orelse return false;
     const src = model.BoardPos.fromPixelPos(src_pix);
+    const piece = state.board.get(src) orelse return false;
     const move: model.Move = .{
         .pos = src,
         .motion = .{
@@ -78,19 +71,19 @@ fn applyUserMove(state: *State) EventError!void {
         },
     };
 
-    var user_owns_piece = false;
-    if (state.board.get(src)) |piece| {
-        user_owns_piece = piece.player.eq(state.user);
-    }
+    if (piece.player.not_eq(state.user)) return false;
+    if (move.motion.x == 0 and move.motion.y == 0) return false;
+    if (!rules.isValid(move, state.board)) return false;
 
-    if (rules.isValid(move, state.board) and user_owns_piece) {
-        state.board.applyMove(move);
-        state.last_move = move;
-    }
-
+    state.board.applyMove(move);
+    state.last_move = move;
     state.current_player = state.current_player.swap();
+
+    return true;
 }
 
+/// Spawn (and detach) a `std.Thread` in which the CPU will calculate a move to
+/// play, and then push that move onto the `cpu_pending_move` MutexGuard.
 fn queueCpuMove(state: *State) EventError!void {
     const thread_config = .{};
 
