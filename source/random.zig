@@ -26,3 +26,13 @@ pub fn randomSeedFromOs() RandomError!u64 {
 
     return seed_u64;
 }
+
+/// Tries to ask the OS for a random seed; falls back to using the current
+/// timestamp if that fails for whatever reason.
+pub fn randomSeed() u64 {
+    return randomSeedFromOs() catch {
+        const now = std.time.nanoTimestamp();
+        const remainder = @mod(now, std.math.maxInt(u64));
+        return @intCast(remainder);
+    };
+}

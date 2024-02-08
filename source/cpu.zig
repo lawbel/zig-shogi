@@ -8,11 +8,6 @@ const mutex = @import("mutex.zig");
 const state = @import("state.zig");
 const random = @import("random.zig");
 
-/// Any kind of error that can occur when computing the CPU players move.
-pub const CpuError = error{
-    CpuGetRandomFromOs,
-};
-
 /// An array with enough space to accomodate all possible `model.Move`s from a
 /// given position.
 const Moves = std.BoundedArray(model.Move, max_pieces * rules.max_moves);
@@ -36,29 +31,21 @@ pub fn queueMove(
     player: model.Player,
     board: model.Board,
     dest: *mutex.MutexGuard(model.Move),
-) CpuError!void {
-    const move = try chooseMove(player, board);
+) void {
+    const move = chooseMove(player, board);
     dest.setValue(move);
 }
 
 /// Choose a move to play.
-pub fn chooseMove(
-    player: model.Player,
-    board: model.Board,
-) CpuError!model.Move {
+pub fn chooseMove(player: model.Player, board: model.Board) model.Move {
     // For now, simply choose any valid move at random.
     return randomMove(player, board);
 }
 
 /// Choose a move at random from all valid moves. TODO: handle drops.
-pub fn randomMove(
-    player: model.Player,
-    board: model.Board,
-) CpuError!model.Move {
+pub fn randomMove(player: model.Player, board: model.Board) model.Move {
     var moves = Moves.init(0) catch unreachable;
-    const seed = random.randomSeedFromOs() catch {
-        return error.CpuGetRandomFromOs;
-    };
+    const seed = random.randomSeed();
 
     for (board.tiles, 0..model.Board.size) |row, y| {
         for (row, 0..model.Board.size) |tile, x| {
