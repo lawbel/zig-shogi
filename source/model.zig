@@ -26,11 +26,27 @@
 const pixel = @import("pixel.zig");
 const std = @import("std");
 
-/// A choice of move to make on the board. Used for the CPU player.
-/// TODO: handle drops.
-pub const Move = struct {
-    pos: BoardPos,
-    motion: Motion,
+/// A valid move in the game. Can be either a 'basic' move (moving a piece from
+/// one tile to another) or a drop.
+pub const Move = union(enum) {
+    /// A basic move - changing the position of some piece from one tile to
+    /// another, possibly capturing something at the destination tile and
+    /// possibly promoting along the way.
+    basic: struct {
+        /// Moved from where?
+        from: BoardPos,
+        /// The motion of the piece, relating to it's initial `BoardPos`.
+        motion: Motion,
+        /// Was the moved piece promoted in the course of this move?
+        promoted: bool = false,
+    },
+    /// A piece was dropped onto the board.
+    drop: struct {
+        /// The destination of the dropped piece.
+        pos: BoardPos,
+        /// What `Sort` of piece was dropped.
+        sort: Sort,
+    },
 };
 
 /// A vector `(x, y)` representing a motion on our board. This could be simply
@@ -89,6 +105,14 @@ pub const BoardPos = struct {
             .y = this.y + motion.y,
         };
         return if (target.isInBounds()) target else null;
+    }
+
+    /// Is this position in the promotion zone?
+    pub fn inPromotionZoneFor(this: @This(), player: Player) bool {
+        return switch (player) {
+            .white => 0 <= this.y and this.y < 3,
+            .black => Board.size - 3 <= this.y and this.y < Board.size,
+        };
     }
 };
 
@@ -256,9 +280,12 @@ pub const Piece = struct {
     }
 };
 
+/// The pieces in a player's hand.
+pub const Hand = std.EnumMap(Sort, i8);
+
 /// The empty hand, with every key intialized to zero.
-const empty_hand: std.EnumMap(Sort, i8) = init: {
-    var map: std.EnumMap(Sort, i8) = .{};
+const empty_hand: Hand = init: {
+    var map: Hand = .{};
 
     for (@typeInfo(Sort).Enum.fields) |field| {
         map.put(@enumFromInt(field.value), 0);
@@ -276,9 +303,9 @@ pub const Board = struct {
     /// Which pieces does each player have in hand?
     hand: struct {
         /// What pieces does white have in hand, and how many of each?
-        white: std.EnumMap(Sort, i8),
+        white: Hand,
         /// What pieces does black have in hand, and how many of each?
-        black: std.EnumMap(Sort, i8),
+        black: Hand,
     },
 
     /// The size of the board (i.e. its width/height).
@@ -334,15 +361,15 @@ pub const Board = struct {
         this.set(dest, src_piece);
 
         // Add the captured piece (if any) to the players hand.
-        const piece = dest_piece orelse return;
-        const sort = piece.sort.demote();
-
-        var hand: *std.EnumMap(Sort, i8) = undefined;
+        var hand: *Hand = undefined;
         if (src_piece.player == .white) {
             hand = &this.hand.white;
         } else {
             hand = &this.hand.black;
         }
+
+        const piece = dest_piece orelse return;
+        const sort = piece.sort.demote();
 
         if (hand.getPtr(sort)) |count| {
             count.* += 1;
