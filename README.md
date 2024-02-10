@@ -83,12 +83,12 @@ Otherwise, clone the repo and then:
 ## Special Rules in Shogi
 
 The basic rules of Shogi are easy to pick up. However, finding clear and
-unambiguous English language explanations of the more complex rules can be
+unambiguous English language explanations of the more complex rules can be more
 difficult. So, for those curious about the finer points of these more complex
 rules (e.g., how *exactly* does the repetition rule work, and in what ways is
 perpetual check different in Shogi than in Chess?), here are the details.
 
-For a more official reference, one can consult the [FESA rules][fesa-rules]
+For a more official reference, one may consult the [FESA rules][fesa-rules]
 (these also contain details specific to over-the-board play).
 
 ### Promotion
@@ -116,7 +116,7 @@ There are a few rules/restrictions on when you can drop a piece:
   commonly played illegal move and results in an instant loss. (However, it is
   okay to drop a pawn on the same file as any number of promoted pawns.)
 - You cannot checkmate the opponent by dropping a pawn. (You *can* check them
-  by dropping a pawn, as long as it is not an immediate mate. And you can
+  by dropping a pawn, as long as it is not an immediate mate. You can also
   checkmate the opponent by dropping any other piece.)
 
 ### Ending the Game
@@ -145,7 +145,7 @@ to be checks, as long as not ALL of them are.
 
 Stalemate occurs when a player has no legal moves available to them. In Shogi,
 this results in a loss for the player who cannot move. This is different than
-Chess, where this results in a draw for both players.
+Chess, where this would result in a draw for both players.
 
 [direnv]: https://direnv.net
 [sdl2]: https://www.libsdl.org
