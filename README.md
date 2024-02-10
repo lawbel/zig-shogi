@@ -15,8 +15,8 @@ Building documentation for the source code is possible, although a convenient
 CLI doesn't seem to exist at time of writing. Additionally, only public
 functions/constants (those marked with the `pub` keyword) are shown.
 
-Nonetheless, To build documentation for a particular module,
-say `source/sdl.zig`, run the following bash command from the project root
+Nonetheless, to build documentation for a particular module (say
+`source/sdl.zig`), run the following bash command from the project root
 directory, and then open up `docs/index.html` in your browser. This will show
 docs for all publicly exposed functions, types, etc.
 
