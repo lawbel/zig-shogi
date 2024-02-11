@@ -32,21 +32,27 @@ pub const Move = union(enum) {
     /// A basic move - changing the position of some piece from one tile to
     /// another, possibly capturing something at the destination tile and
     /// possibly promoting along the way.
-    basic: struct {
-        /// Moved from where?
+    basic: Basic,
+    /// A piece was dropped onto the board.
+    drop: Drop,
+
+    /// A basic move.
+    pub const Basic = struct {
+        /// The initial location where the piece came from.
         from: BoardPos,
         /// The motion of the piece, relating to it's initial `BoardPos`.
         motion: Motion,
-        /// Was the moved piece promoted in the course of this move?
+        /// Whether the moved piece was promoted in the course of this move.
         promoted: bool = false,
-    },
-    /// A piece was dropped onto the board.
-    drop: struct {
+    };
+
+    /// A piece drop.
+    pub const Drop = struct {
         /// The destination of the dropped piece.
         pos: BoardPos,
-        /// What `Sort` of piece was dropped.
-        sort: Sort,
-    },
+        /// What sort of `Piece` was dropped.
+        piece: Piece,
+    };
 };
 
 /// A vector `(x, y)` representing a motion on our board. This could be simply
@@ -336,6 +342,14 @@ pub const Board = struct {
         },
     };
 
+    /// Get the `Hand` of the given player.
+    pub fn handPtr(this: *@This(), player: Player) *Hand {
+        return switch (player) {
+            .black => &this.hand.black,
+            .white => &this.hand.white,
+        };
+    }
+
     /// Get the `Piece` (if any) at the given position.
     pub fn get(this: @This(), pos: BoardPos) ?Piece {
         const x: usize = @intCast(pos.x);
@@ -350,29 +364,59 @@ pub const Board = struct {
         this.tiles[y][x] = piece;
     }
 
-    /// Process the given `Move` by updating the board as appropriate.
-    pub fn applyMove(this: *@This(), move: Move) void {
-        const src_piece = this.get(move.pos) orelse return;
-        const dest = move.pos.applyMotion(move.motion) orelse return;
+    /// Process the given `Move` by updating the board as appropriate. Returns
+    /// `true` if the move was applied successfully, `false` otherwise.
+    pub fn applyMove(this: *@This(), move: Move) bool {
+        switch (move) {
+            .basic => |basic| return this.applyMoveBasic(basic),
+            .drop => |drop| return this.applyMoveDrop(drop),
+        }
+    }
+
+    /// Process the given `Move.Drop` by updating the board as appropriate.
+    /// Returns `true` if the move was applied successfully, `false` otherwise.
+    pub fn applyMoveDrop(this: *@This(), move: Move.Drop) bool {
+        const dest = this.get(move.pos);
+        const hand = this.handPtr(move.piece.player);
+        const count = hand.getPtr(move.piece.sort) orelse return false;
+
+        if (dest != null) return false;
+        if (count.* < 1) return false;
+
+        // Make sure to demote the piece, if it isn't already.
+        var piece = move.piece;
+        piece.sort = piece.sort.demote();
+
+        this.set(move.pos, piece);
+        count.* -= 1;
+
+        return true;
+    }
+
+    /// Process the given `Move.Basic` by updating the board as appropriate.
+    /// Returns `true` if the move was applied successfully, `false` otherwise.
+    pub fn applyMoveBasic(this: *@This(), move: Move.Basic) bool {
+        var src_piece = this.get(move.from) orelse return false;
+        const dest = move.from.applyMotion(move.motion) orelse return false;
         const dest_piece = this.get(dest);
 
+        if (move.promoted) {
+            src_piece.sort = src_piece.sort.promote();
+        }
+
         // Update the board.
-        this.set(move.pos, null);
+        this.set(move.from, null);
         this.set(dest, src_piece);
 
         // Add the captured piece (if any) to the players hand.
-        var hand: *Hand = undefined;
-        if (src_piece.player == .white) {
-            hand = &this.hand.white;
-        } else {
-            hand = &this.hand.black;
-        }
-
-        const piece = dest_piece orelse return;
+        const hand = this.handPtr(src_piece.player);
+        const piece = dest_piece orelse return true;
         const sort = piece.sort.demote();
 
         if (hand.getPtr(sort)) |count| {
             count.* += 1;
         }
+
+        return true;
     }
 };
