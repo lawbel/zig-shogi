@@ -113,8 +113,8 @@ pub const BoardPos = struct {
         return if (target.isInBounds()) target else null;
     }
 
-    /// Is this position in the promotion zone?
-    pub fn inPromotionZoneFor(this: @This(), player: Player) bool {
+    /// Whether this position is in the promotion zone for the given `Player`.
+    pub fn isInPromotionZoneFor(this: @This(), player: Player) bool {
         return switch (player) {
             .white => 0 <= this.y and this.y < 3,
             .black => Board.size - 3 <= this.y and this.y < Board.size,
@@ -277,12 +277,8 @@ pub const Piece = struct {
 
     /// The starting front row for a given player.
     pub fn frontRow(player: Player) [Board.size]?@This() {
-        return .{
-            .{
-                .player = player,
-                .sort = .pawn,
-            },
-        } ** Board.size;
+        const piece = .{ .player = player, .sort = .pawn };
+        return .{piece} ** Board.size;
     }
 };
 
