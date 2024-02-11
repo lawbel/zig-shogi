@@ -357,6 +357,13 @@ pub const Board = struct {
         return this.tiles[y][x];
     }
 
+    /// Get a pointer into the `Piece` (if any) at the given position.
+    pub fn getPtr(this: *@This(), pos: BoardPos) *?Piece {
+        const x: usize = @intCast(pos.x);
+        const y: usize = @intCast(pos.y);
+        return &this.tiles[y][x];
+    }
+
     /// Set (or delete) the `Piece` present at the given position.
     pub fn set(this: *@This(), pos: BoardPos, piece: ?Piece) void {
         const x: usize = @intCast(pos.x);
@@ -376,18 +383,18 @@ pub const Board = struct {
     /// Process the given `Move.Drop` by updating the board as appropriate.
     /// Returns `true` if the move was applied successfully, `false` otherwise.
     pub fn applyMoveDrop(this: *@This(), move: Move.Drop) bool {
-        const dest = this.get(move.pos);
+        const dest = this.getPtr(move.pos);
         const hand = this.handPtr(move.piece.player);
         const count = hand.getPtr(move.piece.sort) orelse return false;
 
-        if (dest != null) return false;
+        if (dest.* != null) return false;
         if (count.* < 1) return false;
 
         // Make sure to demote the piece, if it isn't already.
         var piece = move.piece;
         piece.sort = piece.sort.demote();
 
-        this.set(move.pos, piece);
+        dest.* = piece;
         count.* -= 1;
 
         return true;
