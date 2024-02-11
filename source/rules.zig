@@ -42,7 +42,10 @@ pub fn isValid(move: model.Move, board: model.Board) bool {
 
 test "isValid permits moving starting pawns" {
     const rows = [_]i8{ 2, model.Board.size - 3 };
-    const motions = [_]model.Motion{ .{ .x = 0, .y = 1 }, .{ .x = 0, .y = -1 } };
+    const motions = [_]model.Motion{
+        .{ .x = 0, .y = 1 },
+        .{ .x = 0, .y = -1 },
+    };
 
     for (rows, motions) |row, motion| {
         for (0..model.Board.size) |n| {
