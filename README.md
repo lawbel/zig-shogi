@@ -5,42 +5,9 @@ library [SDL2][sdl2].
 
 Table of Contents:
 
-- [Source Documentation](#source-documentation)
 - [Build / Develop](#build--develop)
+- [Source Documentation](#source-documentation)
 - [Special Rules in Shogi](#special-rules-in-shogi)
-
-## Source Documentation
-
-Building documentation for the source code is possible, although a convenient
-CLI doesn't seem to exist at time of writing. Additionally, only public
-functions/constants (those marked with the `pub` keyword) are shown.
-
-Nonetheless, to build documentation for a particular module (say
-`source/sdl.zig`), run the following bash command from the project root
-directory, and then open up `docs/index.html` in your browser. This will show
-docs for all publicly exposed functions, types, etc.
-
-```sh
-zig build-lib ./source/sdl.zig              \
-    -femit-docs -fno-emit-bin -fno-soname   \
-    --main-mod-path .                       \
-    -lc                                     \
-    $(pkg-config --cflags      sdl2)        \
-    $(pkg-config --libs-only-L sdl2)        \
-    $(pkg-config --libs-only-l sdl2)        \
-    $(pkg-config --cflags      SDL2_image)  \
-    $(pkg-config --libs-only-L SDL2_image)  \
-    $(pkg-config --libs-only-l SDL2_image)  \
-    $(pkg-config --cflags      SDL2_gfx)    \
-    $(pkg-config --libs-only-L SDL2_gfx)    \
-    $(pkg-config --libs-only-l SDL2_gfx)
-```
-
-Note: the flags here tell zig to emit only documentation, enable `@embedData`
-to access the `./data` directory, and link C libs. If running this command in
-other shells, it may be necessary to split the result of the command
-substitutions `$(...)` into lists of strings - for example, in fish they need
-changing to `$(... | string split " ")`.
 
 ## Build / Develop
 
@@ -79,6 +46,39 @@ Otherwise, clone the repo and then:
   load up the project in your editor of choice and get LSP support from `zls`,
   as well as having the `zig` compiler available. You can then use any of
   the [above](#standard-method) mentioned `zig ...` commands directly as well.
+
+## Source Documentation
+
+Building documentation for the source code is possible, although a convenient
+CLI doesn't seem to exist at time of writing. Additionally, only public
+functions/constants (those marked with the `pub` keyword) are shown.
+
+Nonetheless, to build documentation for a particular module (say
+`source/sdl.zig`), run the following bash command from the project root
+directory, and then open up `docs/index.html` in your browser. This will show
+docs for all publicly exposed functions, types, etc.
+
+```sh
+zig build-lib ./source/sdl.zig              \
+    -femit-docs -fno-emit-bin -fno-soname   \
+    --main-mod-path .                       \
+    -lc                                     \
+    $(pkg-config --cflags      sdl2)        \
+    $(pkg-config --libs-only-L sdl2)        \
+    $(pkg-config --libs-only-l sdl2)        \
+    $(pkg-config --cflags      SDL2_image)  \
+    $(pkg-config --libs-only-L SDL2_image)  \
+    $(pkg-config --libs-only-l SDL2_image)  \
+    $(pkg-config --cflags      SDL2_gfx)    \
+    $(pkg-config --libs-only-L SDL2_gfx)    \
+    $(pkg-config --libs-only-l SDL2_gfx)
+```
+
+Note: the flags here tell zig to emit only documentation, enable `@embedData`
+to access the `./data` directory, and link C libs. If running this command in
+other shells, it may be necessary to split the result of the command
+substitutions `$(...)` into lists of strings - for example, in fish they need
+changing to `$(... | string split " ")`.
 
 ## Special Rules in Shogi
 
