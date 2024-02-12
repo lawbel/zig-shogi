@@ -59,9 +59,9 @@ pub fn processEvents(state: *State) EventError!QuitOrPass {
 /// to apply that move to the board. Returns `true` if the move was valid and
 /// successfully applied, or `false` otherwise.
 fn applyUserMove(state: *State) EventError!bool {
-    const dest = model.BoardPos.fromPixelPos(state.mouse.pos);
+    const dest = state.mouse.pos.toBoardPos();
     const src_pix = state.mouse.move_from orelse return false;
-    const src = model.BoardPos.fromPixelPos(src_pix);
+    const src = src_pix.toBoardPos();
     const piece = state.board.get(src) orelse return false;
     const move: model.Move = .{
         .pos = src,

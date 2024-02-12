@@ -152,7 +152,7 @@ fn drawPieces(
     var moved_from: ?model.BoardPos = null;
 
     if (state.mouse.move_from) |pos| {
-        moved_from = model.BoardPos.fromPixelPos(pos);
+        moved_from = pos.toBoardPos();
     }
 
     // Render every piece on the board, except for the one (if any) that the
@@ -294,7 +294,7 @@ fn highlightCurrentMove(
     state: State,
 ) sdl.SdlError!void {
     const from_pix = state.mouse.move_from orelse return;
-    const from_pos = model.BoardPos.fromPixelPos(from_pix);
+    const from_pos = from_pix.toBoardPos();
     const piece = state.board.get(from_pos) orelse return;
     const owner_is_user = piece.player.eq(state.user);
 

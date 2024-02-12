@@ -23,7 +23,6 @@
 //! * promoted lance (narikyō 成香)
 //! * promoted pawn (tokin と金), also known as a tokin.
 
-const pixel = @import("pixel.zig");
 const std = @import("std");
 
 /// A valid move in the game. Can be either a 'basic' move (moving a piece from
@@ -87,14 +86,6 @@ pub const BoardPos = struct {
     x: i8,
     y: i8,
 
-    /// Returns the position on the board at this location on the screen.
-    pub fn fromPixelPos(pos: pixel.PixelPos) @This() {
-        return .{
-            .x = @intCast(@divFloor(pos.x, pixel.tile_size)),
-            .y = @intCast(@divFloor(pos.y, pixel.tile_size)),
-        };
-    }
-
     /// Check whether this position is actually valid for indexing into the
     /// `Board`.
     pub fn isInBounds(this: @This()) bool {
@@ -121,22 +112,6 @@ pub const BoardPos = struct {
         };
     }
 };
-
-test "BoardPos.fromPixelPos(n*size, n*size) returns (n, n)" {
-    for (0..Board.size) |n| {
-        const n_float: f32 = @floatFromInt(n);
-        const tile_size_float: f32 = @floatFromInt(pixel.tile_size);
-
-        // A pixel dead-centre in the middle of the intended tile.
-        const pix: pixel.PixelPos = .{
-            .x = @intFromFloat((n_float + 0.5) * tile_size_float),
-            .y = @intFromFloat((n_float + 0.5) * tile_size_float),
-        };
-        const pos: BoardPos = .{ .x = @intCast(n), .y = @intCast(n) };
-
-        try std.testing.expectEqual(BoardPos.fromPixelPos(pix), pos);
-    }
-}
 
 /// The possible players of the game.
 pub const Player = union(enum) {

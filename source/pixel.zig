@@ -1,6 +1,7 @@
 //! This module contains functionality and definitions to do with pixel
 //! positions on the screen, and pixel colour values.
 
+const model = @import("model.zig");
 const std = @import("std");
 
 /// An RGB colour, including an alpha (opacity) field.
@@ -32,4 +33,51 @@ pub const PixelPos = struct {
             .y = @mod(this.y, tile_size),
         };
     }
+
+    /// Returns the position on the board at this location on the screen.
+    pub fn toBoardPos(this: @This()) model.BoardPos {
+        return .{
+            .x = @intCast(@divFloor(this.x, tile_size)),
+            .y = @intCast(@divFloor(this.y, tile_size)),
+        };
+    }
+
+    /// Whether or not these coordinates are within the bounds of the board.
+    pub fn isOnTheBoard(this: @This()) bool {
+        const board_size_pix = tile_size * model.Board.size;
+
+        const x_on_board =
+            board_top_left.x <= this.x and
+            this.x < board_top_left.x + board_size_pix;
+        const y_on_board =
+            board_top_left.y <= this.y and
+            this.y < board_top_left.y + board_size_pix;
+
+        return x_on_board and y_on_board;
+    }
 };
+
+/// The coordinates of the top-left corner of the board.
+pub const board_top_left: PixelPos = .{
+    .x = 175,
+    .y = 35,
+};
+
+test "PixelPos.toBoardPos(n*size, n*size) returns (n, n)" {
+    for (0..model.Board.size) |n| {
+        const n_float: f32 = @floatFromInt(n);
+        const tile_size_float: f32 = @floatFromInt(tile_size);
+
+        // A pixel dead-centre in the middle of the intended tile.
+        const pix: PixelPos = .{
+            .x = @intFromFloat((n_float + 0.5) * tile_size_float),
+            .y = @intFromFloat((n_float + 0.5) * tile_size_float),
+        };
+        const pos: model.BoardPos = .{
+            .x = @intCast(n),
+            .y = @intCast(n),
+        };
+
+        try std.testing.expectEqual(pix.toBoardPos(), pos);
+    }
+}
