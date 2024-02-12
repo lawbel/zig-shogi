@@ -27,8 +27,8 @@ pub const PixelPos = struct {
     /// Add these coordinates together.
     pub fn add(this: @This(), other: @This()) @This() {
         return .{
-            this.x + other.x,
-            this.y + other.y,
+            .x = this.x + other.x,
+            .y = this.y + other.y,
         };
     }
 
@@ -36,8 +36,8 @@ pub const PixelPos = struct {
     /// first: `a.subtract(b) == a - b`.
     pub fn subtract(this: @This(), other: @This()) @This() {
         return .{
-            this.x - other.x,
-            this.y - other.y,
+            .x = this.x - other.x,
+            .y = this.y - other.y,
         };
     }
 
