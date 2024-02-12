@@ -209,6 +209,24 @@ pub const Sort = enum {
     }
 };
 
+test "Sort.promote is idempotent" {
+    for (@typeInfo(Sort).Enum.fields) |field| {
+        const sort: Sort = @enumFromInt(field.value);
+        const promoted_once = sort.promote();
+        const promoted_twice = promoted_once.promote();
+        std.testing.expectEqual(promoted_once, promoted_twice);
+    }
+}
+
+test "Sort.demote is idempotent" {
+    for (@typeInfo(Sort).Enum.fields) |field| {
+        const sort: Sort = @enumFromInt(field.value);
+        const demoted_once = sort.demote();
+        const demoted_twice = demoted_once.demote();
+        std.testing.expectEqual(demoted_once, demoted_twice);
+    }
+}
+
 /// A piece belonging to a player - this type combines a `Sort` and a
 /// `Player` in one type.
 pub const Piece = struct {
