@@ -273,17 +273,28 @@ const selected_colour: pixel.Colour = .{
 /// piece to.
 const option_colour: pixel.Colour = selected_colour;
 
-/// Show the last move (if there is one) on the board by highlighting the
-/// tile/square that the piece moved from and moved to.
+/// Show the last move (if there is one) on the board by highlighting either:
+///
+/// - The tile/square that the piece moved from and moved to (if it was a
+///   'basic' move).
+/// - The tile that the piece was dropped on (if it was a drop).
 fn highlightLastMove(
     renderer: *c.SDL_Renderer,
     state: State,
 ) sdl.SdlError!void {
     const last = state.last_move orelse return;
-    const dest = last.pos.applyMotion(last.motion) orelse return;
 
-    try highlightTileSquare(renderer, last.pos, last_colour);
-    try highlightTileSquare(renderer, dest, last_colour);
+    switch (last) {
+        .basic => |basic| {
+            const dest = basic.from.applyMotion(basic.motion) orelse return;
+            try highlightTileSquare(renderer, basic.from, last_colour);
+            try highlightTileSquare(renderer, dest, last_colour);
+        },
+
+        .drop => |drop| {
+            try highlightTileSquare(renderer, drop.pos, last_colour);
+        },
+    }
 }
 
 /// Show the current move (if there is one) on the board by highlighting the
