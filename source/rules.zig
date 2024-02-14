@@ -270,8 +270,7 @@ fn directMotionsFrom(args: DirectArgs) Motions {
 
         if (args.board.get(dest)) |piece| {
             // If there is an opponent's piece in the way, that is ok.
-            const owner_is_opp = piece.player.not_eq(args.user);
-            if (owner_is_opp) {
+            if (!piece.player.eq(args.user)) {
                 motions.appendAssumeCapacity(motion);
             }
         } else {
@@ -306,8 +305,7 @@ fn rangedMotionsFromSteps(args: RangedArgs) Motions {
 
             if (args.board.get(dest)) |piece| {
                 // If there is an opponent's piece in the way, that is ok.
-                const owner_is_opp = piece.player.not_eq(args.user);
-                if (owner_is_opp) {
+                if (!piece.player.eq(args.user)) {
                     motions.appendAssumeCapacity(cur_step);
                 }
 

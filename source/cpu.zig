@@ -61,7 +61,7 @@ pub fn randomMove(player: model.Player, board: model.Board) model.Move {
     for (board.tiles, 0..) |row, y| {
         for (row, 0..) |tile, x| {
             const piece = tile orelse continue;
-            if (piece.player.not_eq(player)) continue;
+            if (!piece.player.eq(player)) continue;
 
             const pos: model.BoardPos = .{
                 .x = @intCast(x),

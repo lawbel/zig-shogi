@@ -39,7 +39,7 @@ pub fn processEvents(state: *State) EventError!QuitOrPass {
                 defer state.mouse.move_from = null;
 
                 if (event.button.button != c.SDL_BUTTON_LEFT) continue;
-                if (state.current_player.not_eq(state.user)) continue;
+                if (!state.current_player.eq(state.user)) continue;
 
                 const moved = try applyUserMove(state);
                 if (moved) try queueCpuMove(state);

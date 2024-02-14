@@ -120,14 +120,9 @@ pub const Player = union(enum) {
     /// Typically called black in English; sente (先手) in Japanese. Goes first.
     black,
 
-    /// Are the two players equal?
+    /// Whether or not these two players are the same.
     pub fn eq(this: @This(), other: @This()) bool {
         return @intFromEnum(this) == @intFromEnum(other);
-    }
-
-    /// Are the two players different?
-    pub fn not_eq(this: @This(), other: @This()) bool {
-        return @intFromEnum(this) != @intFromEnum(other);
     }
 
     /// Changes this player to the other possibility - if this was `.white`
@@ -179,6 +174,11 @@ pub const Sort = enum {
     pawn,
     /// A promoted pawn (tokin と金). Moves and attacks like a gold.
     promoted_pawn,
+
+    /// Whether or not these two sorts of pieces are the same.
+    pub fn eq(this: @This(), other: @This()) bool {
+        return @intFromEnum(this) == @intFromEnum(other);
+    }
 
     /// Promote this piece. If it is already promoted or cannot be promoted,
     /// returns it as-is.
@@ -232,6 +232,11 @@ test "Sort.demote is idempotent" {
 pub const Piece = struct {
     player: Player,
     sort: Sort,
+
+    /// Whether or not these two pieces are the same.
+    pub fn eq(this: @This(), other: @This()) bool {
+        return this.player.eq(other.player) and this.sort.eq(other.sort);
+    }
 };
 
 /// The pieces in a player's hand.
