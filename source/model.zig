@@ -248,46 +248,46 @@ const empty_hand: Hand = init: {
     break :init map;
 };
 
-    /// The starting back row for a given player.
+/// The starting back row for a given player.
 pub fn backRankFor(player: Player) [Board.size]?Piece {
-        return .{
-            .{ .player = player, .sort = .lance },
-            .{ .player = player, .sort = .knight },
-            .{ .player = player, .sort = .silver },
-            .{ .player = player, .sort = .gold },
-            .{ .player = player, .sort = .king },
-            .{ .player = player, .sort = .gold },
-            .{ .player = player, .sort = .silver },
-            .{ .player = player, .sort = .knight },
-            .{ .player = player, .sort = .lance },
-        };
-    }
+    return .{
+        .{ .player = player, .sort = .lance },
+        .{ .player = player, .sort = .knight },
+        .{ .player = player, .sort = .silver },
+        .{ .player = player, .sort = .gold },
+        .{ .player = player, .sort = .king },
+        .{ .player = player, .sort = .gold },
+        .{ .player = player, .sort = .silver },
+        .{ .player = player, .sort = .knight },
+        .{ .player = player, .sort = .lance },
+    };
+}
 
-    /// The starting middle row for a given player.
+/// The starting middle row for a given player.
 pub fn middleRankFor(player: Player) [Board.size]?Piece {
-        const one = .{
-            .player = player,
-            .sort = switch (player) {
-                .white => .rook,
-                .black => .bishop,
-            },
-        };
-        const two = .{
-            .player = player,
-            .sort = switch (player) {
-                .white => .bishop,
-                .black => .rook,
-            },
-        };
+    const one = .{
+        .player = player,
+        .sort = switch (player) {
+            .white => .rook,
+            .black => .bishop,
+        },
+    };
+    const two = .{
+        .player = player,
+        .sort = switch (player) {
+            .white => .bishop,
+            .black => .rook,
+        },
+    };
 
-        return .{ null, one, null, null, null, null, null, two, null };
-    }
+    return .{ null, one, null, null, null, null, null, two, null };
+}
 
-    /// The starting front row for a given player.
+/// The starting front row for a given player.
 pub fn frontRankFor(player: Player) [Board.size]?Piece {
-        const piece = .{ .player = player, .sort = .pawn };
-        return .{piece} ** Board.size;
-    }
+    const piece = .{ .player = player, .sort = .pawn };
+    return .{piece} ** Board.size;
+}
 
 /// This type represents the pure state of the board, and has some associated
 /// functionalimodel.
@@ -330,6 +330,38 @@ pub const Board = struct {
             .black = empty_hand,
         },
     };
+
+    /// Whether or not the numbered file has 1 or more pawns (just a plain
+    /// pawn, not counting *promoted* pawns). The numbering is 0-indexed from
+    /// left-to-right, the same as indices into `tiles`.
+    pub fn fileHasPawnFor(this: @This(), file: usize, player: Player) bool {
+        for (0..size) |rank| {
+            const piece = this.tiles[rank][file] orelse continue;
+            if (piece.player == player and piece.sort == .pawn) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    pub fn filesHavePawnFor(
+        this: @This(),
+        player: Player,
+    ) std.bit_set.IntegerBitSet(u16) {
+        var bit_set = std.bit_set.IntegerBitSet(u16).initEmpty();
+
+        for (0..size) |file| {
+            for (0..size) |rank| {
+                const piece = this.tiles[rank][file] orelse continue;
+                if (piece.player == player and piece.sort == .pawn) {
+                    bit_set.set(file);
+                    break;
+                }
+            }
+        }
+
+        return bit_set;
+    }
 
     /// Get the `Hand` of the given player.
     pub fn handPtr(this: *@This(), player: Player) *Hand {
