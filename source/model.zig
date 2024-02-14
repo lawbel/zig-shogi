@@ -232,9 +232,24 @@ test "Sort.demote is idempotent" {
 pub const Piece = struct {
     player: Player,
     sort: Sort,
+};
+
+/// The pieces in a player's hand.
+pub const Hand = std.EnumMap(Sort, i8);
+
+/// The empty hand, with every key intialized to zero.
+const empty_hand: Hand = init: {
+    var map: Hand = .{};
+
+    for (@typeInfo(Sort).Enum.fields) |field| {
+        map.put(@enumFromInt(field.value), 0);
+    }
+
+    break :init map;
+};
 
     /// The starting back row for a given player.
-    pub fn backRow(player: Player) [Board.size]?@This() {
+pub fn backRankFor(player: Player) [Board.size]?Piece {
         return .{
             .{ .player = player, .sort = .lance },
             .{ .player = player, .sort = .knight },
@@ -249,7 +264,7 @@ pub const Piece = struct {
     }
 
     /// The starting middle row for a given player.
-    pub fn middleRow(player: Player) [Board.size]?@This() {
+pub fn middleRankFor(player: Player) [Board.size]?Piece {
         const one = .{
             .player = player,
             .sort = switch (player) {
@@ -269,25 +284,10 @@ pub const Piece = struct {
     }
 
     /// The starting front row for a given player.
-    pub fn frontRow(player: Player) [Board.size]?@This() {
+pub fn frontRankFor(player: Player) [Board.size]?Piece {
         const piece = .{ .player = player, .sort = .pawn };
         return .{piece} ** Board.size;
     }
-};
-
-/// The pieces in a player's hand.
-pub const Hand = std.EnumMap(Sort, i8);
-
-/// The empty hand, with every key intialized to zero.
-const empty_hand: Hand = init: {
-    var map: Hand = .{};
-
-    for (@typeInfo(Sort).Enum.fields) |field| {
-        map.put(@enumFromInt(field.value), 0);
-    }
-
-    break :init map;
-};
 
 /// This type represents the pure state of the board, and has some associated
 /// functionalimodel.
@@ -310,9 +310,9 @@ pub const Board = struct {
     pub const init: @This() = .{
         .tiles = .{
             // White's territory.
-            Piece.backRow(.white),
-            Piece.middleRow(.white),
-            Piece.frontRow(.white),
+            backRankFor(.white),
+            middleRankFor(.white),
+            frontRankFor(.white),
 
             // No-mans land.
             .{null} ** size,
@@ -320,9 +320,9 @@ pub const Board = struct {
             .{null} ** size,
 
             // Black's territory.
-            Piece.frontRow(.black),
-            Piece.middleRow(.black),
-            Piece.backRow(.black),
+            frontRankFor(.black),
+            middleRankFor(.black),
+            backRankFor(.black),
         },
 
         .hand = .{
