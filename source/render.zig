@@ -275,9 +275,9 @@ const option_colour: pixel.Colour = selected_colour;
 
 /// Show the last move (if there is one) on the board by highlighting either:
 ///
-/// - The tile/square that the piece moved from and moved to (if it was a
+/// * The tile/square that the piece moved from and moved to (if it was a
 ///   'basic' move).
-/// - The tile that the piece was dropped on (if it was a drop).
+/// * The tile that the piece was dropped on (if it was a drop).
 fn highlightLastMove(
     renderer: *c.SDL_Renderer,
     state: State,
