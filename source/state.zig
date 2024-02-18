@@ -1,11 +1,9 @@
 //! This module deals with the mutable game state that we keep track of as the
 //! game progresses.
 
-const rules = @import("rules.zig");
-const pixel = @import("pixel.zig");
 const model = @import("model.zig");
 const mutex = @import("mutex.zig");
-const std = @import("std");
+const pixel = @import("pixel.zig");
 
 /// Our entire game state, which includes a mix of core types like `Board`
 /// and things relating to window/mouse state.
