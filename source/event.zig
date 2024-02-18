@@ -17,9 +17,8 @@ var event: c.SDL_Event = undefined;
 pub const QuitOrPass =
     enum { quit, pass };
 
-pub const EventError = error{
-    EventThread,
-};
+/// Any error that can occur while processing events.
+pub const EventError = std.Thread.SpawnError;
 
 /// Process all events that occured since the last frame. Can throw errors due
 /// to a (transitive) call to `std.Thread.spawn`.

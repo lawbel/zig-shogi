@@ -11,15 +11,10 @@ const pixel = @import("pixel.zig");
 const model = @import("model.zig");
 
 pub const SdlError = error{
-    SdlCopy,
-    SdlLoadTexture,
-    SdlSetDrawBlendMode,
-    SdlReadConstMemory,
-    SdlSetDrawColour,
-    SdlClear,
-    SdlFillRect,
-    SdlFillCircle,
-    SdlFillTriangle,
+    CannotLoadTexture,
+    CannotReadMemory,
+    CannotSetVar,
+    RenderError,
 };
 
 /// A wrapper around the C function `SDL_RenderCopyEx`. As that function has a
@@ -48,7 +43,7 @@ pub fn renderCopy(
     ) < 0) {
         const msg = "Failed to render copy: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.SdlCopy;
+        return error.RenderError;
     }
 }
 
@@ -70,13 +65,13 @@ pub fn rwToTexture(
     ) orelse {
         const msg = "Failed to load texture: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.SdlLoadTexture;
+        return error.CannotLoadTexture;
     };
 
     if (c.SDL_SetTextureBlendMode(texture, args.blend_mode) < 0) {
         const msg = "Failed to set draw blend mode: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.SdlSetDrawBlendMode;
+        return error.CannotSetVar;
     }
 
     return texture;
@@ -90,7 +85,7 @@ pub fn constMemToRw(data: [:0]const u8) SdlError!*c.SDL_RWops {
     ) orelse {
         const msg = "Failed to read from const memory: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.SdlReadConstMemory;
+        return error.CannotReadMemory;
     };
 }
 
@@ -108,7 +103,7 @@ pub fn setRenderDrawColour(
     ) < 0) {
         const msg = "Failed to set render draw color: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.SdlSetDrawColour;
+        return error.CannotSetVar;
     }
 }
 
@@ -121,7 +116,7 @@ pub fn renderClear(renderer: *c.SDL_Renderer) SdlError!void {
     if (c.SDL_RenderClear(renderer) < 0) {
         const msg = "Failed to clear renderer: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.SdlClear;
+        return error.RenderError;
     }
 }
 
@@ -137,7 +132,7 @@ pub fn renderFillRect(
     if (c.SDL_RenderFillRect(renderer, rect) < 0) {
         const msg = "Failed to fill rectangle: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.SdlFillRect;
+        return error.RenderError;
     }
 }
 
@@ -173,7 +168,7 @@ pub fn renderFillCircle(
     ) < 0) {
         const msg = "Failed to fill circle";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg);
-        return error.SdlFillCircle;
+        return error.RenderError;
     }
 }
 
@@ -203,6 +198,6 @@ pub fn renderFillTriangle(
     ) < 0) {
         const msg = "Failed to fill triangle";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg);
-        return error.SdlFillTriangle;
+        return error.RenderError;
     }
 }

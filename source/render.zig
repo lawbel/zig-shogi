@@ -132,10 +132,10 @@ fn getPieceTexture(
 
         else => {
             texture = core_piece_textures.getPtr(piece.sort) orelse {
-                return error.SdlLoadTexture;
+                return error.CannotLoadTexture;
             };
             image = core_piece_images.get(piece.sort) orelse {
-                return error.SdlReadConstMemory;
+                return error.CannotReadMemory;
             };
         },
     }
