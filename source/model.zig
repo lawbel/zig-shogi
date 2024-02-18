@@ -43,6 +43,13 @@ pub const Move = union(enum) {
         motion: Motion,
         /// Whether the moved piece was promoted in the course of this move.
         promoted: bool = false,
+
+        /// Whether or not these two basic moves are the same.
+        pub fn eq(this: @This(), other: @This()) bool {
+            return this.from.eq(other.from) and
+                this.motion.eq(other.motion) and
+                this.promoted == other.promoted;
+        }
     };
 
     /// A piece drop.
@@ -51,7 +58,27 @@ pub const Move = union(enum) {
         pos: BoardPos,
         /// What sort of `Piece` was dropped.
         piece: Piece,
+
+        /// Whether or not these two drops are the same.
+        pub fn eq(this: @This(), other: @This()) bool {
+            return this.pos.eq(other.pos) and
+                this.piece.eq(other.piece);
+        }
     };
+
+    /// Whether or not these two moves are the same.
+    pub fn eq(this: @This(), other: @This()) bool {
+        return switch (this) {
+            .basic => switch (other) {
+                .basic => Basic.eq(this, other),
+                .drop => false,
+            },
+            .drop => switch (other) {
+                .drop => Drop.eq(this, other),
+                .basic => false,
+            },
+        };
+    }
 };
 
 /// A vector `(x, y)` representing a motion on our board. This could be simply
@@ -64,6 +91,11 @@ pub const Motion = struct {
     /// it is for.
     pub fn flipHoriz(this: *@This()) void {
         this.y *= -1;
+    }
+
+    /// Whether or not these two positions are the same.
+    pub fn eq(this: @This(), other: @This()) bool {
+        return this.x == other.x and this.y == other.y;
     }
 };
 
@@ -85,6 +117,11 @@ test "Motion.flipHoriz does nothing when y = 0" {
 pub const BoardPos = struct {
     x: i8,
     y: i8,
+
+    /// Whether or not these two positions are the same.
+    pub fn eq(this: @This(), other: @This()) bool {
+        return this.x == other.x and this.y == other.y;
+    }
 
     /// Check whether this position is actually valid for indexing into the
     /// `Board`.
@@ -349,16 +386,19 @@ pub const Board = struct {
         return false;
     }
 
+    /// Returns a bit-set where index `i` is set if-and-only-if the given
+    /// `Player` has a pawn on file `i` (counting files from left to right,
+    /// the same as indexing into `tiles`).
     pub fn filesHavePawnFor(
         this: @This(),
         player: Player,
-    ) std.bit_set.IntegerBitSet(u16) {
-        var bit_set = std.bit_set.IntegerBitSet(u16).initEmpty();
+    ) std.bit_set.IntegerBitSet(size) {
+        var bit_set = std.bit_set.IntegerBitSet(size).initEmpty();
 
         for (0..size) |file| {
             for (0..size) |rank| {
                 const piece = this.tiles[rank][file] orelse continue;
-                if (piece.player == player and piece.sort == .pawn) {
+                if (piece.player.eq(player) and piece.sort == .pawn) {
                     bit_set.set(file);
                     break;
                 }
@@ -368,11 +408,19 @@ pub const Board = struct {
         return bit_set;
     }
 
-    /// Get the `Hand` of the given player.
-    pub fn handPtr(this: *@This(), player: Player) *Hand {
+    /// Get a pointer to the `Hand` of the given player.
+    pub fn getHandPtr(this: *@This(), player: Player) *Hand {
         return switch (player) {
             .black => &this.hand.black,
             .white => &this.hand.white,
+        };
+    }
+
+    /// Get the `Hand` of the given player.
+    pub fn getHand(this: @This(), player: Player) Hand {
+        return switch (player) {
+            .black => this.hand.black,
+            .white => this.hand.white,
         };
     }
 
@@ -381,6 +429,23 @@ pub const Board = struct {
         const x: usize = @intCast(pos.x);
         const y: usize = @intCast(pos.y);
         return this.tiles[y][x];
+    }
+
+    /// Finds the first position (if any) containing the given `Piece`.
+    pub fn find(this: @This(), piece: Piece) ?BoardPos {
+        for (this.tiles, 0..) |row, y| {
+            for (row, 0..) |value, x| {
+                const tile_piece = value orelse continue;
+                if (tile_piece.eq(piece)) {
+                    const pos: BoardPos = .{
+                        .x = @intCast(x),
+                        .y = @intCast(y),
+                    };
+                    return pos;
+                }
+            }
+        }
+        return null;
     }
 
     /// Get a pointer into the `Piece` (if any) at the given position.
@@ -410,7 +475,7 @@ pub const Board = struct {
     /// Returns `true` if the move was applied successfully, `false` otherwise.
     pub fn applyMoveDrop(this: *@This(), move: Move.Drop) bool {
         const dest = this.getPtr(move.pos);
-        const hand = this.handPtr(move.piece.player);
+        const hand = this.getHandPtr(move.piece.player);
         const count = hand.getPtr(move.piece.sort) orelse return false;
 
         if (dest.* != null) return false;
@@ -442,7 +507,7 @@ pub const Board = struct {
         this.set(dest, src_piece);
 
         // Add the captured piece (if any) to the players hand.
-        const hand = this.handPtr(src_piece.player);
+        const hand = this.getHandPtr(src_piece.player);
         const piece = dest_piece orelse return true;
         const sort = piece.sort.demote();
 
