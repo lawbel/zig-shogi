@@ -4,14 +4,23 @@ const event = @import("event.zig");
 const init = @import("init.zig");
 const render = @import("render.zig");
 const sdl = @import("sdl.zig");
+const std = @import("std");
 const time = @import("time.zig");
 const model = @import("model.zig");
 const State = @import("state.zig").State;
+
+/// The allocator to be used for this program (except for the C code which
+/// uses its' own malloc provided by libc).
+const Alloc = std.heap.GeneralPurposeAllocator(.{});
 
 /// The main entry point to the game. We chose to free allocated SDL resources,
 /// but they could just as well be intentionally leaked as they will be
 /// promptly freed by the OS once the process exits.
 pub fn main() !void {
+    var gpa: Alloc = .{};
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const alloc = gpa.allocator();
+
     try init.sdlInit();
     defer init.sdlQuit();
 
@@ -27,10 +36,21 @@ pub fn main() !void {
         .init_frame = c.SDL_GetTicks(),
     });
 
+    const move = .{
+        .basic = .{
+            .from = .{ .x = 7, .y = 7 },
+            .motion = .{ .x = 0, .y = -1 },
+            .promoted = false,
+        },
+    };
+    const valid = @import("rules.zig").valid.isValid(alloc, move, state.board);
+    std.debug.print("isValid(move) = {any}\n", .{valid});
+    if (true) return;
+
     while (true) {
         // Process any events since the last frame. May spawn a thread for the
         // CPU to calculate its move.
-        const result = try event.processEvents(&state);
+        const result = try event.processEvents(alloc, &state);
         switch (result) {
             .quit => break,
             .pass => {},
@@ -40,7 +60,7 @@ pub fn main() !void {
         cpu.applyQueuedMove(&state);
 
         // Render the current game state.
-        try render.render(renderer, state);
+        try render.render(alloc, renderer, state);
 
         // Possible sleep for a short while.
         time.sleepToMatchFps(&state.last_frame);

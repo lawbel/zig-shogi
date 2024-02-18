@@ -10,7 +10,7 @@ const c = @import("c.zig");
 const pixel = @import("pixel.zig");
 const model = @import("model.zig");
 
-pub const SdlError = error{
+pub const Error = error{
     CannotLoadTexture,
     CannotReadMemory,
     CannotSetVar,
@@ -31,7 +31,7 @@ pub fn renderCopy(
         center: ?*const c.SDL_Point = null,
         flip: c.SDL_RendererFlip = c.SDL_FLIP_NONE,
     },
-) SdlError!void {
+) Error!void {
     if (c.SDL_RenderCopyEx(
         args.renderer,
         args.texture,
@@ -57,7 +57,7 @@ pub fn rwToTexture(
         free_stream: bool,
         blend_mode: c.SDL_BlendMode,
     },
-) SdlError!*c.SDL_Texture {
+) Error!*c.SDL_Texture {
     const texture = c.IMG_LoadTexture_RW(
         args.renderer,
         args.stream,
@@ -78,7 +78,7 @@ pub fn rwToTexture(
 }
 
 /// A wrapper around the C function `SDL_RWFromConstMem`.
-pub fn constMemToRw(data: [:0]const u8) SdlError!*c.SDL_RWops {
+pub fn constMemToRw(data: [:0]const u8) Error!*c.SDL_RWops {
     return c.SDL_RWFromConstMem(
         @ptrCast(data),
         @intCast(data.len),
@@ -93,7 +93,7 @@ pub fn constMemToRw(data: [:0]const u8) SdlError!*c.SDL_RWops {
 pub fn setRenderDrawColour(
     renderer: *c.SDL_Renderer,
     colour: pixel.Colour,
-) SdlError!void {
+) Error!void {
     if (c.SDL_SetRenderDrawColor(
         renderer,
         colour.red,
@@ -109,7 +109,7 @@ pub fn setRenderDrawColour(
 
 /// A wrapper around the C function `SDL_RenderClear`. Note: may change the
 /// render draw colour.
-pub fn renderClear(renderer: *c.SDL_Renderer) SdlError!void {
+pub fn renderClear(renderer: *c.SDL_Renderer) Error!void {
     const black = pixel.Colour{};
     try setRenderDrawColour(renderer, black);
 
@@ -126,7 +126,7 @@ pub fn renderFillRect(
     renderer: *c.SDL_Renderer,
     colour: pixel.Colour,
     rect: ?*const c.SDL_Rect,
-) SdlError!void {
+) Error!void {
     try setRenderDrawColour(renderer, colour);
 
     if (c.SDL_RenderFillRect(renderer, rect) < 0) {
@@ -152,7 +152,7 @@ pub fn renderFillCircle(
         centre: Vertex,
         radius: i16,
     },
-) SdlError!void {
+) Error!void {
     if (c.filledCircleRGBA(
         // The renderer.
         args.renderer,
@@ -177,7 +177,7 @@ pub fn renderFillTriangle(
     renderer: *c.SDL_Renderer,
     vertices: [3]Vertex,
     colour: pixel.Colour,
-) SdlError!void {
+) Error!void {
     if (c.filledTrigonRGBA(
         // The renderer.
         renderer,

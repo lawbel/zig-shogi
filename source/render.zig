@@ -13,6 +13,8 @@ const std = @import("std");
 const model = @import("model.zig");
 const State = @import("state.zig").State;
 
+pub const Error = sdl.Error || std.mem.Allocator.Error;
+
 /// The blending mode to use for all rendering.
 pub const blend_mode: c_int = c.SDL_BLENDMODE_BLEND;
 
@@ -74,16 +76,17 @@ var core_piece_textures: std.EnumMap(model.Sort, ?*c.SDL_Texture) = init: {
 /// The main rendering function - it does *all* the rendering each frame, by
 /// calling out to helper functions.
 pub fn render(
+    alloc: std.mem.Allocator,
     renderer: *c.SDL_Renderer,
     state: State,
-) sdl.SdlError!void {
+) Error!void {
     // Clear the renderer for this frame.
     try sdl.renderClear(renderer);
 
     // Perform all the rendering logic.
     try drawBoard(renderer);
     try highlightLastMove(renderer, state);
-    try highlightCurrentMove(renderer, state);
+    try highlightCurrentMove(alloc, renderer, state);
     try drawPieces(renderer, state);
 
     // Take the rendered state and update the window with it.
@@ -114,7 +117,7 @@ pub fn freeTextures() void {
 fn getPieceTexture(
     renderer: *c.SDL_Renderer,
     piece: model.Piece,
-) sdl.SdlError!*c.SDL_Texture {
+) Error!*c.SDL_Texture {
     var texture: *?*c.SDL_Texture = undefined;
     var image: [:0]const u8 = undefined;
 
@@ -147,7 +150,7 @@ fn getPieceTexture(
 fn drawPieces(
     renderer: *c.SDL_Renderer,
     state: State,
-) sdl.SdlError!void {
+) Error!void {
     var moved_piece: ?model.Piece = null;
     var moved_from: ?model.BoardPos = null;
 
@@ -204,7 +207,7 @@ fn renderPiece(
         x: c_int,
         y: c_int,
     },
-) sdl.SdlError!void {
+) Error!void {
     const tex = try getPieceTexture(renderer, piece);
 
     try sdl.renderCopy(.{
@@ -224,7 +227,7 @@ fn renderPiece(
 }
 
 /// Renders the game board.
-fn drawBoard(renderer: *c.SDL_Renderer) sdl.SdlError!void {
+fn drawBoard(renderer: *c.SDL_Renderer) Error!void {
     const tex = try getInitTexture(renderer, &board_texture, board_image);
     try sdl.renderCopy(.{ .renderer = renderer, .texture = tex });
 }
@@ -235,7 +238,7 @@ fn getInitTexture(
     renderer: *c.SDL_Renderer,
     texture: *?*c.SDL_Texture,
     raw_data: [:0]const u8,
-) sdl.SdlError!*c.SDL_Texture {
+) Error!*c.SDL_Texture {
     if (texture.*) |tex| {
         return tex;
     }
@@ -281,7 +284,7 @@ const option_colour: pixel.Colour = selected_colour;
 fn highlightLastMove(
     renderer: *c.SDL_Renderer,
     state: State,
-) sdl.SdlError!void {
+) Error!void {
     const last = state.last_move orelse return;
 
     switch (last) {
@@ -301,30 +304,42 @@ fn highlightLastMove(
 /// tile/square of the selected piece, and any possible moves that piece could
 /// make.
 fn highlightCurrentMove(
+    alloc: std.mem.Allocator,
     renderer: *c.SDL_Renderer,
     state: State,
-) sdl.SdlError!void {
+) Error!void {
     const from_pix = state.mouse.move_from orelse return;
-    const from_pos = from_pix.toBoardPos();
-    const piece = state.board.get(from_pos) orelse return;
-    const owner_is_user = piece.player.eq(state.user);
 
-    if (!owner_is_user) {
-        return;
+    if (from_pix.toBoardPos()) |from_pos| {
+        try highlightCurrentMoveBasic(alloc, renderer, state, from_pos);
+    } else {
+        // TODO: highlight drops
     }
+}
 
-    try highlightTileSquare(renderer, from_pos, selected_colour);
+fn highlightCurrentMoveBasic(
+    alloc: std.mem.Allocator,
+    renderer: *c.SDL_Renderer,
+    state: State,
+    pos: model.BoardPos,
+) Error!void {
+    const piece = state.board.get(pos) orelse return;
+    if (!piece.player.eq(state.user)) return;
 
-    const motions = rules.validMotions(from_pos, state.board).slice();
+    var moves = try rules.moved.movementsFrom(alloc, pos, state.board);
+    defer moves.deinit();
 
-    for (motions) |motion| {
-        const dest = from_pos.applyMotion(motion) orelse continue;
+    for (moves.items) |item| {
+        // TODO: handle item.could_promote?
+        const dest = pos.applyMotion(item.motion) orelse continue;
         if (state.board.get(dest) == null) {
             try highlightTileDot(renderer, dest, option_colour);
         } else {
             try highlightTileCorners(renderer, dest, option_colour);
         }
     }
+
+    try highlightTileSquare(renderer, pos, selected_colour);
 }
 
 /// Highlights the given position on the board, by filling it with the given
@@ -333,7 +348,7 @@ fn highlightTileSquare(
     renderer: *c.SDL_Renderer,
     tile: model.BoardPos,
     colour: pixel.Colour,
-) sdl.SdlError!void {
+) Error!void {
     try sdl.renderFillRect(
         renderer,
         colour,
@@ -351,7 +366,7 @@ fn highlightTileDot(
     renderer: *c.SDL_Renderer,
     tile: model.BoardPos,
     colour: pixel.Colour,
-) sdl.SdlError!void {
+) Error!void {
     const tile_size_i: i16 = @intCast(pixel.tile_size);
     const tile_size_f: f32 = @floatFromInt(pixel.tile_size);
     const x: f32 = @floatFromInt(tile.x);
@@ -380,7 +395,7 @@ fn highlightTileCorners(
     renderer: *c.SDL_Renderer,
     tile: model.BoardPos,
     colour: pixel.Colour,
-) sdl.SdlError!void {
+) Error!void {
     const Corner = struct {
         base: sdl.Vertex,
         x_offset: i16,

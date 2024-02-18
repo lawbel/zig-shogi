@@ -1,5 +1,5 @@
 //! This module contains the main datatypes we need for shogi, together with
-//! some logic that is core to those types.
+//! some basic logic that is core to those types.
 //!
 //! Note on names: there is some variation in the english names used for some
 //! pieces. The names we use here don't get shown to the user, so we've chosen
@@ -247,20 +247,20 @@ pub const Sort = enum {
 };
 
 test "Sort.promote is idempotent" {
-    for (@typeInfo(Sort).Enum.fields) |field| {
+    inline for (@typeInfo(Sort).Enum.fields) |field| {
         const sort: Sort = @enumFromInt(field.value);
         const promoted_once = sort.promote();
         const promoted_twice = promoted_once.promote();
-        std.testing.expectEqual(promoted_once, promoted_twice);
+        try std.testing.expectEqual(promoted_once, promoted_twice);
     }
 }
 
 test "Sort.demote is idempotent" {
-    for (@typeInfo(Sort).Enum.fields) |field| {
+    inline for (@typeInfo(Sort).Enum.fields) |field| {
         const sort: Sort = @enumFromInt(field.value);
         const demoted_once = sort.demote();
         const demoted_twice = demoted_once.demote();
-        std.testing.expectEqual(demoted_once, demoted_twice);
+        try std.testing.expectEqual(demoted_once, demoted_twice);
     }
 }
 
@@ -428,6 +428,12 @@ pub const Board = struct {
     pub fn get(this: @This(), pos: BoardPos) ?Piece {
         const x: usize = @intCast(pos.x);
         const y: usize = @intCast(pos.y);
+
+        std.debug.assert(x < size);
+        std.debug.assert(y < size);
+
+        if (x >= size or y >= size) return null;
+
         return this.tiles[y][x];
     }
 
