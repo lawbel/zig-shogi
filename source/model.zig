@@ -432,8 +432,6 @@ pub const Board = struct {
         std.debug.assert(x < size);
         std.debug.assert(y < size);
 
-        if (x >= size or y >= size) return null;
-
         return this.tiles[y][x];
     }
 

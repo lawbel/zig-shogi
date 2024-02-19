@@ -42,7 +42,12 @@ pub fn movesBasicFor(
     },
 ) Error!std.ArrayList(Valid.Basic) {
     var moves = std.ArrayList(Valid.Basic).init(args.alloc);
-    errdefer moves.deinit();
+    errdefer {
+        for (moves.items) |*item| {
+            item.deinit();
+        }
+        moves.deinit();
+    }
 
     for (args.board.tiles, 0..) |row, y| {
         for (row, 0..) |value, x| {
@@ -75,24 +80,30 @@ pub fn movesDropFor(
     player: model.Player,
     board: model.Board,
 ) Error!std.ArrayList(Valid.Drop) {
-    var moves_drop = std.ArrayList(Valid.Drop).init(alloc);
-    errdefer moves_drop.deinit();
+    var moves = std.ArrayList(Valid.Drop).init(alloc);
+    errdefer {
+        for (moves.items) |*item| {
+            item.deinit();
+        }
+        moves.deinit();
+    }
 
     const hand = board.getHand(player);
     inline for (@typeInfo(model.Sort).Enum.fields) |field| {
         const sort: model.Sort = @enumFromInt(field.value);
         const piece: model.Piece = .{ .sort = sort, .player = player };
         const count = hand.get(sort) orelse 0;
+
         if (count > 0) {
             const drops = try dropped.possibleDropsOf(alloc, piece, board);
             errdefer drops.deinit();
 
             const drop = .{ .piece = piece, .drops = drops };
-            try moves_drop.append(drop);
+            try moves.append(drop);
         }
     }
 
-    return moves_drop;
+    return moves;
 }
 
 /// Returns whether or not the given move is a valid one, considering the
@@ -105,19 +116,12 @@ pub fn isValid(
 ) Error!bool {
     switch (move) {
         .basic => |basic| {
-            std.debug.print(
-                "isValid/basic: from = {any}\n",
-                .{basic.from},
-            );
-
             const moves = try moved.movementsFrom(.{
                 .alloc = alloc,
                 .from = basic.from,
                 .board = board,
             });
             defer moves.deinit();
-
-            std.debug.print("isValid/basic: got here\n", .{});
 
             for (moves.items) |item| {
                 if (basic.motion.eq(item.motion)) {
@@ -150,20 +154,11 @@ test "isValid permits moving starting pawns" {
         .{ .x = 0, .y = -1 },
     };
 
-    std.debug.print("\n", .{});
-
     for (rows, motions) |row, motion| {
         for (0..model.Board.size) |n| {
-            std.debug.print(
-                "row = {d}, motion = {any}, n = {d}\n",
-                .{ row, motion, n },
-            );
-
             const pos: model.BoardPos = .{ .x = @intCast(n), .y = row };
             const basic = .{ .motion = motion, .from = pos };
             const move = .{ .basic = basic };
-
-            // HMM.
             const valid = try isValid(alloc, move, model.Board.init);
 
             try std.testing.expect(valid);

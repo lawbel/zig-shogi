@@ -36,17 +36,6 @@ pub fn main() !void {
         .init_frame = c.SDL_GetTicks(),
     });
 
-    const move = .{
-        .basic = .{
-            .from = .{ .x = 7, .y = 7 },
-            .motion = .{ .x = 0, .y = -1 },
-            .promoted = false,
-        },
-    };
-    const valid = @import("rules.zig").valid.isValid(alloc, move, state.board);
-    std.debug.print("isValid(move) = {any}\n", .{valid});
-    if (true) return;
-
     while (true) {
         // Process any events since the last frame. May spawn a thread for the
         // CPU to calculate its move.

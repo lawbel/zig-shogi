@@ -7,8 +7,6 @@ const valid = @import("valid.zig");
 /// Possible errors that can occur while calculating check(mate).
 pub const Error = std.mem.Allocator.Error;
 
-var calls: i32 = 0;
-
 /// Returns whether the king for the given player is in check. In other words,
 /// whether it could be captured by a piece already on the board if the
 /// opposite player was able to move.
@@ -17,9 +15,6 @@ pub fn isInCheck(
     player: model.Player,
     board: model.Board,
 ) Error!bool {
-    calls += 1;
-    std.debug.print("isInCheck [{}]\n", .{calls});
-
     const king = .{ .player = player, .sort = .king };
     const pos = board.find(king) orelse return false;
 
