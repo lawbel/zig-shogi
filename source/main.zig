@@ -1,3 +1,6 @@
+//! The main entry point into the game. This module is intended to be a thin
+//! wrapper around the functionality provided by the other modules.
+
 const c = @import("c.zig");
 const cpu = @import("cpu.zig");
 const event = @import("event.zig");
