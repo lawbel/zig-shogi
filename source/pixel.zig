@@ -82,6 +82,14 @@ pub const board_top_left: PixelPos = .{
     .y = 35,
 };
 
+/// How much bigger the window should be horizontally, compared to the
+/// board size.
+pub const board_padding_horiz: i32 = board_top_left.x * 2;
+
+/// How much bigger the window should be vertically, compared to the
+/// board size.
+pub const board_padding_vert: i32 = board_top_left.y * 2;
+
 /// The size of the board (width/height), in pixels.
 const board_size_pix: c_int = tile_size * model.Board.size;
 

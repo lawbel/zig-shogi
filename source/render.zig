@@ -172,12 +172,17 @@ fn drawPieces(
                 }
             }
 
+            const pos_x: c_int = @intCast(x);
+            const pos_y: c_int = @intCast(y);
+            const top_left_x: c_int = @intCast(pixel.board_top_left.x);
+            const top_left_y: c_int = @intCast(pixel.board_top_left.y);
+
             try renderPiece(
                 renderer,
                 piece,
                 .{
-                    .x = pixel.tile_size * @as(c_int, @intCast(x)),
-                    .y = pixel.tile_size * @as(c_int, @intCast(y)),
+                    .x = top_left_x + (pixel.tile_size * pos_x),
+                    .y = top_left_y + (pixel.tile_size * pos_y),
                 },
             );
         }
@@ -353,12 +358,15 @@ fn highlightTileSquare(
     tile: model.BoardPos,
     colour: pixel.Colour,
 ) Error!void {
+    const top_left_x: c_int = @intCast(pixel.board_top_left.x);
+    const top_left_y: c_int = @intCast(pixel.board_top_left.y);
+
     try sdl.renderFillRect(
         renderer,
         colour,
         &.{
-            .x = tile.x * pixel.tile_size,
-            .y = tile.y * pixel.tile_size,
+            .x = top_left_x + (tile.x * pixel.tile_size),
+            .y = top_left_y + (tile.y * pixel.tile_size),
             .w = pixel.tile_size,
             .h = pixel.tile_size,
         },
@@ -373,15 +381,19 @@ fn highlightTileDot(
 ) Error!void {
     const tile_size_i: i16 = @intCast(pixel.tile_size);
     const tile_size_f: f32 = @floatFromInt(pixel.tile_size);
-    const x: f32 = @floatFromInt(tile.x);
-    const y: f32 = @floatFromInt(tile.y);
+    const tile_x: f32 = @floatFromInt(tile.x);
+    const tile_y: f32 = @floatFromInt(tile.y);
+    const top_left_x: i16 = @intCast(pixel.board_top_left.x);
+    const top_left_y: i16 = @intCast(pixel.board_top_left.y);
+    const center_x: i16 = @intFromFloat((tile_x + 0.5) * tile_size_f);
+    const center_y: i16 = @intFromFloat((tile_y + 0.5) * tile_size_f);
 
     try sdl.renderFillCircle(.{
         .renderer = renderer,
         .colour = colour,
         .centre = .{
-            .x = @intFromFloat((x + 0.5) * tile_size_f),
-            .y = @intFromFloat((y + 0.5) * tile_size_f),
+            .x = top_left_x + center_x,
+            .y = top_left_y + center_y,
         },
         .radius = tile_size_i / 6,
     });
@@ -416,7 +428,6 @@ fn highlightTileCorners(
             .x_offset = 1,
             .y_offset = 1,
         },
-
         // Top right corner.
         .{
             .base = .{
@@ -426,7 +437,6 @@ fn highlightTileCorners(
             .x_offset = -1,
             .y_offset = 1,
         },
-
         // Bottom left corner.
         .{
             .base = .{
@@ -436,7 +446,6 @@ fn highlightTileCorners(
             .x_offset = 1,
             .y_offset = -1,
         },
-
         // Bottom right corner.
         .{
             .base = .{
@@ -448,19 +457,30 @@ fn highlightTileCorners(
         },
     };
 
+    const top_left_x: i16 = @intCast(pixel.board_top_left.x);
+    const top_left_y: i16 = @intCast(pixel.board_top_left.y);
+
     inline for (corners) |corner| {
+        const horix_offset = triangle_size * corner.x_offset;
         const horiz_pt = .{
-            .x = corner.base.x + (triangle_size * corner.x_offset),
-            .y = corner.base.y,
+            .x = top_left_x + corner.base.x + horix_offset,
+            .y = top_left_y + corner.base.y,
         };
+
+        const vert_offset = triangle_size * corner.y_offset;
         const vert_pt = .{
-            .x = corner.base.x,
-            .y = corner.base.y + (triangle_size * corner.y_offset),
+            .x = top_left_x + corner.base.x,
+            .y = top_left_y + corner.base.y + vert_offset,
+        };
+
+        const base = .{
+            .x = top_left_x + corner.base.x,
+            .y = top_left_y + corner.base.y,
         };
 
         try sdl.renderFillTriangle(
             renderer,
-            .{ corner.base, horiz_pt, vert_pt },
+            .{ base, horiz_pt, vert_pt },
             colour,
         );
     }

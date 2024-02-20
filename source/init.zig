@@ -35,8 +35,8 @@ pub fn sdlQuit() void {
 
 /// The default window size.
 pub const window_size = .{
-    .width = pixel.tile_size * model.Board.size,
-    .height = pixel.tile_size * model.Board.size,
+    .width = pixel.board_padding_horiz + (pixel.tile_size * model.Board.size),
+    .height = pixel.board_padding_vert + (pixel.tile_size * model.Board.size),
 };
 
 /// The default window position.
