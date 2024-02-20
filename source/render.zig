@@ -326,7 +326,11 @@ fn highlightCurrentMoveBasic(
     const piece = state.board.get(pos) orelse return;
     if (!piece.player.eq(state.user)) return;
 
-    var moves = try rules.moved.movementsFrom(alloc, pos, state.board);
+    var moves = try rules.moved.movementsFrom(.{
+        .alloc = alloc,
+        .from = pos,
+        .board = state.board,
+    });
     defer moves.deinit();
 
     for (moves.items) |item| {

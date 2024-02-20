@@ -65,7 +65,11 @@ pub fn randomMove(
     player: model.Player,
     board: model.Board,
 ) std.mem.Allocator.Error!model.Move {
-    var moves = try rules.valid.movesFor(alloc, player, board);
+    var moves = try rules.valid.movesFor(.{
+        .alloc = alloc,
+        .player = player,
+        .board = board,
+    });
     defer moves.deinit();
 
     const len = moves.count();
