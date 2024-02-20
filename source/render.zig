@@ -6,13 +6,14 @@
 //! error.
 
 const c = @import("c.zig");
+const model = @import("model.zig");
 const pixel = @import("pixel.zig");
 const rules = @import("rules.zig");
 const sdl = @import("sdl.zig");
-const std = @import("std");
-const model = @import("model.zig");
 const State = @import("state.zig").State;
+const std = @import("std");
 
+/// Any kind of error that can occur during rendering.
 pub const Error = sdl.Error || std.mem.Allocator.Error;
 
 /// The blending mode to use for all rendering.
@@ -322,6 +323,7 @@ fn highlightCurrentMove(
     }
 }
 
+/// Shows the current basic move on the board.
 fn highlightCurrentMoveBasic(
     alloc: std.mem.Allocator,
     renderer: *c.SDL_Renderer,

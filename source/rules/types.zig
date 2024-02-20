@@ -3,6 +3,7 @@
 const model = @import("../model.zig");
 const std = @import("std");
 
+/// A collection of valid possible moves.
 pub const Valid = struct {
     basics: std.ArrayList(Basic),
     drops: std.ArrayList(Drop),

@@ -7,9 +7,10 @@
 //! what happened) and `SDL_LogError` (to do the logging).
 
 const c = @import("c.zig");
-const pixel = @import("pixel.zig");
 const model = @import("model.zig");
+const pixel = @import("pixel.zig");
 
+/// Any kinf of error that these SDL functions can throw.
 pub const Error = error{
     CannotLoadTexture,
     CannotReadMemory,

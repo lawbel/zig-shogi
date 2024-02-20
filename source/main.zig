@@ -28,7 +28,10 @@ pub fn main() !void {
     defer c.SDL_DestroyWindow(window);
 
     const renderer = try init.createRenderer(.{ .window = window });
-    defer c.SDL_DestroyRenderer(renderer);
+    defer {
+        c.SDL_DestroyRenderer(renderer);
+        render.freeTextures();
+    }
 
     var state = State.init(.{
         .user = .black,
@@ -54,6 +57,4 @@ pub fn main() !void {
         // Possible sleep for a short while.
         time.sleepToMatchFps(&state.last_frame);
     }
-
-    render.freeTextures();
 }

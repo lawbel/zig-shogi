@@ -64,7 +64,8 @@ pub fn isInCheckMate(
     });
     defer moves.deinit();
 
-    // If there is any move which results in us not being in check, then we
-    // are not in-fact in checkmate.
+    // If there is any move which results in us not being in check (which we
+    // are filtering on by setting `.test_check = true`), then we are not
+    // in-fact in checkmate.
     return (moves.count() > 0);
 }

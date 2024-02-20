@@ -77,6 +77,8 @@ fn applyUserMove(alloc: std.mem.Allocator, state: *State) Error!bool {
     }
 }
 
+/// Apply the given move for the user. Returns `true` if the move was valid and
+/// successfully applied, or `false` otherwise.
 fn applyUserMoveBasic(
     args: struct {
         alloc: std.mem.Allocator,

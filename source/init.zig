@@ -1,9 +1,9 @@
 //! This module handles initialization and termination of SDL.
 
 const c = @import("c.zig");
+const model = @import("model.zig");
 const pixel = @import("pixel.zig");
 const render = @import("render.zig");
-const model = @import("model.zig");
 
 /// Any kind of error that can happen during initialization of SDL.
 pub const Error = error{

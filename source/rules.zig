@@ -4,8 +4,8 @@
 pub const checked = @import("rules/checked.zig");
 pub const dropped = @import("rules/dropped.zig");
 pub const moved = @import("rules/moved.zig");
-pub const valid = @import("rules/valid.zig");
 pub const types = @import("rules/types.zig");
+pub const valid = @import("rules/valid.zig");
 
 test {
     // Pull in any test cases from the above sub-modules.
@@ -13,6 +13,6 @@ test {
     _ = checked;
     _ = dropped;
     _ = moved;
-    _ = valid;
     _ = types;
+    _ = valid;
 }
