@@ -28,7 +28,7 @@ pub const Valid = struct {
 
             for (this.movements.items) |item| {
                 cursor += item.count();
-                if (cursor <= i) continue;
+                if (cursor < i) continue;
 
                 const promoted: bool = switch (item.promotion) {
                     .cannot_promote => false,
