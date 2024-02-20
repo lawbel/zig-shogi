@@ -11,8 +11,6 @@ const Valid = @import("types.zig").Valid;
 /// Errors than can occur while calculating piece movements.
 pub const Error = std.mem.Allocator.Error;
 
-var calls: u32 = 0;
-
 /// Returns a list of all valid motions for the piece at the given position.
 /// The caller is responsible for freeing the memory associated with the
 /// returned `Motions`.
@@ -27,9 +25,6 @@ pub fn movementsFrom(
     const piece = args.board.get(args.from) orelse {
         return std.ArrayList(Valid.Movement).init(args.alloc);
     };
-
-    calls += 1;
-    std.debug.print("movementsFrom [{d}]: got here\n", .{calls});
 
     var direct_args: DirectArgs = .{
         .alloc = args.alloc,
