@@ -160,6 +160,7 @@ pub fn movementsFrom(
                 }
             }
 
+            direct_args.must_promote_in_ranks = 2;
             direct_args.motions = &motions;
             return directMovementsFrom(direct_args);
         },
@@ -170,6 +171,7 @@ pub fn movementsFrom(
                 motion.flipHoriz();
             }
 
+            ranged_args.must_promote_in_ranks = 1;
             ranged_args.steps = &.{motion};
             return rangedMovementsFromSteps(ranged_args);
         },
@@ -180,6 +182,7 @@ pub fn movementsFrom(
                 motion.flipHoriz();
             }
 
+            direct_args.must_promote_in_ranks = 1;
             direct_args.motions = &.{motion};
             return directMovementsFrom(direct_args);
         },
@@ -194,6 +197,7 @@ const DirectArgs = struct {
     board: model.Board,
     motions: []const model.Motion,
     test_check: bool = true,
+    must_promote_in_ranks: usize = 0,
 };
 
 /// Returns an array of possible `Motions` from the given position, by
@@ -216,8 +220,8 @@ fn directMovementsFrom(
             if (piece.player.eq(args.player)) continue;
         }
 
+        // We cannot make a move that would leave us in check
         if (args.test_check) {
-            // We cannot make a move that would leave us in check
             var if_moved = args.board;
             const is_ok = if_moved.applyMoveBasic(.{
                 .from = args.from,
@@ -231,14 +235,30 @@ fn directMovementsFrom(
             if (causes_check) continue;
         }
 
-        // If we got this far, then this move is okay.
-        const could_promote =
+        // If we got this far, then this move is okay. We just have to work out
+        // whether this piece can/must be promoted.
+        var move: Valid.Movement = .{
+            .motion = motion,
+            .promotion = undefined,
+        };
+
+        const must_promote = switch (args.player) {
+            .black => dest.y < args.must_promote_in_ranks,
+            .white => dest.y >= model.Board.size - args.must_promote_in_ranks,
+        };
+        const can_promote =
             args.from.isInPromotionZoneFor(args.player) or
             dest.isInPromotionZoneFor(args.player);
-        try moves.append(.{
-            .motion = motion,
-            .could_promote = could_promote,
-        });
+
+        if (must_promote) {
+            move.promotion = .must_promote;
+        } else if (can_promote) {
+            move.promotion = .can_promote;
+        } else {
+            move.promotion = .cannot_promote;
+        }
+
+        try moves.append(move);
     }
 
     return moves;
@@ -252,6 +272,7 @@ const RangedArgs = struct {
     board: model.Board,
     steps: []const model.Motion,
     test_check: bool = true,
+    must_promote_in_ranks: usize = 0,
 };
 
 /// Returns an array of possible `Motions` from the given position. For each
@@ -274,12 +295,9 @@ fn rangedMovementsFromSteps(
 
         for (1..model.Board.size) |_| {
             const dest = args.from.applyMotion(cur_step) orelse break;
-            const could_promote =
-                args.from.isInPromotionZoneFor(args.player) or
-                dest.isInPromotionZoneFor(args.player);
 
+            // We cannot make a move that would leave us in check.
             if (args.test_check) {
-                // We cannot make a move that would leave us in check.
                 var if_moved = args.board;
                 const is_ok = if_moved.applyMoveBasic(.{
                     .from = args.from,
@@ -293,24 +311,43 @@ fn rangedMovementsFromSteps(
                 if (causes_check) break;
             }
 
+            // Here we pre-compute the move that we might be making, including
+            // whether the piece can/must be promoted. It would be more optimal
+            // to delay this as we may not need it, but it is not expensive
+            // and makes the code more readable.
+            var move: Valid.Movement = .{
+                .motion = cur_step,
+                .promotion = undefined,
+            };
+
+            const flip_ranks = model.Board.size - args.must_promote_in_ranks;
+            const must_promote = switch (args.player) {
+                .black => dest.y < args.must_promote_in_ranks,
+                .white => dest.y >= flip_ranks,
+            };
+            const can_promote =
+                args.from.isInPromotionZoneFor(args.player) or
+                dest.isInPromotionZoneFor(args.player);
+
+            if (must_promote) {
+                move.promotion = .must_promote;
+            } else if (can_promote) {
+                move.promotion = .can_promote;
+            } else {
+                move.promotion = .cannot_promote;
+            }
+
+            // Now make the final checks and potentially add this move.
             if (args.board.get(dest)) |piece| {
                 // We cannot capture our own pieces.
                 if (piece.player.eq(args.player)) break;
-
                 // If we got here, then this move is okay.
-                try moves.append(.{
-                    .motion = cur_step,
-                    .could_promote = could_promote,
-                });
-
+                try moves.append(move);
                 // We cannot go any further, so must break the loop.
                 break;
             } else {
                 // If the tile is vacant, then this move is okay.
-                try moves.append(.{
-                    .motion = cur_step,
-                    .could_promote = could_promote,
-                });
+                try moves.append(move);
             }
 
             cur_step.x += step.x;

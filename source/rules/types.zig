@@ -30,8 +30,11 @@ pub const Valid = struct {
                 cursor += item.count();
                 if (cursor <= i) continue;
 
-                const promoted: bool =
-                    if (item.could_promote) (cursor - i) % 2 != 0 else false;
+                const promoted: bool = switch (item.promotion) {
+                    .cannot_promote => false,
+                    .can_promote => (cursor - i) % 2 != 0,
+                    .must_promote => true,
+                };
                 return .{
                     .from = this.from,
                     .motion = item.motion,
@@ -48,14 +51,20 @@ pub const Valid = struct {
         }
     };
 
+    pub const Promotion = union(enum) {
+        cannot_promote,
+        can_promote,
+        must_promote,
+    };
+
     /// A possible movement on the board, including promotion information.
     pub const Movement = struct {
         motion: model.Motion,
-        could_promote: bool,
+        promotion: Promotion,
 
         /// The total number of possible moves encoded by this type.
         pub fn count(this: @This()) usize {
-            return if (this.could_promote) 2 else 1;
+            return if (this.promotion == .can_promote) 2 else 1;
         }
     };
 
