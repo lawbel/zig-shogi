@@ -103,8 +103,12 @@ pub fn movesDropFor(
             const drops = try dropped.possibleDropsOf(alloc, piece, board);
             errdefer drops.deinit();
 
-            const drop = .{ .piece = piece, .drops = drops };
-            try moves.append(drop);
+            if (drops.items.len > 0) {
+                const drop = .{ .piece = piece, .drops = drops };
+                try moves.append(drop);
+            } else {
+                drops.deinit();
+            }
         }
     }
 
