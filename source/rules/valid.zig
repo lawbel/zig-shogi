@@ -66,6 +66,11 @@ pub fn movesBasicFor(
             });
             errdefer movements.deinit();
 
+            if (movements.items.len == 0) {
+                movements.deinit();
+                continue;
+            }
+
             const basic = .{ .from = pos, .movements = movements };
             try moves.append(basic);
         }
