@@ -144,8 +144,8 @@ pub const BoardPos = struct {
     /// Whether this position is in the promotion zone for the given `Player`.
     pub fn isInPromotionZoneFor(this: @This(), player: Player) bool {
         return switch (player) {
-            .white => 0 <= this.y and this.y < 3,
-            .black => Board.size - 3 <= this.y and this.y < Board.size,
+            .black => 0 <= this.y and this.y < 3,
+            .white => Board.size - 3 <= this.y and this.y < Board.size,
         };
     }
 };

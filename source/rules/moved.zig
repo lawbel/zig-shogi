@@ -242,9 +242,10 @@ fn directMovementsFrom(
             .promotion = undefined,
         };
 
+        const flip_ranks = model.Board.size - args.must_promote_in_ranks;
         const must_promote = switch (args.player) {
             .black => dest.y < args.must_promote_in_ranks,
-            .white => dest.y >= model.Board.size - args.must_promote_in_ranks,
+            .white => dest.y >= flip_ranks,
         };
         const can_promote =
             args.from.isInPromotionZoneFor(args.player) or
