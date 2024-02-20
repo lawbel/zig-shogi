@@ -5,12 +5,12 @@ const c = @import("c.zig");
 const cpu = @import("cpu.zig");
 const event = @import("event.zig");
 const init = @import("init.zig");
+const model = @import("model.zig");
 const render = @import("render.zig");
 const sdl = @import("sdl.zig");
+const State = @import("state.zig").State;
 const std = @import("std");
 const time = @import("time.zig");
-const model = @import("model.zig");
-const State = @import("state.zig").State;
 
 /// The allocator to be used for this program (except for the C code which
 /// uses its' own malloc provided by libc).
