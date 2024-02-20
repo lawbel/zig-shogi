@@ -6,12 +6,15 @@
 //! error.
 
 const c = @import("c.zig");
+const model = @import("model.zig");
 const pixel = @import("pixel.zig");
 const rules = @import("rules.zig");
 const sdl = @import("sdl.zig");
-const std = @import("std");
-const model = @import("model.zig");
 const State = @import("state.zig").State;
+const std = @import("std");
+
+/// Any kind of error that can occur during rendering.
+pub const Error = sdl.Error || std.mem.Allocator.Error;
 
 /// The blending mode to use for all rendering.
 pub const blend_mode: c_int = c.SDL_BLENDMODE_BLEND;
@@ -74,16 +77,17 @@ var core_piece_textures: std.EnumMap(model.Sort, ?*c.SDL_Texture) = init: {
 /// The main rendering function - it does *all* the rendering each frame, by
 /// calling out to helper functions.
 pub fn render(
+    alloc: std.mem.Allocator,
     renderer: *c.SDL_Renderer,
     state: State,
-) sdl.SdlError!void {
+) Error!void {
     // Clear the renderer for this frame.
     try sdl.renderClear(renderer);
 
     // Perform all the rendering logic.
     try drawBoard(renderer);
     try highlightLastMove(renderer, state);
-    try highlightCurrentMove(renderer, state);
+    try highlightCurrentMove(alloc, renderer, state);
     try drawPieces(renderer, state);
 
     // Take the rendered state and update the window with it.
@@ -114,7 +118,7 @@ pub fn freeTextures() void {
 fn getPieceTexture(
     renderer: *c.SDL_Renderer,
     piece: model.Piece,
-) sdl.SdlError!*c.SDL_Texture {
+) Error!*c.SDL_Texture {
     var texture: *?*c.SDL_Texture = undefined;
     var image: [:0]const u8 = undefined;
 
@@ -132,10 +136,10 @@ fn getPieceTexture(
 
         else => {
             texture = core_piece_textures.getPtr(piece.sort) orelse {
-                return error.SdlLoadTexture;
+                return error.CannotLoadTexture;
             };
             image = core_piece_images.get(piece.sort) orelse {
-                return error.SdlReadConstMemory;
+                return error.CannotReadMemory;
             };
         },
     }
@@ -147,12 +151,12 @@ fn getPieceTexture(
 fn drawPieces(
     renderer: *c.SDL_Renderer,
     state: State,
-) sdl.SdlError!void {
+) Error!void {
     var moved_piece: ?model.Piece = null;
     var moved_from: ?model.BoardPos = null;
 
     if (state.mouse.move_from) |pos| {
-        moved_from = model.BoardPos.fromPixelPos(pos);
+        moved_from = pos.toBoardPos();
     }
 
     // Render every piece on the board, except for the one (if any) that the
@@ -169,12 +173,17 @@ fn drawPieces(
                 }
             }
 
+            const pos_x: c_int = @intCast(x);
+            const pos_y: c_int = @intCast(y);
+            const top_left_x: c_int = @intCast(pixel.board_top_left.x);
+            const top_left_y: c_int = @intCast(pixel.board_top_left.y);
+
             try renderPiece(
                 renderer,
                 piece,
                 .{
-                    .x = pixel.tile_size * @as(c_int, @intCast(x)),
-                    .y = pixel.tile_size * @as(c_int, @intCast(y)),
+                    .x = top_left_x + (pixel.tile_size * pos_x),
+                    .y = top_left_y + (pixel.tile_size * pos_y),
                 },
             );
         }
@@ -204,7 +213,7 @@ fn renderPiece(
         x: c_int,
         y: c_int,
     },
-) sdl.SdlError!void {
+) Error!void {
     const tex = try getPieceTexture(renderer, piece);
 
     try sdl.renderCopy(.{
@@ -224,7 +233,7 @@ fn renderPiece(
 }
 
 /// Renders the game board.
-fn drawBoard(renderer: *c.SDL_Renderer) sdl.SdlError!void {
+fn drawBoard(renderer: *c.SDL_Renderer) Error!void {
     const tex = try getInitTexture(renderer, &board_texture, board_image);
     try sdl.renderCopy(.{ .renderer = renderer, .texture = tex });
 }
@@ -235,7 +244,7 @@ fn getInitTexture(
     renderer: *c.SDL_Renderer,
     texture: *?*c.SDL_Texture,
     raw_data: [:0]const u8,
-) sdl.SdlError!*c.SDL_Texture {
+) Error!*c.SDL_Texture {
     if (texture.*) |tex| {
         return tex;
     }
@@ -273,47 +282,75 @@ const selected_colour: pixel.Colour = .{
 /// piece to.
 const option_colour: pixel.Colour = selected_colour;
 
-/// Show the last move (if there is one) on the board by highlighting the
-/// tile/square that the piece moved from and moved to.
+/// Show the last move (if there is one) on the board by highlighting either:
+///
+/// * The tile/square that the piece moved from and moved to (if it was a
+///   'basic' move).
+/// * The tile that the piece was dropped on (if it was a drop).
 fn highlightLastMove(
     renderer: *c.SDL_Renderer,
     state: State,
-) sdl.SdlError!void {
+) Error!void {
     const last = state.last_move orelse return;
-    const dest = last.pos.applyMotion(last.motion) orelse return;
 
-    try highlightTileSquare(renderer, last.pos, last_colour);
-    try highlightTileSquare(renderer, dest, last_colour);
+    switch (last) {
+        .basic => |basic| {
+            const dest = basic.from.applyMotion(basic.motion) orelse return;
+            try highlightTileSquare(renderer, basic.from, last_colour);
+            try highlightTileSquare(renderer, dest, last_colour);
+        },
+
+        .drop => |drop| {
+            try highlightTileSquare(renderer, drop.pos, last_colour);
+        },
+    }
 }
 
 /// Show the current move (if there is one) on the board by highlighting the
 /// tile/square of the selected piece, and any possible moves that piece could
 /// make.
 fn highlightCurrentMove(
+    alloc: std.mem.Allocator,
     renderer: *c.SDL_Renderer,
     state: State,
-) sdl.SdlError!void {
+) Error!void {
     const from_pix = state.mouse.move_from orelse return;
-    const from_pos = model.BoardPos.fromPixelPos(from_pix);
-    const piece = state.board.get(from_pos) orelse return;
-    const owner_is_user = piece.player.eq(state.user);
 
-    if (!owner_is_user) {
-        return;
+    if (from_pix.toBoardPos()) |from_pos| {
+        try highlightCurrentMoveBasic(alloc, renderer, state, from_pos);
+    } else {
+        // TODO: highlight drops
     }
+}
 
-    try highlightTileSquare(renderer, from_pos, selected_colour);
+/// Shows the current basic move on the board.
+fn highlightCurrentMoveBasic(
+    alloc: std.mem.Allocator,
+    renderer: *c.SDL_Renderer,
+    state: State,
+    pos: model.BoardPos,
+) Error!void {
+    const piece = state.board.get(pos) orelse return;
+    if (!piece.player.eq(state.user)) return;
 
-    const motions = rules.validMotions(from_pos, state.board).slice();
+    var moves = try rules.moved.movementsFrom(.{
+        .alloc = alloc,
+        .from = pos,
+        .board = state.board,
+    });
+    defer moves.deinit();
 
-    for (motions) |motion| {
-        const dest = from_pos.applyMotion(motion) orelse continue;
+    for (moves.items) |item| {
+        // TODO: handle item.could_promote?
+        const dest = pos.applyMotion(item.motion) orelse continue;
         if (state.board.get(dest) == null) {
             try highlightTileDot(renderer, dest, option_colour);
         } else {
             try highlightTileCorners(renderer, dest, option_colour);
         }
     }
+
+    try highlightTileSquare(renderer, pos, selected_colour);
 }
 
 /// Highlights the given position on the board, by filling it with the given
@@ -322,13 +359,16 @@ fn highlightTileSquare(
     renderer: *c.SDL_Renderer,
     tile: model.BoardPos,
     colour: pixel.Colour,
-) sdl.SdlError!void {
+) Error!void {
+    const top_left_x: c_int = @intCast(pixel.board_top_left.x);
+    const top_left_y: c_int = @intCast(pixel.board_top_left.y);
+
     try sdl.renderFillRect(
         renderer,
         colour,
         &.{
-            .x = tile.x * pixel.tile_size,
-            .y = tile.y * pixel.tile_size,
+            .x = top_left_x + (tile.x * pixel.tile_size),
+            .y = top_left_y + (tile.y * pixel.tile_size),
             .w = pixel.tile_size,
             .h = pixel.tile_size,
         },
@@ -340,18 +380,22 @@ fn highlightTileDot(
     renderer: *c.SDL_Renderer,
     tile: model.BoardPos,
     colour: pixel.Colour,
-) sdl.SdlError!void {
+) Error!void {
     const tile_size_i: i16 = @intCast(pixel.tile_size);
     const tile_size_f: f32 = @floatFromInt(pixel.tile_size);
-    const x: f32 = @floatFromInt(tile.x);
-    const y: f32 = @floatFromInt(tile.y);
+    const tile_x: f32 = @floatFromInt(tile.x);
+    const tile_y: f32 = @floatFromInt(tile.y);
+    const top_left_x: i16 = @intCast(pixel.board_top_left.x);
+    const top_left_y: i16 = @intCast(pixel.board_top_left.y);
+    const center_x: i16 = @intFromFloat((tile_x + 0.5) * tile_size_f);
+    const center_y: i16 = @intFromFloat((tile_y + 0.5) * tile_size_f);
 
     try sdl.renderFillCircle(.{
         .renderer = renderer,
         .colour = colour,
         .centre = .{
-            .x = @intFromFloat((x + 0.5) * tile_size_f),
-            .y = @intFromFloat((y + 0.5) * tile_size_f),
+            .x = top_left_x + center_x,
+            .y = top_left_y + center_y,
         },
         .radius = tile_size_i / 6,
     });
@@ -369,7 +413,7 @@ fn highlightTileCorners(
     renderer: *c.SDL_Renderer,
     tile: model.BoardPos,
     colour: pixel.Colour,
-) sdl.SdlError!void {
+) Error!void {
     const Corner = struct {
         base: sdl.Vertex,
         x_offset: i16,
@@ -386,7 +430,6 @@ fn highlightTileCorners(
             .x_offset = 1,
             .y_offset = 1,
         },
-
         // Top right corner.
         .{
             .base = .{
@@ -396,7 +439,6 @@ fn highlightTileCorners(
             .x_offset = -1,
             .y_offset = 1,
         },
-
         // Bottom left corner.
         .{
             .base = .{
@@ -406,7 +448,6 @@ fn highlightTileCorners(
             .x_offset = 1,
             .y_offset = -1,
         },
-
         // Bottom right corner.
         .{
             .base = .{
@@ -418,19 +459,30 @@ fn highlightTileCorners(
         },
     };
 
+    const top_left_x: i16 = @intCast(pixel.board_top_left.x);
+    const top_left_y: i16 = @intCast(pixel.board_top_left.y);
+
     inline for (corners) |corner| {
+        const horix_offset = triangle_size * corner.x_offset;
         const horiz_pt = .{
-            .x = corner.base.x + (triangle_size * corner.x_offset),
-            .y = corner.base.y,
+            .x = top_left_x + corner.base.x + horix_offset,
+            .y = top_left_y + corner.base.y,
         };
+
+        const vert_offset = triangle_size * corner.y_offset;
         const vert_pt = .{
-            .x = corner.base.x,
-            .y = corner.base.y + (triangle_size * corner.y_offset),
+            .x = top_left_x + corner.base.x,
+            .y = top_left_y + corner.base.y + vert_offset,
+        };
+
+        const base = .{
+            .x = top_left_x + corner.base.x,
+            .y = top_left_y + corner.base.y,
         };
 
         try sdl.renderFillTriangle(
             renderer,
-            .{ corner.base, horiz_pt, vert_pt },
+            .{ base, horiz_pt, vert_pt },
             colour,
         );
     }

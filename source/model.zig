@@ -1,5 +1,5 @@
 //! This module contains the main datatypes we need for shogi, together with
-//! some logic that is core to those types.
+//! some basic logic that is core to those types.
 //!
 //! Note on names: there is some variation in the english names used for some
 //! pieces. The names we use here don't get shown to the user, so we've chosen
@@ -23,14 +23,62 @@
 //! * promoted lance (narikyō 成香)
 //! * promoted pawn (tokin と金), also known as a tokin.
 
-const pixel = @import("pixel.zig");
 const std = @import("std");
 
-/// A choice of move to make on the board. Used for the CPU player.
-/// TODO: handle drops.
-pub const Move = struct {
-    pos: BoardPos,
-    motion: Motion,
+/// A valid move in the game. Can be either a 'basic' move (moving a piece from
+/// one tile to another) or a drop.
+pub const Move = union(enum) {
+    /// A basic move - changing the position of some piece from one tile to
+    /// another, possibly capturing something at the destination tile and
+    /// possibly promoting along the way.
+    basic: Basic,
+    /// A piece was dropped onto the board.
+    drop: Drop,
+
+    /// A basic move.
+    pub const Basic = struct {
+        /// The initial location where the piece came from.
+        from: BoardPos,
+        /// The motion of the piece, relating to it's initial `BoardPos`.
+        motion: Motion,
+        /// Whether the moved piece was promoted in the course of this move.
+        promoted: bool = false,
+
+        /// Whether or not these two basic moves are the same.
+        pub fn eq(this: @This(), other: @This()) bool {
+            return this.from.eq(other.from) and
+                this.motion.eq(other.motion) and
+                this.promoted == other.promoted;
+        }
+    };
+
+    /// A piece drop.
+    pub const Drop = struct {
+        /// The destination of the dropped piece.
+        pos: BoardPos,
+        /// What sort of `Piece` was dropped.
+        piece: Piece,
+
+        /// Whether or not these two drops are the same.
+        pub fn eq(this: @This(), other: @This()) bool {
+            return this.pos.eq(other.pos) and
+                this.piece.eq(other.piece);
+        }
+    };
+
+    /// Whether or not these two moves are the same.
+    pub fn eq(this: @This(), other: @This()) bool {
+        return switch (this) {
+            .basic => switch (other) {
+                .basic => Basic.eq(this, other),
+                .drop => false,
+            },
+            .drop => switch (other) {
+                .drop => Drop.eq(this, other),
+                .basic => false,
+            },
+        };
+    }
 };
 
 /// A vector `(x, y)` representing a motion on our board. This could be simply
@@ -43,6 +91,11 @@ pub const Motion = struct {
     /// it is for.
     pub fn flipHoriz(this: *@This()) void {
         this.y *= -1;
+    }
+
+    /// Whether or not these two positions are the same.
+    pub fn eq(this: @This(), other: @This()) bool {
+        return this.x == other.x and this.y == other.y;
     }
 };
 
@@ -65,12 +118,9 @@ pub const BoardPos = struct {
     x: i8,
     y: i8,
 
-    /// Returns the position on the board at this location on the screen.
-    pub fn fromPixelPos(pos: pixel.PixelPos) @This() {
-        return .{
-            .x = @intCast(@divFloor(pos.x, pixel.tile_size)),
-            .y = @intCast(@divFloor(pos.y, pixel.tile_size)),
-        };
+    /// Whether or not these two positions are the same.
+    pub fn eq(this: @This(), other: @This()) bool {
+        return this.x == other.x and this.y == other.y;
     }
 
     /// Check whether this position is actually valid for indexing into the
@@ -90,23 +140,15 @@ pub const BoardPos = struct {
         };
         return if (target.isInBounds()) target else null;
     }
-};
 
-test "BoardPos.fromPixelPos(n*size, n*size) returns (n, n)" {
-    for (0..Board.size) |n| {
-        const n_float: f32 = @floatFromInt(n);
-        const tile_size_float: f32 = @floatFromInt(pixel.tile_size);
-
-        // A pixel dead-centre in the middle of the intended tile.
-        const pix: pixel.PixelPos = .{
-            .x = @intFromFloat((n_float + 0.5) * tile_size_float),
-            .y = @intFromFloat((n_float + 0.5) * tile_size_float),
+    /// Whether this position is in the promotion zone for the given `Player`.
+    pub fn isInPromotionZoneFor(this: @This(), player: Player) bool {
+        return switch (player) {
+            .black => 0 <= this.y and this.y < 3,
+            .white => Board.size - 3 <= this.y and this.y < Board.size,
         };
-        const pos: BoardPos = .{ .x = @intCast(n), .y = @intCast(n) };
-
-        try std.testing.expectEqual(BoardPos.fromPixelPos(pix), pos);
     }
-}
+};
 
 /// The possible players of the game.
 pub const Player = union(enum) {
@@ -115,14 +157,9 @@ pub const Player = union(enum) {
     /// Typically called black in English; sente (先手) in Japanese. Goes first.
     black,
 
-    /// Are the two players equal?
+    /// Whether or not these two players are the same.
     pub fn eq(this: @This(), other: @This()) bool {
         return @intFromEnum(this) == @intFromEnum(other);
-    }
-
-    /// Are the two players different?
-    pub fn not_eq(this: @This(), other: @This()) bool {
-        return @intFromEnum(this) != @intFromEnum(other);
     }
 
     /// Changes this player to the other possibility - if this was `.white`
@@ -175,6 +212,11 @@ pub const Sort = enum {
     /// A promoted pawn (tokin と金). Moves and attacks like a gold.
     promoted_pawn,
 
+    /// Whether or not these two sorts of pieces are the same.
+    pub fn eq(this: @This(), other: @This()) bool {
+        return @intFromEnum(this) == @intFromEnum(other);
+    }
+
     /// Promote this piece. If it is already promoted or cannot be promoted,
     /// returns it as-is.
     pub fn promote(this: @This()) @This() {
@@ -204,61 +246,42 @@ pub const Sort = enum {
     }
 };
 
+test "Sort.promote is idempotent" {
+    inline for (@typeInfo(Sort).Enum.fields) |field| {
+        const sort: Sort = @enumFromInt(field.value);
+        const promoted_once = sort.promote();
+        const promoted_twice = promoted_once.promote();
+        try std.testing.expectEqual(promoted_once, promoted_twice);
+    }
+}
+
+test "Sort.demote is idempotent" {
+    inline for (@typeInfo(Sort).Enum.fields) |field| {
+        const sort: Sort = @enumFromInt(field.value);
+        const demoted_once = sort.demote();
+        const demoted_twice = demoted_once.demote();
+        try std.testing.expectEqual(demoted_once, demoted_twice);
+    }
+}
+
 /// A piece belonging to a player - this type combines a `Sort` and a
 /// `Player` in one type.
 pub const Piece = struct {
     player: Player,
     sort: Sort,
 
-    /// The starting back row for a given player.
-    pub fn backRow(player: Player) [Board.size]?@This() {
-        return .{
-            .{ .player = player, .sort = .lance },
-            .{ .player = player, .sort = .knight },
-            .{ .player = player, .sort = .silver },
-            .{ .player = player, .sort = .gold },
-            .{ .player = player, .sort = .king },
-            .{ .player = player, .sort = .gold },
-            .{ .player = player, .sort = .silver },
-            .{ .player = player, .sort = .knight },
-            .{ .player = player, .sort = .lance },
-        };
-    }
-
-    /// The starting middle row for a given player.
-    pub fn middleRow(player: Player) [Board.size]?@This() {
-        const one = .{
-            .player = player,
-            .sort = switch (player) {
-                .white => .rook,
-                .black => .bishop,
-            },
-        };
-        const two = .{
-            .player = player,
-            .sort = switch (player) {
-                .white => .bishop,
-                .black => .rook,
-            },
-        };
-
-        return .{ null, one, null, null, null, null, null, two, null };
-    }
-
-    /// The starting front row for a given player.
-    pub fn frontRow(player: Player) [Board.size]?@This() {
-        return .{
-            .{
-                .player = player,
-                .sort = .pawn,
-            },
-        } ** Board.size;
+    /// Whether or not these two pieces are the same.
+    pub fn eq(this: @This(), other: @This()) bool {
+        return this.player.eq(other.player) and this.sort.eq(other.sort);
     }
 };
 
+/// The pieces in a player's hand.
+pub const Hand = std.EnumMap(Sort, i8);
+
 /// The empty hand, with every key intialized to zero.
-const empty_hand: std.EnumMap(Sort, i8) = init: {
-    var map: std.EnumMap(Sort, i8) = .{};
+const empty_hand: Hand = init: {
+    var map: Hand = .{};
 
     for (@typeInfo(Sort).Enum.fields) |field| {
         map.put(@enumFromInt(field.value), 0);
@@ -266,6 +289,47 @@ const empty_hand: std.EnumMap(Sort, i8) = init: {
 
     break :init map;
 };
+
+/// The starting back row for a given player.
+pub fn backRankFor(player: Player) [Board.size]?Piece {
+    return .{
+        .{ .player = player, .sort = .lance },
+        .{ .player = player, .sort = .knight },
+        .{ .player = player, .sort = .silver },
+        .{ .player = player, .sort = .gold },
+        .{ .player = player, .sort = .king },
+        .{ .player = player, .sort = .gold },
+        .{ .player = player, .sort = .silver },
+        .{ .player = player, .sort = .knight },
+        .{ .player = player, .sort = .lance },
+    };
+}
+
+/// The starting middle row for a given player.
+pub fn middleRankFor(player: Player) [Board.size]?Piece {
+    const one = .{
+        .player = player,
+        .sort = switch (player) {
+            .white => .rook,
+            .black => .bishop,
+        },
+    };
+    const two = .{
+        .player = player,
+        .sort = switch (player) {
+            .white => .bishop,
+            .black => .rook,
+        },
+    };
+
+    return .{ null, one, null, null, null, null, null, two, null };
+}
+
+/// The starting front row for a given player.
+pub fn frontRankFor(player: Player) [Board.size]?Piece {
+    const piece = .{ .player = player, .sort = .pawn };
+    return .{piece} ** Board.size;
+}
 
 /// This type represents the pure state of the board, and has some associated
 /// functionalimodel.
@@ -276,9 +340,9 @@ pub const Board = struct {
     /// Which pieces does each player have in hand?
     hand: struct {
         /// What pieces does white have in hand, and how many of each?
-        white: std.EnumMap(Sort, i8),
+        white: Hand,
         /// What pieces does black have in hand, and how many of each?
-        black: std.EnumMap(Sort, i8),
+        black: Hand,
     },
 
     /// The size of the board (i.e. its width/height).
@@ -288,9 +352,9 @@ pub const Board = struct {
     pub const init: @This() = .{
         .tiles = .{
             // White's territory.
-            Piece.backRow(.white),
-            Piece.middleRow(.white),
-            Piece.frontRow(.white),
+            backRankFor(.white),
+            middleRankFor(.white),
+            frontRankFor(.white),
 
             // No-mans land.
             .{null} ** size,
@@ -298,9 +362,9 @@ pub const Board = struct {
             .{null} ** size,
 
             // Black's territory.
-            Piece.frontRow(.black),
-            Piece.middleRow(.black),
-            Piece.backRow(.black),
+            frontRankFor(.black),
+            middleRankFor(.black),
+            backRankFor(.black),
         },
 
         .hand = .{
@@ -309,11 +373,90 @@ pub const Board = struct {
         },
     };
 
+    /// Whether or not the numbered file has 1 or more pawns (just a plain
+    /// pawn, not counting *promoted* pawns). The numbering is 0-indexed from
+    /// left-to-right, the same as indices into `tiles`.
+    pub fn fileHasPawnFor(this: @This(), file: usize, player: Player) bool {
+        for (0..size) |rank| {
+            const piece = this.tiles[rank][file] orelse continue;
+            if (piece.player == player and piece.sort == .pawn) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns a bit-set where index `i` is set if-and-only-if the given
+    /// `Player` has a pawn on file `i` (counting files from left to right,
+    /// the same as indexing into `tiles`).
+    pub fn filesHavePawnFor(
+        this: @This(),
+        player: Player,
+    ) std.bit_set.IntegerBitSet(size) {
+        var bit_set = std.bit_set.IntegerBitSet(size).initEmpty();
+
+        for (0..size) |file| {
+            for (0..size) |rank| {
+                const piece = this.tiles[rank][file] orelse continue;
+                if (piece.player.eq(player) and piece.sort == .pawn) {
+                    bit_set.set(file);
+                    break;
+                }
+            }
+        }
+
+        return bit_set;
+    }
+
+    /// Get a pointer to the `Hand` of the given player.
+    pub fn getHandPtr(this: *@This(), player: Player) *Hand {
+        return switch (player) {
+            .black => &this.hand.black,
+            .white => &this.hand.white,
+        };
+    }
+
+    /// Get the `Hand` of the given player.
+    pub fn getHand(this: @This(), player: Player) Hand {
+        return switch (player) {
+            .black => this.hand.black,
+            .white => this.hand.white,
+        };
+    }
+
     /// Get the `Piece` (if any) at the given position.
     pub fn get(this: @This(), pos: BoardPos) ?Piece {
         const x: usize = @intCast(pos.x);
         const y: usize = @intCast(pos.y);
+
+        std.debug.assert(x < size);
+        std.debug.assert(y < size);
+
         return this.tiles[y][x];
+    }
+
+    /// Finds the first position (if any) containing the given `Piece`.
+    pub fn find(this: @This(), piece: Piece) ?BoardPos {
+        for (this.tiles, 0..) |row, y| {
+            for (row, 0..) |value, x| {
+                const tile_piece = value orelse continue;
+                if (tile_piece.eq(piece)) {
+                    const pos: BoardPos = .{
+                        .x = @intCast(x),
+                        .y = @intCast(y),
+                    };
+                    return pos;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Get a pointer into the `Piece` (if any) at the given position.
+    pub fn getPtr(this: *@This(), pos: BoardPos) *?Piece {
+        const x: usize = @intCast(pos.x);
+        const y: usize = @intCast(pos.y);
+        return &this.tiles[y][x];
     }
 
     /// Set (or delete) the `Piece` present at the given position.
@@ -323,29 +466,59 @@ pub const Board = struct {
         this.tiles[y][x] = piece;
     }
 
-    /// Process the given `Move` by updating the board as appropriate.
-    pub fn applyMove(this: *@This(), move: Move) void {
-        const src_piece = this.get(move.pos) orelse return;
-        const dest = move.pos.applyMotion(move.motion) orelse return;
+    /// Process the given `Move` by updating the board as appropriate. Returns
+    /// `true` if the move was applied successfully, `false` otherwise.
+    pub fn applyMove(this: *@This(), move: Move) bool {
+        switch (move) {
+            .basic => |basic| return this.applyMoveBasic(basic),
+            .drop => |drop| return this.applyMoveDrop(drop),
+        }
+    }
+
+    /// Process the given `Move.Drop` by updating the board as appropriate.
+    /// Returns `true` if the move was applied successfully, `false` otherwise.
+    pub fn applyMoveDrop(this: *@This(), move: Move.Drop) bool {
+        const dest = this.getPtr(move.pos);
+        const hand = this.getHandPtr(move.piece.player);
+        const count = hand.getPtr(move.piece.sort) orelse return false;
+
+        if (dest.* != null) return false;
+        if (count.* < 1) return false;
+
+        // Make sure to demote the piece, if it isn't already.
+        var piece = move.piece;
+        piece.sort = piece.sort.demote();
+
+        dest.* = piece;
+        count.* -= 1;
+
+        return true;
+    }
+
+    /// Process the given `Move.Basic` by updating the board as appropriate.
+    /// Returns `true` if the move was applied successfully, `false` otherwise.
+    pub fn applyMoveBasic(this: *@This(), move: Move.Basic) bool {
+        var src_piece = this.get(move.from) orelse return false;
+        const dest = move.from.applyMotion(move.motion) orelse return false;
         const dest_piece = this.get(dest);
 
+        if (move.promoted) {
+            src_piece.sort = src_piece.sort.promote();
+        }
+
         // Update the board.
-        this.set(move.pos, null);
+        this.set(move.from, null);
         this.set(dest, src_piece);
 
         // Add the captured piece (if any) to the players hand.
-        const piece = dest_piece orelse return;
+        const hand = this.getHandPtr(src_piece.player);
+        const piece = dest_piece orelse return true;
         const sort = piece.sort.demote();
-
-        var hand: *std.EnumMap(Sort, i8) = undefined;
-        if (src_piece.player == .white) {
-            hand = &this.hand.white;
-        } else {
-            hand = &this.hand.black;
-        }
 
         if (hand.getPtr(sort)) |count| {
             count.* += 1;
         }
+
+        return true;
     }
 };

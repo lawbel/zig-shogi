@@ -1,29 +1,22 @@
 //! This module implements the 'CPU' / 'AI' player logic. That is, it evaluates
 //! a position on the board and decides on a move to play.
 
-const rules = @import("rules.zig");
-const std = @import("std");
 const model = @import("model.zig");
 const mutex = @import("mutex.zig");
-const state = @import("state.zig");
 const random = @import("random.zig");
+const rules = @import("rules.zig");
+const State = @import("state.zig").State;
+const std = @import("std");
 const time = @import("time.zig");
 
-/// An array with enough space to accomodate all possible `model.Move`s from a
-/// given position.
-const Moves = std.BoundedArray(model.Move, max_pieces * rules.max_moves);
-
-/// An upper bound on the maximum number of pieces a player could have at a
-/// time.
-pub const max_pieces: usize = (model.Board.size * 4) + 4;
-
 /// Take the `cpu_pending_move` (if any) and update the game state with it.
-pub fn applyQueuedMove(cur_state: *state.State) void {
-    const move = cur_state.cpu_pending_move.takeValue() orelse return;
+pub fn applyQueuedMove(state: *State) void {
+    const move = state.cpu_pending_move.takeValue() orelse return;
+    const is_ok = state.board.applyMove(move);
+    std.debug.assert(is_ok);
 
-    cur_state.board.applyMove(move);
-    cur_state.current_player = cur_state.current_player.swap();
-    cur_state.last_move = move;
+    state.current_player = state.current_player.swap();
+    state.last_move = move;
 }
 
 /// The minimum time for the CPU to appear to be thinking about it's move. The
@@ -34,51 +27,56 @@ pub const min_cpu_thinking_time_s: f32 = 0.4;
 /// Choose a move for the CPU (may take a not-insignificant amount of time),
 /// and then write it to the given `mutex.MutexGuard`.
 pub fn queueMove(
-    player: model.Player,
-    board: model.Board,
-    dest: *mutex.MutexGuard(model.Move),
-) void {
-    const move = time.callTakeAtLeast(
+    args: struct {
+        alloc: std.mem.Allocator,
+        player: model.Player,
+        board: model.Board,
+        dest: *mutex.MutexGuard(model.Move),
+    },
+) std.mem.Allocator.Error!void {
+    const move = try time.callTakeAtLeast(
         min_cpu_thinking_time_s,
         chooseMove,
-        .{ player, board },
+        .{
+            args.alloc,
+            args.player,
+            args.board,
+        },
     );
 
-    dest.setValue(move);
+    args.dest.setValue(move);
 }
 
 /// Choose a move to play.
-pub fn chooseMove(player: model.Player, board: model.Board) model.Move {
+pub fn chooseMove(
+    alloc: std.mem.Allocator,
+    player: model.Player,
+    board: model.Board,
+) std.mem.Allocator.Error!model.Move {
     // For now, simply choose any valid move at random.
-    return randomMove(player, board);
+    return randomMove(alloc, player, board);
 }
 
-/// Choose a move at random from all valid moves. TODO: handle drops.
-pub fn randomMove(player: model.Player, board: model.Board) model.Move {
-    var moves = Moves.init(0) catch unreachable;
+/// Choose a move at random from all valid moves.
+///
+/// TODO: handle case where there are no valid moves.
+pub fn randomMove(
+    alloc: std.mem.Allocator,
+    player: model.Player,
+    board: model.Board,
+) std.mem.Allocator.Error!model.Move {
+    var moves = try rules.valid.movesFor(.{
+        .alloc = alloc,
+        .player = player,
+        .board = board,
+    });
+    defer moves.deinit();
+
+    const len = moves.count();
     const seed = random.randomSeed();
-
-    for (board.tiles, 0..) |row, y| {
-        for (row, 0..) |tile, x| {
-            const piece = tile orelse continue;
-            if (piece.player.not_eq(player)) continue;
-
-            const pos: model.BoardPos = .{
-                .x = @intCast(x),
-                .y = @intCast(y),
-            };
-            const motions = rules.validMotions(pos, board).slice();
-
-            for (motions) |motion| {
-                const move = .{ .pos = pos, .motion = motion };
-                moves.appendAssumeCapacity(move);
-            }
-        }
-    }
-
-    // TODO: add logic for case where there are zero valid moves.
     var prng = std.rand.DefaultPrng.init(seed);
-    const choice = prng.random().intRangeLessThan(usize, 0, moves.len);
+    const choice = prng.random().intRangeLessThan(usize, 0, len);
 
-    return moves.get(choice);
+    // We know the 'choice' index is valid, so can unwrap it.
+    return moves.index(choice).?;
 }

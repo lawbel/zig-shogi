@@ -1,16 +1,16 @@
 //! This module handles initialization and termination of SDL.
 
 const c = @import("c.zig");
+const model = @import("model.zig");
 const pixel = @import("pixel.zig");
 const render = @import("render.zig");
-const model = @import("model.zig");
 
 /// Any kind of error that can happen during initialization of SDL.
-pub const InitError = error{
-    Initialization,
-    InitCreateWindow,
-    InitCreateRenderer,
-    InitSetDrawBlendMode,
+pub const Error = error{
+    InitFailed,
+    CannotCreateWindow,
+    CannotCreateRenderer,
+    CannotSetVar,
 };
 
 /// Flags to use for SDL initialization; can be used to enable various
@@ -19,11 +19,11 @@ pub const sdl_init_flags: u32 =
     c.SDL_INIT_VIDEO | c.SDL_INIT_TIMER;
 
 /// A wrapper around the C function `SDL_Init`.
-pub fn sdlInit() InitError!void {
+pub fn sdlInit() Error!void {
     if (c.SDL_Init(sdl_init_flags) < 0) {
         const msg = "Failed to initialize SDL: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_SYSTEM, msg, c.SDL_GetError());
-        return error.Initialization;
+        return error.InitFailed;
     }
 }
 
@@ -35,8 +35,8 @@ pub fn sdlQuit() void {
 
 /// The default window size.
 pub const window_size = .{
-    .width = pixel.tile_size * model.Board.size,
-    .height = pixel.tile_size * model.Board.size,
+    .width = pixel.board_padding_horiz + (pixel.tile_size * model.Board.size),
+    .height = pixel.board_padding_vert + (pixel.tile_size * model.Board.size),
 };
 
 /// The default window position.
@@ -53,7 +53,7 @@ pub fn createWindow(
         size: struct { width: c_int, height: c_int } = window_size,
         pos: struct { x: c_int, y: c_int } = window_pos,
     },
-) InitError!*c.SDL_Window {
+) Error!*c.SDL_Window {
     return c.SDL_CreateWindow(
         args.title,
         args.pos.x,
@@ -64,7 +64,7 @@ pub fn createWindow(
     ) orelse {
         const msg = "Failed to create window: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_VIDEO, msg, c.SDL_GetError());
-        return error.InitCreateWindow;
+        return error.CannotCreateWindow;
     };
 }
 
@@ -80,7 +80,7 @@ pub fn createRenderer(
         rendering_driver: c_int = use_any_rendering_driver,
         render_flags: u32 = c.SDL_RENDERER_ACCELERATED,
     },
-) InitError!*c.SDL_Renderer {
+) Error!*c.SDL_Renderer {
     const renderer = c.SDL_CreateRenderer(
         args.window,
         args.rendering_driver,
@@ -88,13 +88,13 @@ pub fn createRenderer(
     ) orelse {
         const msg = "Failed to create renderer: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.InitCreateRenderer;
+        return error.CannotCreateRenderer;
     };
 
     if (c.SDL_SetRenderDrawBlendMode(renderer, args.blend_mode) < 0) {
         const msg = "Failed to set draw blend mode: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.InitSetDrawBlendMode;
+        return error.CannotSetVar;
     }
 
     return renderer;
