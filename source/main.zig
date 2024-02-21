@@ -10,6 +10,7 @@ const render = @import("render.zig");
 const sdl = @import("sdl.zig");
 const State = @import("state.zig").State;
 const std = @import("std");
+const texture = @import("texture.zig");
 const time = @import("time.zig");
 
 /// The allocator to be used for this program (except for the C code which
@@ -33,7 +34,7 @@ pub fn main() !void {
     const renderer = try init.createRenderer(.{ .window = window });
     defer {
         c.SDL_DestroyRenderer(renderer);
-        render.freeTextures();
+        texture.freeTextures();
     }
 
     var state = State.init(.{

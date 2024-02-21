@@ -12,67 +12,10 @@ const rules = @import("rules.zig");
 const sdl = @import("sdl.zig");
 const State = @import("state.zig").State;
 const std = @import("std");
+const texture = @import("texture.zig");
 
 /// Any kind of error that can occur during rendering.
 pub const Error = sdl.Error || std.mem.Allocator.Error;
-
-/// The blending mode to use for all rendering.
-pub const blend_mode: c_int = c.SDL_BLENDMODE_BLEND;
-
-/// Embed a file in the `data` directory.
-fn embedData(comptime path: [:0]const u8) [:0]const u8 {
-    return @embedFile("../data/" ++ path);
-}
-
-/// The board image.
-const board_image: [:0]const u8 = embedData("board.png");
-
-/// The white king image.
-const white_king_image: [:0]const u8 = embedData("white_king.png");
-
-/// The black king image.
-const black_king_image: [:0]const u8 = embedData("black_king.png");
-
-/// The images for all 'core' pieces - every piece except for the kings.
-var core_piece_images: std.EnumMap(model.Sort, [:0]const u8) = init: {
-    var map: std.EnumMap(model.Sort, [:0]const u8) = .{};
-
-    for (@typeInfo(model.Sort).Enum.fields) |field| {
-        // Skip over kings, as we handle them separately due to the need to
-        // assign them different images for white and black.
-        if (field.value == @intFromEnum(model.Sort.king)) {
-            continue;
-        }
-
-        map.put(
-            @enumFromInt(field.value),
-            embedData(field.name ++ ".png"),
-        );
-    }
-
-    break :init map;
-};
-
-/// The board texture.
-var board_texture: ?*c.SDL_Texture = null;
-
-/// The white king texture.
-var white_king_texture: ?*c.SDL_Texture = null;
-
-/// The black king texture.
-var black_king_texture: ?*c.SDL_Texture = null;
-
-/// The textures for all 'core' pieces - every piece except for the kings.
-var core_piece_textures: std.EnumMap(model.Sort, ?*c.SDL_Texture) = init: {
-    var map: std.EnumMap(model.Sort, ?*c.SDL_Texture) = .{};
-
-    // We want every key to be initialized so indexing is always safe.
-    for (@typeInfo(model.Sort).Enum.fields) |field| {
-        map.put(@enumFromInt(field.value), null);
-    }
-
-    break :init map;
-};
 
 /// The main rendering function - it does *all* the rendering each frame, by
 /// calling out to helper functions.
@@ -92,59 +35,6 @@ pub fn render(
 
     // Take the rendered state and update the window with it.
     c.SDL_RenderPresent(renderer);
-}
-
-/// Frees the memory associated with the textures:
-///
-/// * `board_texture`
-/// * `white_king_texture`
-/// * `black_king_texture`
-/// * `core_piece_textures`
-pub fn freeTextures() void {
-    c.SDL_DestroyTexture(board_texture);
-    c.SDL_DestroyTexture(white_king_texture);
-    c.SDL_DestroyTexture(black_king_texture);
-
-    inline for (@typeInfo(model.Sort).Enum.fields) |field| {
-        const piece: model.Sort = @enumFromInt(field.value);
-        if (core_piece_textures.get(piece)) |texture| {
-            c.SDL_DestroyTexture(texture);
-        }
-    }
-}
-
-/// Gets the appropriate texture for the given `model.Piece`, possibly
-/// initializing it along the way if necessary.
-fn getPieceTexture(
-    renderer: *c.SDL_Renderer,
-    piece: model.Piece,
-) Error!*c.SDL_Texture {
-    var texture: *?*c.SDL_Texture = undefined;
-    var image: [:0]const u8 = undefined;
-
-    switch (piece.sort) {
-        .king => switch (piece.player) {
-            .white => {
-                texture = &white_king_texture;
-                image = white_king_image;
-            },
-            .black => {
-                texture = &black_king_texture;
-                image = black_king_image;
-            },
-        },
-
-        else => {
-            texture = core_piece_textures.getPtr(piece.sort) orelse {
-                return error.CannotLoadTexture;
-            };
-            image = core_piece_images.get(piece.sort) orelse {
-                return error.CannotReadMemory;
-            };
-        },
-    }
-
-    return getInitTexture(renderer, texture, image);
 }
 
 /// Renders all the pieces on the board.
@@ -214,7 +104,7 @@ fn renderPiece(
         y: c_int,
     },
 ) Error!void {
-    const tex = try getPieceTexture(renderer, piece);
+    const tex = try texture.getPieceTexture(renderer, piece);
 
     try sdl.renderCopy(.{
         .renderer = renderer,
@@ -234,31 +124,15 @@ fn renderPiece(
 
 /// Renders the game board.
 fn drawBoard(renderer: *c.SDL_Renderer) Error!void {
-    const tex = try getInitTexture(renderer, &board_texture, board_image);
-    try sdl.renderCopy(.{ .renderer = renderer, .texture = tex });
-}
-
-/// Get the texture if it's there, or (if `null`) initialize it with the given
-/// `raw_data` and then return it.
-fn getInitTexture(
-    renderer: *c.SDL_Renderer,
-    texture: *?*c.SDL_Texture,
-    raw_data: [:0]const u8,
-) Error!*c.SDL_Texture {
-    if (texture.*) |tex| {
-        return tex;
-    }
-
-    const stream = try sdl.constMemToRw(raw_data);
-    const tex = try sdl.rwToTexture(.{
+    const tex = try texture.getInitTexture(
+        renderer,
+        &texture.board_texture,
+        texture.board_image,
+    );
+    try sdl.renderCopy(.{
         .renderer = renderer,
-        .stream = stream,
-        .free_stream = true,
-        .blend_mode = blend_mode,
+        .texture = tex,
     });
-
-    texture.* = tex;
-    return tex;
 }
 
 /// The colour to highlight the last move with (if there is one).

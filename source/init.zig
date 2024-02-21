@@ -4,6 +4,7 @@ const c = @import("c.zig");
 const model = @import("model.zig");
 const pixel = @import("pixel.zig");
 const render = @import("render.zig");
+const texture = @import("texture.zig");
 
 /// Any kind of error that can happen during initialization of SDL.
 pub const Error = error{
@@ -76,7 +77,7 @@ pub const use_any_rendering_driver: c_int = -1;
 pub fn createRenderer(
     args: struct {
         window: *c.SDL_Window,
-        blend_mode: c.SDL_BlendMode = render.blend_mode,
+        blend_mode: c.SDL_BlendMode = texture.blend_mode,
         rendering_driver: c_int = use_any_rendering_driver,
         render_flags: u32 = c.SDL_RENDERER_ACCELERATED,
     },
