@@ -21,8 +21,9 @@ pub fn applyQueuedMove(state: *State) void {
 
 /// The minimum time for the CPU to appear to be thinking about it's move. The
 /// UX is strange if they respond instantly, so it's better to insert a small
-/// delay if needed.
-pub const min_cpu_thinking_time_s: f32 = 0.4;
+/// delay if needed. This is actually a range, and each time the actual minimum
+/// time used will be randomly chosen from this range.
+pub const min_cpu_thinking_time_s = [2]f32{ 0.5, 1.5 };
 
 /// Choose a move for the CPU (may take a not-insignificant amount of time),
 /// and then write it to the given `mutex.MutexGuard`.
@@ -34,8 +35,16 @@ pub fn queueMove(
         dest: *mutex.MutexGuard(model.Move),
     },
 ) std.mem.Allocator.Error!void {
+    const seed = random.randomSeed();
+    var prng = std.rand.DefaultPrng.init(seed);
+    const rand = prng.random().float(f32);
+
+    const lower = min_cpu_thinking_time_s[0];
+    const upper = min_cpu_thinking_time_s[1];
+    const time_s = lower + rand * (upper - lower);
+
     const move = try time.callTakeAtLeast(
-        min_cpu_thinking_time_s,
+        time_s,
         chooseMove,
         .{
             args.alloc,
