@@ -1,4 +1,4 @@
-//! This module contains the main datatypes we need for shogi, together with
+//! This module contains the main datatypes we need for Shogi, together with
 //! some basic logic that is core to those types.
 //!
 //! Note on names: there is some variation in the english names used for some
@@ -279,7 +279,7 @@ pub const Piece = struct {
 /// The pieces in a player's hand.
 pub const Hand = std.EnumMap(Sort, i8);
 
-/// The empty hand, with every key intialized to zero.
+/// The empty hand, with every key initialized to zero.
 const empty_hand: Hand = init: {
     var map: Hand = .{};
 
@@ -332,7 +332,7 @@ pub fn frontRankFor(player: Player) [Board.size]?Piece {
 }
 
 /// This type represents the pure state of the board, and has some associated
-/// functionalimodel.
+/// functionality.
 pub const Board = struct {
     /// Which (if any) `Piece` is on each square/tile.
     tiles: [size][size]?Piece,

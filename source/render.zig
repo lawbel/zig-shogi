@@ -38,7 +38,7 @@ var core_piece_images: std.EnumMap(model.Sort, [:0]const u8) = init: {
     var map: std.EnumMap(model.Sort, [:0]const u8) = .{};
 
     for (@typeInfo(model.Sort).Enum.fields) |field| {
-        // Skip over kings, as we handle them seperately due to the need to
+        // Skip over kings, as we handle them separately due to the need to
         // assign them different images for white and black.
         if (field.value == @intFromEnum(model.Sort.king)) {
             continue;
@@ -401,7 +401,7 @@ fn highlightTileDot(
     });
 }
 
-/// The length (in pixels) of the 'baseline' sides of the triangls drawn by
+/// The length (in pixels) of the 'baseline' sides of the triangles drawn by
 /// `highlightTileCorners`. That is, the length of the sides along the x and y
 /// axis. The length of the hypotenuse will then be `sqrt(2)` times this
 /// length, as it always cuts at 45 degrees across the corner.

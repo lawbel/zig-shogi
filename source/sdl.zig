@@ -10,7 +10,7 @@ const c = @import("c.zig");
 const model = @import("model.zig");
 const pixel = @import("pixel.zig");
 
-/// Any kinf of error that these SDL functions can throw.
+/// Any kind of error that these SDL functions can throw.
 pub const Error = error{
     CannotLoadTexture,
     CannotReadMemory,
@@ -102,7 +102,7 @@ pub fn setRenderDrawColour(
         colour.blue,
         colour.alpha,
     ) < 0) {
-        const msg = "Failed to set render draw color: %s";
+        const msg = "Failed to set render draw colour: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return error.CannotSetVar;
     }

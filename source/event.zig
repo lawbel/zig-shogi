@@ -20,7 +20,7 @@ pub const QuitOrPass =
 /// Any error that can occur while processing events.
 pub const Error = std.Thread.SpawnError;
 
-/// Process all events that occured since the last frame. Can throw errors due
+/// Process all events that occurred since the last frame. Can throw errors due
 /// to a (transitive) call to `std.Thread.spawn`.
 pub fn processEvents(
     alloc: std.mem.Allocator,
