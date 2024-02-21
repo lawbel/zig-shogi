@@ -11,9 +11,9 @@ const Valid = @import("types.zig").Valid;
 /// Errors than can occur while calculating piece movements.
 pub const Error = std.mem.Allocator.Error;
 
-/// Returns a list of all valid motions for the piece at the given position.
+/// Returns a list of all valid movements for the piece at the given position.
 /// The caller is responsible for freeing the memory associated with the
-/// returned `Motions`.
+/// returned `Movement`s.
 pub fn movementsFrom(
     args: struct {
         alloc: std.mem.Allocator,
@@ -200,7 +200,7 @@ const DirectArgs = struct {
     must_promote_in_ranks: usize = 0,
 };
 
-/// Returns an array of possible `Motions` from the given position, by
+/// Returns an array of possible `Movements` from the given position, by
 /// filtering the given argument `motions` based on whether:
 ///
 /// * The result of making that move would be in-bounds.
@@ -276,7 +276,7 @@ const RangedArgs = struct {
     must_promote_in_ranks: usize = 0,
 };
 
-/// Returns an array of possible `Motions` from the given position. For each
+/// Returns an array of possible `Movements` from the given position. For each
 /// step in the `steps` argument, applying the given step to the starting
 /// `pos` as many times as possible until either:
 ///
