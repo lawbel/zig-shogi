@@ -19,17 +19,24 @@ pub const Error = error{
 pub const sdl_init_flags: u32 =
     c.SDL_INIT_VIDEO | c.SDL_INIT_TIMER;
 
-/// A wrapper around the C function `SDL_Init`.
+/// A wrapper around the C function `SDL_Init` and `TTF_Init`.
 pub fn sdlInit() Error!void {
     if (c.SDL_Init(sdl_init_flags) < 0) {
         const msg = "Failed to initialize SDL: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_SYSTEM, msg, c.SDL_GetError());
         return error.InitFailed;
     }
+    if (c.TTF_Init() < 0) {
+        const msg = "Failed to initialize SDL_ttf: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_SYSTEM, msg, c.TTF_GetError());
+        return error.InitFailed;
+    }
 }
 
-/// A wrapper around the C functions `SDL_QuitSubSystem` and `SDL_Quit`.
+/// A wrapper around the C functions `TTF_Quit`, `SDL_QuitSubSystem`
+/// and `SDL_Quit`.
 pub fn sdlQuit() void {
+    c.TTF_Quit();
     c.SDL_QuitSubSystem(sdl_init_flags);
     c.SDL_Quit();
 }

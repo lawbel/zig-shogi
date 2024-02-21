@@ -12,4 +12,6 @@ pub usingnamespace @cImport({
     @cInclude("SDL2/SDL2_gfxPrimitives.h");
     // From 'SDL2_ttf'.
     @cInclude("SDL2/SDL_ttf.h");
+    // From 'fontconfig'.
+    @cInclude("fontconfig/fontconfig.h");
 });

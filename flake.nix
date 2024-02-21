@@ -37,6 +37,9 @@
         pkgs.SDL2_image
         pkgs.SDL2_gfx
         pkgs.SDL2_ttf
+        # fonts
+        pkgs.fontconfig
+        pkgs.cantarell-fonts
       ];
 
     in {
