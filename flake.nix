@@ -63,11 +63,10 @@
         installPhase = ''
           mkdir -p $out/bin
 
-          # This changes the 'dynamic loader' / 'ELF interpreter' of the
-          # resulting binary from musl to glibc. Without this, the output will
-          # not work. I would rather give zig some options to fix the
-          # underlying linker issue, but for now this solves the problem and
-          # makes this into a complete working build.
+          # This changes the ELF interpreter of the resulting binary from musl
+          # to glibc. Without this, the output will not work. Perhaps we can
+          # figure out some flags to give zig to address the underlying issue,
+          # but for now this works.
           patchelf \
             --set-interpreter ${pkgs.glibc}/lib/ld-linux-x86-64.so.2 \
             --output $out/bin/${name} \
