@@ -24,6 +24,7 @@ pub fn build(builder: *std.Build) void {
     exe.linkSystemLibrary("SDL2");
     exe.linkSystemLibrary("SDL2_image");
     exe.linkSystemLibrary("SDL2_gfx");
+    exe.linkSystemLibrary("SDL2_ttf");
 
     // Install the executable.
     builder.installArtifact(exe);

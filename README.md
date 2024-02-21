@@ -13,8 +13,8 @@ Table of Contents:
 
 ### Standard Method
 
-You will need the `zig` compiler and the C libraries SDL2, SDL2_image, and
-SDL2_gfx installed on your system. Then clone the repo, and:
+You will need the `zig` compiler and the C libraries SDL2, SDL2_image,
+SDL2_ttf, and SDL2_gfx installed on your system. Then clone the repo, and:
 
 - To run the program, use the command `zig build run`. This will (re)build
   the program if needed, and then run it.
@@ -69,6 +69,9 @@ zig build-lib ./source/sdl.zig              \
     $(pkg-config --cflags      SDL2_image)  \
     $(pkg-config --libs-only-L SDL2_image)  \
     $(pkg-config --libs-only-l SDL2_image)  \
+    $(pkg-config --cflags      SDL2_ttf)    \
+    $(pkg-config --libs-only-L SDL2_ttf)    \
+    $(pkg-config --libs-only-l SDL2_ttf)    \
     $(pkg-config --cflags      SDL2_gfx)    \
     $(pkg-config --libs-only-L SDL2_gfx)    \
     $(pkg-config --libs-only-l SDL2_gfx)

@@ -36,6 +36,7 @@
         pkgs.SDL2.dev
         pkgs.SDL2_image
         pkgs.SDL2_gfx
+        pkgs.SDL2_ttf
       ];
 
     in {
