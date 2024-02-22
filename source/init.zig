@@ -19,7 +19,7 @@ pub const Error = error{
 pub const sdl_init_flags: u32 =
     c.SDL_INIT_VIDEO | c.SDL_INIT_TIMER;
 
-/// A wrapper around the C function `SDL_Init` and `TTF_Init`.
+/// Intialize SDL and other systems.
 pub fn sdlInit() Error!void {
     if (c.SDL_Init(sdl_init_flags) < 0) {
         const msg = "Failed to initialize SDL: %s";
@@ -31,11 +31,21 @@ pub fn sdlInit() Error!void {
         c.SDL_LogError(c.SDL_LOG_CATEGORY_SYSTEM, msg, c.TTF_GetError());
         return error.InitFailed;
     }
+    if (c.FcInit() != c.FcTrue) {
+        const msg = "Failed to initialize fontconfig";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_SYSTEM, msg);
+        return error.InitFailed;
+    }
+    if (c.FcConfigBuildFonts(null) != c.FcTrue) {
+        const msg = "Failed to build fontconfig fonts";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_SYSTEM, msg);
+        return error.InitFailed;
+    }
 }
 
-/// A wrapper around the C functions `TTF_Quit`, `SDL_QuitSubSystem`
-/// and `SDL_Quit`.
+/// Quit SDL and other systems, freeing memory associated with each.
 pub fn sdlQuit() void {
+    c.FcFini();
     c.TTF_Quit();
     c.SDL_QuitSubSystem(sdl_init_flags);
     c.SDL_Quit();
