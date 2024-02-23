@@ -39,7 +39,6 @@
         pkgs.SDL2_ttf
         # fonts
         pkgs.fontconfig
-        pkgs.cantarell-fonts
       ];
 
     in {
