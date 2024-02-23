@@ -202,3 +202,70 @@ pub fn renderFillTriangle(
         return error.RenderError;
     }
 }
+
+/// Render the given text (which is expected to be UTF-8 encoded) with the
+/// given font, style, and colour. The resulting text will be centered about
+/// the position of the 'center' argument.
+pub fn renderUtf8Text(
+    args: struct {
+        renderer: *c.SDL_Renderer,
+        text: [:0]const u8,
+        font: *c.TTF_Font,
+        colour: pixel.Colour,
+        style: c_int = c.TTF_STYLE_NORMAL,
+        center: struct {
+            x: c_int,
+            y: c_int,
+        },
+    },
+) Error!void {
+    const orig_style = c.TTF_GetFontStyle(args.font);
+    c.TTF_SetFontStyle(args.font, args.style);
+    defer c.TTF_SetFontStyle(args.font, orig_style);
+
+    const colour: c.SDL_Colour = .{
+        .r = args.colour.red,
+        .g = args.colour.green,
+        .b = args.colour.blue,
+        .a = args.colour.alpha,
+    };
+    const surface: *c.SDL_Surface = c.TTF_RenderUTF8_Blended(
+        args.font,
+        args.text,
+        colour,
+    ) orelse {
+        return error.RenderError;
+    };
+    defer c.SDL_FreeSurface(surface);
+
+    const texture: *c.SDL_Texture = c.SDL_CreateTextureFromSurface(
+        args.renderer,
+        surface,
+    ) orelse {
+        const msg = "Failed to create texture for text: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return error.RenderError;
+    };
+    defer c.SDL_DestroyTexture(texture);
+
+    var width: c_int = undefined;
+    var height: c_int = undefined;
+    if (c.SDL_QueryTexture(texture, null, null, &width, &height) < 0) {
+        const msg = "Failed to query rendered text size: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return error.RenderError;
+    }
+
+    const top_left_x: c_int = args.center.x - @divFloor(width, 2);
+    const top_left_y: c_int = args.center.y - @divFloor(height, 2);
+    try renderCopy(.{
+        .renderer = args.renderer,
+        .texture = texture,
+        .dst_rect = &.{
+            .x = top_left_x,
+            .y = top_left_y,
+            .w = width,
+            .h = height,
+        },
+    });
+}

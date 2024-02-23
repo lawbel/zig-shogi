@@ -37,11 +37,17 @@ pub fn main() !void {
         texture.freeTextures();
     }
 
-    var state = State.init(.{
+    var state = try State.init(.{
+        .alloc = alloc,
         .user = .black,
         .current_player = .black,
         .init_frame = c.SDL_GetTicks(),
+        .font = .{
+            .match = ":serif:lang=en:weight=bold:fontformat=TrueType",
+            .pt_size = 18,
+        },
     });
+    defer state.deinit();
 
     while (true) {
         // Process any events since the last frame. May spawn a thread for the
