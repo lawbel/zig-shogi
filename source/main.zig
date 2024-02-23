@@ -51,7 +51,7 @@ pub fn main() !void {
 
     while (true) {
         // Process any events since the last frame. May spawn a thread for the
-        // CPU to calculate its move.
+        // CPU to calculate its next move.
         const result = try event.processEvents(alloc, &state);
         switch (result) {
             .quit => break,
@@ -64,7 +64,7 @@ pub fn main() !void {
         // Render the current game state.
         try render.render(alloc, renderer, state);
 
-        // Possible sleep for a short while.
+        // Possibly sleep for a short while.
         time.sleepToMatchFps(&state.last_frame);
     }
 }
