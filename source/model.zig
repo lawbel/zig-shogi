@@ -277,7 +277,7 @@ pub const Piece = struct {
 };
 
 /// The pieces in a player's hand.
-pub const Hand = std.EnumMap(Sort, i8);
+pub const Hand = std.EnumMap(Sort, u8);
 
 /// The empty hand, with every key initialized to zero.
 const empty_hand: Hand = init: {

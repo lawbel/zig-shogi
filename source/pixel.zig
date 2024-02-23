@@ -82,6 +82,23 @@ pub const board_top_left: PixelPos = .{
     .y = 35,
 };
 
+/// The coordinates of the top-left corner of the hand shown on the left.
+pub const left_hand_top_left: PixelPos = .{
+    .x = 35,
+    .y = 35,
+};
+
+/// The coordinates of the top-left corner of the hand shown on the right.
+pub const right_hand_top_left: PixelPos = init: {
+    var x = 0;
+
+    x += board_top_left.x;
+    x += tile_size * model.Board.size;
+    x += board_top_left.x - left_hand_top_left.x - tile_size;
+
+    break :init .{ .x = x, .y = 175 };
+};
+
 /// How much bigger the window should be horizontally, compared to the
 /// board size.
 pub const board_padding_horiz: i32 = board_top_left.x * 2;

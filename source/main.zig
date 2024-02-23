@@ -43,8 +43,8 @@ pub fn main() !void {
         .current_player = .black,
         .init_frame = c.SDL_GetTicks(),
         .font = .{
-            .match = ":serif:lang=en:weight=bold:fontformat=TrueType",
-            .pt_size = 18,
+            .match = ":serif:lang=en:fontformat=TrueType",
+            .pt_size = 16,
         },
     });
     defer state.deinit();

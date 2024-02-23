@@ -31,10 +31,139 @@ pub fn render(
     try drawBoard(renderer);
     try highlightLastMove(renderer, state);
     try highlightCurrentMove(alloc, renderer, state);
+    try showPlayerHands(renderer, state);
     try drawPieces(renderer, state);
 
     // Take the rendered state and update the window with it.
     c.SDL_RenderPresent(renderer);
+}
+
+/// The colour to print the count of pieces in a player's hand.
+const hand_text_colour: pixel.Colour = .{
+    .red = 0x79,
+    .green = 0x66,
+    .blue = 0x41,
+};
+
+/// The colour to draw the box showing the piece count for each player's hand.
+const hand_box_colour: pixel.Colour = .{
+    .red = 0xDD,
+    .green = 0xC8,
+    .blue = 0xA1,
+};
+
+/// The colour to draw the border of the box which shows the piece count for
+/// a player's hand.
+const hand_box_border_colour: pixel.Colour = .{
+    .red = 0xA3,
+    .green = 0x87,
+    .blue = 0x50,
+};
+
+/// Show the state of both players hands.
+fn showPlayerHands(
+    renderer: *c.SDL_Renderer,
+    state: State,
+) Error!void {
+    try showPlayerHand(.{
+        .renderer = renderer,
+        .font = state.font,
+        .player = .white,
+        .hand = state.board.hand.white,
+    });
+    try showPlayerHand(.{
+        .renderer = renderer,
+        .font = state.font,
+        .player = .black,
+        .hand = state.board.hand.black,
+    });
+}
+
+/// Render the state of the given players hand - draw the pieces, and show how
+/// many of that piece are in the player's hand in a box next to each piece.
+fn showPlayerHand(
+    args: struct {
+        renderer: *c.SDL_Renderer,
+        font: *c.TTF_Font,
+        player: model.Player,
+        hand: model.Hand,
+    },
+) Error!void {
+    const box_size = 20;
+    const box_border = 2;
+
+    const hand_top_left: pixel.PixelPos = switch (args.player) {
+        .white => pixel.left_hand_top_left,
+        .black => pixel.right_hand_top_left,
+    };
+    const hand_sorts = [7]model.Sort{
+        .rook,
+        .bishop,
+        .gold,
+        .silver,
+        .knight,
+        .lance,
+        .pawn,
+    };
+
+    for (hand_sorts, 0..) |sort, i| {
+        // Step 1/3 - render the piece.
+        const top_left_x: c_int = @intCast(hand_top_left.x);
+        const top_left_y: c_int =
+            @as(c_int, @intCast(hand_top_left.y)) +
+            @as(c_int, @intCast(pixel.tile_size * i));
+
+        // Always render the piece "right way up" by setting `.player=.black`.
+        try renderPiece(
+            args.renderer,
+            .{ .player = .black, .sort = sort },
+            .{ .x = top_left_x, .y = top_left_y },
+        );
+
+        // Step 2/3 - render the box we'll show the piece count in.
+        const box_x: c_int = @intCast(top_left_x + pixel.tile_size);
+        const box_y: c_int = @intCast(top_left_y + pixel.tile_size);
+
+        try sdl.renderFillRect(
+            args.renderer,
+            hand_box_border_colour,
+            &.{
+                .x = box_x - box_size,
+                .y = box_y - box_size,
+                .w = box_size,
+                .h = box_size,
+            },
+        );
+        try sdl.renderFillRect(
+            args.renderer,
+            hand_box_colour,
+            &.{
+                .x = box_x - box_size + box_border,
+                .y = box_y - box_size + box_border,
+                .w = box_size - (box_border * 2),
+                .h = box_size - (box_border * 2),
+            },
+        );
+
+        // Step 3/3 - render the count of this piece in hand.
+        const count = args.hand.get(sort) orelse 0;
+        // TODO: this count can actually be double-digits, in theory. It could
+        // be as high as 18 at maximum, if one player had every single pawn in
+        // hand. We should handle that case properly.
+        const count_str = [_]u8{ std.fmt.digitToChar(count, .lower), 0 };
+
+        try sdl.renderUtf8Text(.{
+            .renderer = args.renderer,
+            .text = @ptrCast(&count_str),
+            .font = args.font,
+            .style = c.TTF_STYLE_BOLD,
+            .colour = hand_text_colour,
+            .center = .{
+                .x = box_x - (box_size / 2),
+                .y = box_y - (box_size / 2),
+            },
+        });
+    }
 }
 
 /// Renders all the pieces on the board.
