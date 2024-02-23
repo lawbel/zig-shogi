@@ -32,7 +32,7 @@ const FontError = error{
 pub fn bestFontMatching(
     alloc: std.mem.Allocator,
     pattern: [:0]const u8,
-) Error![]const u8 {
+) Error![:0]const u8 {
     // The `FcConfig` we'll use - `null` means use the default one.
     const config: ?*c.FcConfig = null;
 
@@ -75,9 +75,8 @@ pub fn bestFontMatching(
     }
 
     // Allocate a string copy of `file_path` to return to the caller.
-    var as_slice: []const u8 = undefined;
-    as_slice.len = std.mem.len(file_path);
-    as_slice.ptr = file_path;
-    const new = try alloc.dupe(u8, as_slice);
-    return new;
+    const len: usize = std.mem.len(file_path);
+    const new: [:0]u8 = try alloc.allocSentinel(u8, len, 0);
+    std.mem.copyForwards(u8, new, file_path[0..len]);
+    return @ptrCast(new);
 }
