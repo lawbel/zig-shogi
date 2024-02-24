@@ -103,17 +103,8 @@ fn showPlayerHand(
         .white => pixel.left_hand_top_left,
         .black => pixel.right_hand_top_left,
     };
-    const hand_sorts = [7]model.Sort{
-        .rook,
-        .bishop,
-        .gold,
-        .silver,
-        .knight,
-        .lance,
-        .pawn,
-    };
 
-    for (hand_sorts, 0..) |sort, i| {
+    for (pixel.order_of_pieces_in_hand, 0..) |sort, i| {
         const count = args.hand.get(sort) orelse 0;
 
         // Step 1/3 - render the piece.
@@ -220,18 +211,42 @@ fn drawPieces(
 
     // We need to render any piece the user may be moving last, so it
     // appears on top of everything else.
-    const piece = moved_piece orelse return;
-    const from = state.mouse.move_from orelse return;
-    const offset = from.offsetFromGrid();
 
-    try drawPiece(.{
-        .renderer = renderer,
-        .piece = piece,
-        .pos = .{
-            .x = state.mouse.pos.x - offset.x,
-            .y = state.mouse.pos.y - offset.y,
-        },
-    });
+    // Handle the user moving a piece on the board.
+    piece_on_board: {
+        const piece = moved_piece orelse break :piece_on_board;
+        const from = state.mouse.move_from orelse break :piece_on_board;
+        const offset = from.offsetFromBoard();
+
+        try drawPiece(.{
+            .renderer = renderer,
+            .piece = piece,
+            .pos = .{
+                .x = state.mouse.pos.x - offset.x,
+                .y = state.mouse.pos.y - offset.y,
+            },
+        });
+    }
+
+    // Handle the user moving a piece from their hand.
+    piece_in_hand: {
+        const pix_from = state.mouse.move_from orelse break :piece_in_hand;
+        const piece = pix_from.toHandPiece() orelse break :piece_in_hand;
+        if (!piece.player.eq(state.user)) break :piece_in_hand;
+
+        const offset = pix_from.offsetFromUserHand();
+        const count = state.board.getHand(state.user).get(piece.sort) orelse 0;
+        if (count == 0) break :piece_in_hand;
+
+        try drawPiece(.{
+            .renderer = renderer,
+            .piece = piece,
+            .pos = .{
+                .x = state.mouse.pos.x - offset.x,
+                .y = state.mouse.pos.y - offset.y,
+            },
+        });
+    }
 }
 
 /// Renders the given piece at the given location. Optionally, shade the piece
@@ -335,40 +350,80 @@ fn highlightCurrentMove(
     const from_pix = state.mouse.move_from orelse return;
 
     if (from_pix.toBoardPos()) |from_pos| {
-        try highlightCurrentMoveBasic(alloc, renderer, state, from_pos);
-    } else {
-        // TODO: highlight drops
+        try highlightCurrentMoveBasic(.{
+            .alloc = alloc,
+            .renderer = renderer,
+            .state = state,
+            .pos = from_pos,
+        });
+    } else if (from_pix.toHandPiece()) |piece| {
+        if (!piece.player.eq(state.user)) return;
+        const count = state.board.getHand(state.user).get(piece.sort) orelse 0;
+        if (count == 0) return;
+
+        try highlightCurrentMoveDrop(.{
+            .alloc = alloc,
+            .renderer = renderer,
+            .state = state,
+            .piece = piece,
+        });
     }
 }
 
 /// Shows the current basic move on the board.
 fn highlightCurrentMoveBasic(
-    alloc: std.mem.Allocator,
-    renderer: *c.SDL_Renderer,
-    state: State,
-    pos: model.BoardPos,
+    args: struct {
+        alloc: std.mem.Allocator,
+        renderer: *c.SDL_Renderer,
+        state: State,
+        pos: model.BoardPos,
+    },
 ) Error!void {
-    const piece = state.board.get(pos) orelse return;
-    if (!piece.player.eq(state.user)) return;
+    const piece = args.state.board.get(args.pos) orelse return;
+    if (!piece.player.eq(args.state.user)) return;
 
     var moves = try rules.moved.movementsFrom(.{
-        .alloc = alloc,
-        .from = pos,
-        .board = state.board,
+        .alloc = args.alloc,
+        .from = args.pos,
+        .board = args.state.board,
     });
     defer moves.deinit();
 
     for (moves.items) |item| {
-        // TODO: handle item.could_promote?
-        const dest = pos.applyMotion(item.motion) orelse continue;
-        if (state.board.get(dest) == null) {
-            try highlightTileDot(renderer, dest, option_colour);
+        const dest = args.pos.applyMotion(item.motion) orelse continue;
+
+        // Show moves as a dot, and possible captures with corner triangles.
+        if (args.state.board.get(dest) == null) {
+            try highlightTileDot(args.renderer, dest, option_colour);
         } else {
-            try highlightTileCorners(renderer, dest, option_colour);
+            try highlightTileCorners(args.renderer, dest, option_colour);
         }
     }
 
-    try highlightTileSquare(renderer, pos, selected_colour);
+    try highlightTileSquare(args.renderer, args.pos, selected_colour);
+}
+
+/// Shows the current move - a drop - on the board.
+fn highlightCurrentMoveDrop(
+    args: struct {
+        alloc: std.mem.Allocator,
+        renderer: *c.SDL_Renderer,
+        state: State,
+        piece: model.Piece,
+    },
+) Error!void {
+    var drops = try rules.dropped.possibleDropsOf(
+        args.alloc,
+        args.piece,
+        args.state.board,
+    );
+    defer drops.deinit();
+
+    for (drops.items) |pos| {
+        if (args.state.board.get(pos) == null) {
+            try highlightTileDot(args.renderer, pos, option_colour);
+        }
+    }
 }
 
 /// Highlights the given position on the board, by filling it with the given

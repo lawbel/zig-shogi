@@ -71,10 +71,17 @@ fn applyUserMove(alloc: std.mem.Allocator, state: *State) Error!bool {
             .src = src,
             .dest = dest,
         });
-    } else {
-        // TODO: handle drops
-        return false;
+    } else if (src_pix.toHandPiece()) |piece| {
+        if (!piece.player.eq(state.user)) return false;
+        return applyUserMoveDrop(.{
+            .alloc = alloc,
+            .state = state,
+            .piece = piece,
+            .dest = dest,
+        });
     }
+
+    return false;
 }
 
 /// Apply the given move for the user. Returns `true` if the move was valid and
@@ -106,7 +113,35 @@ fn applyUserMoveBasic(
 
     const move_ok = args.state.board.applyMoveBasic(basic_move);
     std.debug.assert(move_ok);
-    args.state.last_move = .{ .basic = basic_move };
+    args.state.last_move = move;
+    args.state.current_player = args.state.current_player.swap();
+
+    return true;
+}
+
+/// Apply the given drop for the user. Returns `true` if the drop was valid and
+/// successfully applied, or `false` otherwise.
+fn applyUserMoveDrop(
+    args: struct {
+        alloc: std.mem.Allocator,
+        state: *State,
+        piece: model.Piece,
+        dest: model.BoardPos,
+    },
+) Error!bool {
+    const drop_move: model.Move.Drop = .{
+        .pos = args.dest,
+        .piece = args.piece,
+    };
+
+    const move = .{ .drop = drop_move };
+    const is_valid =
+        try rules.valid.isValid(args.alloc, move, args.state.board);
+    if (!is_valid) return false;
+
+    const move_ok = args.state.board.applyMoveDrop(drop_move);
+    std.debug.assert(move_ok);
+    args.state.last_move = move;
     args.state.current_player = args.state.current_player.swap();
 
     return true;

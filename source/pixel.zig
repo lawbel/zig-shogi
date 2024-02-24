@@ -44,7 +44,7 @@ pub const PixelPos = struct {
     /// Returns the offset of this position from the board grid. For example,
     /// if this position is right in the middle of a tile, it would return
     /// `(tile_size / 2, tile_size / 2)`.
-    pub fn offsetFromGrid(this: @This()) @This() {
+    pub fn offsetFromBoard(this: @This()) @This() {
         const from_top_left = this.subtract(board_top_left);
         return .{
             .x = @mod(from_top_left.x, tile_size),
@@ -54,7 +54,7 @@ pub const PixelPos = struct {
 
     /// Returns the position on the board at this location on the screen.
     pub fn toBoardPos(this: @This()) ?model.BoardPos {
-        if (!this.isOnTheBoard()) return null;
+        if (!this.onTheBoard()) return null;
 
         const from_top_left = this.subtract(board_top_left);
         return .{
@@ -64,7 +64,7 @@ pub const PixelPos = struct {
     }
 
     /// Whether or not these coordinates are within the bounds of the board.
-    pub fn isOnTheBoard(this: @This()) bool {
+    pub fn onTheBoard(this: @This()) bool {
         const x_on_board =
             board_top_left.x <= this.x and
             this.x < board_top_left.x + board_size_pix;
@@ -73,6 +73,65 @@ pub const PixelPos = struct {
             this.y < board_top_left.y + board_size_pix;
 
         return x_on_board and y_on_board;
+    }
+
+    /// Returns the piece (if any) at the given position in either
+    /// player's hand.
+    pub fn toHandPiece(this: @This()) ?model.Piece {
+        const player = this.inPlayersHand() orelse return null;
+
+        const top_y = switch (player) {
+            .white => left_hand_top_left.y,
+            .black => right_hand_top_left.y,
+        };
+        const index: usize = @intCast(@divFloor(this.y - top_y, tile_size));
+        const sort = order_of_pieces_in_hand[index];
+
+        return .{ .sort = sort, .player = player };
+    }
+
+    /// Whether or not these coordinates are within the bounds of the hand box
+    /// for one of the players, and if so, which player.
+    pub fn inPlayersHand(this: @This()) ?model.Player {
+        if (this.inWhiteHand()) return .white;
+        if (this.inBlackHand()) return .black;
+        return null;
+    }
+
+    /// Whether the position is within the white player's hand.
+    ///
+    /// TODO: Remove the assumption here, and elsewhere, that the user is
+    /// playing as black.
+    fn inWhiteHand(this: @This()) bool {
+        return this.inHandAt(left_hand_top_left);
+    }
+
+    /// Whether the position is within the white player's hand.
+    fn inBlackHand(this: @This()) bool {
+        return this.inHandAt(right_hand_top_left);
+    }
+
+    /// Whether the position is within the given hand.
+    fn inHandAt(this: @This(), hand_top_left: @This()) bool {
+        const x_in_hand =
+            hand_top_left.x <= this.x and
+            this.x < hand_top_left.x + tile_size;
+
+        const height: i32 = @intCast(tile_size * order_of_pieces_in_hand.len);
+        const y_in_hand =
+            hand_top_left.y <= this.y and
+            this.y < hand_top_left.y + height;
+
+        return x_in_hand and y_in_hand;
+    }
+
+    /// Returns the offset of this position from the grid in the users' hand.
+    pub fn offsetFromUserHand(this: @This()) @This() {
+        const from_top_left = this.subtract(right_hand_top_left);
+        return .{
+            .x = @mod(from_top_left.x, tile_size),
+            .y = @mod(from_top_left.y, tile_size),
+        };
     }
 };
 
@@ -109,6 +168,19 @@ pub const board_padding_vert: i32 = board_top_left.y * 2;
 
 /// The size of the board (width/height), in pixels.
 const board_size_pix: c_int = tile_size * model.Board.size;
+
+/// The order (top-to-bottom) of the pieces in-hand. This determines how we
+/// will draw the player hands, and is also needed to properly implement the
+/// ability of the user to drop pieces on the board.
+pub const order_of_pieces_in_hand = [7]model.Sort{
+    .rook,
+    .bishop,
+    .gold,
+    .silver,
+    .knight,
+    .lance,
+    .pawn,
+};
 
 test "PixelPos.toBoardPos(n*size, n*size) returns (n, n)" {
     for (0..model.Board.size) |n| {
