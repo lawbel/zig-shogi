@@ -19,7 +19,7 @@ pub const Error = sdl.Error || std.mem.Allocator.Error;
 
 /// The main rendering function - it does *all* the rendering each frame, by
 /// calling out to helper functions.
-pub fn render(
+pub fn showGameState(
     alloc: std.mem.Allocator,
     renderer: *c.SDL_Renderer,
     state: State,
@@ -114,7 +114,7 @@ fn showPlayerHand(
             @as(c_int, @intCast(pixel.tile_size * i));
 
         // Always render the piece "right way up" by setting `.player=.black`.
-        try renderPiece(
+        try drawPiece(
             args.renderer,
             .{ .player = .black, .sort = sort },
             .{ .x = top_left_x, .y = top_left_y },
@@ -197,7 +197,7 @@ fn drawPieces(
             const top_left_x: c_int = @intCast(pixel.board_top_left.x);
             const top_left_y: c_int = @intCast(pixel.board_top_left.y);
 
-            try renderPiece(
+            try drawPiece(
                 renderer,
                 piece,
                 .{
@@ -214,7 +214,7 @@ fn drawPieces(
     const from = state.mouse.move_from orelse return;
     const offset = from.offsetFromGrid();
 
-    try renderPiece(
+    try drawPiece(
         renderer,
         piece,
         .{
@@ -225,7 +225,7 @@ fn drawPieces(
 }
 
 /// Renders the given piece at the given location.
-fn renderPiece(
+fn drawPiece(
     renderer: *c.SDL_Renderer,
     piece: model.Piece,
     pos: struct {

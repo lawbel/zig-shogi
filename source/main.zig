@@ -62,7 +62,7 @@ pub fn main() !void {
         cpu.applyQueuedMove(&state);
 
         // Render the current game state.
-        try render.render(alloc, renderer, state);
+        try render.showGameState(alloc, renderer, state);
 
         // Possibly sleep for a short while.
         time.sleepToMatchFps(&state.last_frame);
