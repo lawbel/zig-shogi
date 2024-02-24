@@ -60,6 +60,13 @@ const hand_box_border_colour: pixel.Colour = .{
     .blue = 0x50,
 };
 
+/// The colour to shade pieces with, if a player has zero of them in hand.
+const no_piece_in_hand_shade: pixel.Colour = .{
+    .red = 0xCC,
+    .green = 0xCC,
+    .blue = 0xCC,
+};
+
 /// Show the state of both players hands.
 fn showPlayerHands(
     renderer: *c.SDL_Renderer,
@@ -107,6 +114,8 @@ fn showPlayerHand(
     };
 
     for (hand_sorts, 0..) |sort, i| {
+        const count = args.hand.get(sort) orelse 0;
+
         // Step 1/3 - render the piece.
         const top_left_x: c_int = @intCast(hand_top_left.x);
         const top_left_y: c_int =
@@ -114,11 +123,12 @@ fn showPlayerHand(
             @as(c_int, @intCast(pixel.tile_size * i));
 
         // Always render the piece "right way up" by setting `.player=.black`.
-        try drawPiece(
-            args.renderer,
-            .{ .player = .black, .sort = sort },
-            .{ .x = top_left_x, .y = top_left_y },
-        );
+        try drawPiece(.{
+            .renderer = args.renderer,
+            .piece = .{ .player = .black, .sort = sort },
+            .pos = .{ .x = top_left_x, .y = top_left_y },
+            .shade = if (count > 0) null else no_piece_in_hand_shade,
+        });
 
         // Step 2/3 - render the box we'll show the piece count in.
         const box_x: c_int = @intCast(top_left_x + pixel.tile_size);
@@ -146,7 +156,7 @@ fn showPlayerHand(
         );
 
         // Step 3/3 - render the count of this piece in hand.
-        const count = args.hand.get(sort) orelse 0;
+        //
         // TODO: this count can actually be double-digits, in theory. It could
         // be as high as 18 at maximum, if one player had every single pawn in
         // hand. We should handle that case properly.
@@ -197,14 +207,14 @@ fn drawPieces(
             const top_left_x: c_int = @intCast(pixel.board_top_left.x);
             const top_left_y: c_int = @intCast(pixel.board_top_left.y);
 
-            try drawPiece(
-                renderer,
-                piece,
-                .{
+            try drawPiece(.{
+                .renderer = renderer,
+                .piece = piece,
+                .pos = .{
                     .x = top_left_x + (pixel.tile_size * pos_x),
                     .y = top_left_y + (pixel.tile_size * pos_y),
                 },
-            );
+            });
         }
     }
 
@@ -214,40 +224,45 @@ fn drawPieces(
     const from = state.mouse.move_from orelse return;
     const offset = from.offsetFromGrid();
 
-    try drawPiece(
-        renderer,
-        piece,
-        .{
+    try drawPiece(.{
+        .renderer = renderer,
+        .piece = piece,
+        .pos = .{
             .x = state.mouse.pos.x - offset.x,
             .y = state.mouse.pos.y - offset.y,
         },
-    );
+    });
 }
 
-/// Renders the given piece at the given location.
+/// Renders the given piece at the given location. Optionally, shade the piece
+/// with the given colour.
 fn drawPiece(
-    renderer: *c.SDL_Renderer,
-    piece: model.Piece,
-    pos: struct {
-        x: c_int,
-        y: c_int,
+    args: struct {
+        renderer: *c.SDL_Renderer,
+        piece: model.Piece,
+        pos: struct {
+            x: c_int,
+            y: c_int,
+        },
+        shade: ?pixel.Colour = null,
     },
 ) Error!void {
-    const tex = try texture.getPieceTexture(renderer, piece);
+    const tex = try texture.getPieceTexture(args.renderer, args.piece);
 
     try sdl.renderCopy(.{
-        .renderer = renderer,
+        .renderer = args.renderer,
         .texture = tex,
         .dst_rect = &.{
-            .x = pos.x,
-            .y = pos.y,
+            .x = args.pos.x,
+            .y = args.pos.y,
             .w = pixel.tile_size,
             .h = pixel.tile_size,
         },
-        .angle = switch (piece.player) {
+        .angle = switch (args.piece.player) {
             .white => 180,
             .black => 0,
         },
+        .shade = args.shade,
     });
 }
 

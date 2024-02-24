@@ -31,8 +31,16 @@ pub fn renderCopy(
         angle: f64 = 0,
         center: ?*const c.SDL_Point = null,
         flip: c.SDL_RendererFlip = c.SDL_FLIP_NONE,
+        shade: ?pixel.Colour = null,
     },
 ) Error!void {
+    const orig: ?pixel.Colour = init: {
+        const new = (args.shade) orelse break :init null;
+        const old = try getTextureColourMod(args.texture);
+        try setTextureColourMod(args.texture, new);
+        break :init old;
+    };
+
     if (c.SDL_RenderCopyEx(
         args.renderer,
         args.texture,
@@ -46,6 +54,62 @@ pub fn renderCopy(
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return error.RenderError;
     }
+
+    // Cannot `defer { ... try ... }`, so put this here rather than above.
+    if (orig) |colour| {
+        try setTextureColourMod(args.texture, colour);
+    }
+}
+
+/// Set the RGB colour and alpha values of the given texture's modifier. These
+/// values are combined with the texture itself during rendering.
+pub fn setTextureColourMod(
+    texture: *c.SDL_Texture,
+    colour: pixel.Colour,
+) Error!void {
+    if (c.SDL_SetTextureAlphaMod(texture, colour.alpha) < 0) {
+        const msg = "Failed to set texture alpha mod: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return error.CannotSetVar;
+    }
+
+    if (c.SDL_SetTextureColorMod(
+        texture,
+        colour.red,
+        colour.green,
+        colour.blue,
+    ) < 0) {
+        const msg = "Failed to set texture colour mod: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return error.CannotSetVar;
+    }
+}
+
+/// Get the RGB colour and alpha values of the given texture's modifier. These
+/// values are combined with the texture itself during rendering.
+pub fn getTextureColourMod(
+    texture: *c.SDL_Texture,
+) Error!pixel.Colour {
+    var colour: pixel.Colour = undefined;
+
+    if (c.SDL_GetTextureAlphaMod(texture, &colour.alpha) < 0) {
+        const msg = "Failed to get texture alpha mod: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return error.CannotReadMemory;
+    }
+
+    if (c.SDL_GetTextureColorMod(
+        texture,
+        &colour.red,
+        &colour.green,
+        &colour.blue,
+    ) < 0) {
+        const msg = "Failed to get texture colour mod: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return error.CannotReadMemory;
+    }
+
+    return colour;
 }
 
 /// A wrapper around the C function `IMG_LoadTexture_RW`. If the argument
