@@ -248,8 +248,8 @@ fn directMovementsFrom(
             .white => dest.y >= flip_ranks,
         };
         const can_promote =
-            args.from.isInPromotionZoneFor(args.player) or
-            dest.isInPromotionZoneFor(args.player);
+            args.from.inPromotionZoneFor(args.player) or
+            dest.inPromotionZoneFor(args.player);
 
         if (must_promote) {
             move.promotion = .must_promote;
@@ -327,8 +327,8 @@ fn rangedMovementsFromSteps(
                 .white => dest.y >= flip_ranks,
             };
             const can_promote =
-                args.from.isInPromotionZoneFor(args.player) or
-                dest.isInPromotionZoneFor(args.player);
+                args.from.inPromotionZoneFor(args.player) or
+                dest.inPromotionZoneFor(args.player);
 
             if (must_promote) {
                 move.promotion = .must_promote;

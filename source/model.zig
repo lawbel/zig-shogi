@@ -125,7 +125,7 @@ pub const BoardPos = struct {
 
     /// Check whether this position is actually valid for indexing into the
     /// `Board`.
-    pub fn isInBounds(this: @This()) bool {
+    pub fn inBounds(this: @This()) bool {
         const x_in_bounds = 0 <= this.x and this.x < Board.size;
         const y_in_bounds = 0 <= this.y and this.y < Board.size;
         return (x_in_bounds and y_in_bounds);
@@ -138,11 +138,11 @@ pub const BoardPos = struct {
             .x = this.x + motion.x,
             .y = this.y + motion.y,
         };
-        return if (target.isInBounds()) target else null;
+        return if (target.inBounds()) target else null;
     }
 
     /// Whether this position is in the promotion zone for the given `Player`.
-    pub fn isInPromotionZoneFor(this: @This(), player: Player) bool {
+    pub fn inPromotionZoneFor(this: @This(), player: Player) bool {
         return switch (player) {
             .black => 0 <= this.y and this.y < 3,
             .white => Board.size - 3 <= this.y and this.y < Board.size,
