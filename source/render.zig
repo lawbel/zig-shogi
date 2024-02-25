@@ -31,7 +31,7 @@ pub fn showGameState(
     try drawBoard(renderer);
     try highlightLastMove(renderer, state);
     try highlightCurrentMove(alloc, renderer, state);
-    try showPlayerHands(renderer, state);
+    try showPlayerHands(alloc, renderer, state);
     try drawPieces(renderer, state);
 
     // Take the rendered state and update the window with it.
@@ -69,16 +69,19 @@ const no_piece_in_hand_shade: pixel.Colour = .{
 
 /// Show the state of both players hands.
 fn showPlayerHands(
+    alloc: std.mem.Allocator,
     renderer: *c.SDL_Renderer,
     state: State,
 ) Error!void {
     try showPlayerHand(.{
+        .alloc = alloc,
         .renderer = renderer,
         .font = state.font,
         .player = .white,
         .hand = state.board.hand.white,
     });
     try showPlayerHand(.{
+        .alloc = alloc,
         .renderer = renderer,
         .font = state.font,
         .player = .black,
@@ -90,6 +93,7 @@ fn showPlayerHands(
 /// many of that piece are in the player's hand in a box next to each piece.
 fn showPlayerHand(
     args: struct {
+        alloc: std.mem.Allocator,
         renderer: *c.SDL_Renderer,
         font: *c.TTF_Font,
         player: model.Player,
@@ -106,6 +110,7 @@ fn showPlayerHand(
 
     for (pixel.order_of_pieces_in_hand, 0..) |sort, i| {
         const count = args.hand.get(sort) orelse 0;
+        const box_width: c_int = if (count < 10) box_size else (box_size * 1.5);
 
         // Step 1/3 - render the piece.
         const top_left_x: c_int = @intCast(hand_top_left.x);
@@ -129,9 +134,9 @@ fn showPlayerHand(
             args.renderer,
             hand_box_border_colour,
             &.{
-                .x = box_x - box_size,
+                .x = box_x - box_width,
                 .y = box_y - box_size,
-                .w = box_size,
+                .w = box_width,
                 .h = box_size,
             },
         );
@@ -139,29 +144,28 @@ fn showPlayerHand(
             args.renderer,
             hand_box_colour,
             &.{
-                .x = box_x - box_size + box_border,
+                .x = box_x - box_width + box_border,
                 .y = box_y - box_size + box_border,
-                .w = box_size - (box_border * 2),
+                .w = box_width - (box_border * 2),
                 .h = box_size - (box_border * 2),
             },
         );
 
         // Step 3/3 - render the count of this piece in hand.
-        //
-        // TODO: this count can actually be double-digits, in theory. It could
-        // be as high as 18 at maximum, if one player had every single pawn in
-        // hand. We should handle that case properly.
-        const count_str = [_]u8{ std.fmt.digitToChar(count, .lower), 0 };
+        const str_len = if (count > 0) 1 + std.math.log10(count) else 1;
+        const str: [:0]u8 = try args.alloc.allocSentinel(u8, str_len, 0);
+        defer args.alloc.free(str);
+        _ = std.fmt.formatIntBuf(str, count, 10, .lower, .{});
 
         try sdl.renderUtf8Text(.{
             .renderer = args.renderer,
-            .text = @ptrCast(&count_str),
+            .text = str,
             .font = args.font,
             .style = c.TTF_STYLE_BOLD,
             .colour = hand_text_colour,
             .center = .{
-                .x = box_x - (box_size / 2),
-                .y = box_y - (box_size / 2),
+                .x = box_x - @divFloor(box_width, 2),
+                .y = box_y - @divFloor(box_size, 2),
             },
         });
     }
