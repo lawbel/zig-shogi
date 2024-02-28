@@ -5,7 +5,7 @@ const dropped = @import("dropped.zig");
 const model = @import("../model.zig");
 const moved = @import("moved.zig");
 const std = @import("std");
-const Valid = @import("types.zig").Valid;
+const types = @import("types.zig");
 
 /// Errors than can occur while calculating valid movements.
 pub const Error = std.mem.Allocator.Error;
@@ -18,7 +18,7 @@ pub fn movesFor(
         board: model.Board,
         test_check: bool = true,
     },
-) Error!Valid {
+) Error!types.Valid {
     var basics = try movesBasicFor(.{
         .alloc = args.alloc,
         .player = args.player,
@@ -28,7 +28,11 @@ pub fn movesFor(
     errdefer basics.deinit();
 
     const drops = try movesDropFor(args.alloc, args.player, args.board);
-    return .{ .basics = basics, .drops = drops };
+
+    return .{
+        .basics = basics,
+        .drops = drops,
+    };
 }
 
 /// Returns all valid basic moves (moving an existing piece on the board,
@@ -40,14 +44,9 @@ pub fn movesBasicFor(
         board: model.Board,
         test_check: bool = true,
     },
-) Error!std.ArrayList(Valid.Basic) {
-    var moves = std.ArrayList(Valid.Basic).init(args.alloc);
-    errdefer {
-        for (moves.items) |*item| {
-            item.deinit();
-        }
-        moves.deinit();
-    }
+) Error!types.Basics {
+    var moves = types.Basics.init(args.alloc);
+    errdefer moves.deinit();
 
     for (args.board.tiles, 0..) |row, y| {
         for (row, 0..) |value, x| {
@@ -64,15 +63,9 @@ pub fn movesBasicFor(
                 .board = args.board,
                 .test_check = args.test_check,
             });
-            errdefer movements.deinit();
+            if (movements.items.len == 0) continue;
 
-            if (movements.items.len == 0) {
-                movements.deinit();
-                continue;
-            }
-
-            const basic = .{ .from = pos, .movements = movements };
-            try moves.append(basic);
+            try moves.map.put(pos, movements);
         }
     }
 
@@ -84,30 +77,19 @@ pub fn movesDropFor(
     alloc: std.mem.Allocator,
     player: model.Player,
     board: model.Board,
-) Error!std.ArrayList(Valid.Drop) {
-    var moves = std.ArrayList(Valid.Drop).init(alloc);
-    errdefer {
-        for (moves.items) |*item| {
-            item.deinit();
-        }
-        moves.deinit();
-    }
+) Error!types.Drops {
+    var moves = types.Drops.init(alloc);
+    errdefer moves.deinit();
 
     const hand = board.getHand(player);
     inline for (@typeInfo(model.Sort).Enum.fields) |field| {
         const sort: model.Sort = @enumFromInt(field.value);
         const piece: model.Piece = .{ .sort = sort, .player = player };
         const count = hand.get(sort) orelse 0;
-
         if (count > 0) {
             const drops = try dropped.possibleDropsOf(alloc, piece, board);
-            errdefer drops.deinit();
-
             if (drops.items.len > 0) {
-                const drop = .{ .piece = piece, .drops = drops };
-                try moves.append(drop);
-            } else {
-                drops.deinit();
+                try moves.map.put(piece, drops);
             }
         }
     }

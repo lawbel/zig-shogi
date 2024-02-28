@@ -6,7 +6,7 @@
 const checked = @import("checked.zig");
 const model = @import("../model.zig");
 const std = @import("std");
-const Valid = @import("types.zig").Valid;
+const types = @import("types.zig");
 
 /// Errors than can occur while calculating piece movements.
 pub const Error = std.mem.Allocator.Error;
@@ -21,9 +21,9 @@ pub fn movementsFrom(
         board: model.Board,
         test_check: bool = true,
     },
-) Error!std.ArrayList(Valid.Movement) {
+) Error!std.ArrayList(types.Movement) {
     const piece = args.board.get(args.from) orelse {
-        return std.ArrayList(Valid.Movement).init(args.alloc);
+        return std.ArrayList(types.Movement).init(args.alloc);
     };
 
     var direct_args: DirectArgs = .{
@@ -208,8 +208,8 @@ const DirectArgs = struct {
 /// * Making this move would not leave the player in check.
 fn directMovementsFrom(
     args: DirectArgs,
-) Error!std.ArrayList(Valid.Movement) {
-    var moves = std.ArrayList(Valid.Movement).init(args.alloc);
+) Error!std.ArrayList(types.Movement) {
+    var moves = std.ArrayList(types.Movement).init(args.alloc);
     errdefer moves.deinit();
 
     for (args.motions) |motion| {
@@ -237,7 +237,7 @@ fn directMovementsFrom(
 
         // If we got this far, then this move is okay. We just have to work out
         // whether this piece can/must be promoted.
-        var move: Valid.Movement = .{
+        var move: types.Movement = .{
             .motion = motion,
             .promotion = undefined,
         };
@@ -287,8 +287,8 @@ const RangedArgs = struct {
 /// from the possibilities.
 fn rangedMovementsFromSteps(
     args: RangedArgs,
-) Error!std.ArrayList(Valid.Movement) {
-    var moves = std.ArrayList(Valid.Movement).init(args.alloc);
+) Error!std.ArrayList(types.Movement) {
+    var moves = std.ArrayList(types.Movement).init(args.alloc);
     errdefer moves.deinit();
 
     for (args.steps) |step| {
@@ -316,7 +316,7 @@ fn rangedMovementsFromSteps(
             // whether the piece can/must be promoted. It would be more optimal
             // to delay this as we may not need it, but it is not expensive
             // and makes the code more readable.
-            var move: Valid.Movement = .{
+            var move: types.Movement = .{
                 .motion = cur_step,
                 .promotion = undefined,
             };

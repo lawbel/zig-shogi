@@ -31,9 +31,12 @@ pub fn isInCheck(
     });
     defer moves.deinit();
 
-    for (moves.items) |entry| {
-        for (entry.movements.items) |item| {
-            const dest = entry.from.applyMotion(item.motion) orelse continue;
+    var iter = moves.map.iterator();
+    while (iter.next()) |entry| {
+        const from = entry.key_ptr.*;
+        const movements = entry.value_ptr.*;
+        for (movements.items) |item| {
+            const dest = from.applyMotion(item.motion) orelse continue;
             if (dest.eq(pos)) {
                 return true;
             }
@@ -67,5 +70,6 @@ pub fn isInCheckMate(
     // If there is any move which results in us not being in check (which we
     // are filtering on by setting `.test_check = true`), then we are not
     // in-fact in checkmate.
-    return (moves.count() > 0);
+    const count = moves.basics.map.count() + moves.drops.map.count();
+    return count > 0;
 }

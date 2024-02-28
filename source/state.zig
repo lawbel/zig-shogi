@@ -73,7 +73,7 @@ pub const State = struct {
     }
 
     /// Free the memory associated with this type.
-    pub fn deinit(this: *@This()) void {
+    pub fn deinit(this: @This()) void {
         c.TTF_CloseFont(this.font);
     }
 };

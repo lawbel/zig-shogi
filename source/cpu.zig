@@ -81,11 +81,67 @@ pub fn randomMove(
     });
     defer moves.deinit();
 
-    const len = moves.count();
+    const basics = moves.basics.map.count();
+    const drops = moves.drops.map.count();
     const seed = random.randomSeed();
     var prng = std.rand.DefaultPrng.init(seed);
-    const choice = prng.random().intRangeLessThan(usize, 0, len);
+    const choice = prng.random().intRangeLessThan(usize, 0, basics + drops);
 
-    // We know the 'choice' index is valid, so can unwrap it.
-    return moves.index(choice).?;
+    if (choice < basics) {
+        return .{
+            .basic = randomMoveBasic(&prng, moves.basics, choice),
+        };
+    } else {
+        return .{
+            .drop = randomMoveDrop(&prng, moves.drops, choice - basics),
+        };
+    }
+}
+
+fn randomMoveBasic(
+    prng: *std.rand.DefaultPrng,
+    basics: rules.types.Basics,
+    choice: usize,
+) model.Move.Basic {
+    var iter = basics.map.iterator();
+    while (iter.index < choice) {
+        _ = iter.next();
+    }
+
+    const entry = iter.next() orelse unreachable;
+    const movements = entry.value_ptr.*;
+    const index = prng.random().intRangeLessThan(usize, 0, movements.items.len);
+    const movement = movements.items[index];
+    const promoted = switch (movement.promotion) {
+        .cannot_promote => false,
+        .can_promote => prng.random().boolean(),
+        .must_promote => true,
+    };
+
+    return .{
+        .from = entry.key_ptr.*,
+        .motion = movement.motion,
+        .promoted = promoted,
+    };
+}
+
+fn randomMoveDrop(
+    prng: *std.rand.DefaultPrng,
+    drops: rules.types.Drops,
+    choice: usize,
+) model.Move.Drop {
+    var iter = drops.map.iterator();
+    while (iter.index < choice) {
+        _ = iter.next();
+    }
+
+    const entry = iter.next() orelse unreachable;
+    const positions = entry.value_ptr.*;
+    const index = prng.random().intRangeLessThan(usize, 0, positions.items.len);
+    const pos = positions.items[index];
+
+    return .{
+        .pos = pos,
+        .piece = entry.key_ptr.*,
+    };
 }
