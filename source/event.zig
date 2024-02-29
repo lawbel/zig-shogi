@@ -60,6 +60,8 @@ pub fn processEvents(
 /// the move the user has inputted based on the mouse movement, and then tries
 /// to apply that move to the board. Returns `true` if the move was valid and
 /// successfully applied, or `false` otherwise.
+///
+/// TODO: prompt the user for their choice of promotion, if appropriate.
 fn applyUserMove(alloc: std.mem.Allocator, state: *State) Error!bool {
     const dest = state.mouse.pos.toBoardPos() orelse return false;
     const src_pix = state.mouse.move_from orelse return false;
@@ -97,11 +99,23 @@ fn applyUserMoveBasic(
     const piece = args.state.board.get(args.src) orelse return false;
     if (!piece.player.eq(args.state.user)) return false;
 
+    const able_to_promote = rules.promoted.ableToPromote(.{
+        .src = args.src,
+        .dest = args.dest,
+        .player = args.state.user,
+        .must_promote_in_ranks = rules.promoted.mustPromoteInRanks(piece),
+    });
+
     const basic_move: model.Move.Basic = .{
         .from = args.src,
         .motion = .{
             .x = args.dest.x - args.src.x,
             .y = args.dest.y - args.src.y,
+        },
+        .promoted = switch (able_to_promote) {
+            .cannot_promote => false,
+            .must_promote => true,
+            .can_promote => false, // TODO: handle properly
         },
     };
     if (basic_move.motion.x == 0 and basic_move.motion.y == 0) return false;
