@@ -4,9 +4,7 @@
 const c = @import("c.zig");
 const cpu = @import("cpu.zig");
 const model = @import("model.zig");
-const render = @import("render.zig");
 const rules = @import("rules.zig");
-const sdl = @import("sdl.zig");
 const State = @import("state.zig").State;
 const std = @import("std");
 

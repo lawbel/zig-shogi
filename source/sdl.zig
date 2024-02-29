@@ -7,7 +7,6 @@
 //! what happened) and `SDL_LogError` (to do the logging).
 
 const c = @import("c.zig");
-const model = @import("model.zig");
 const pixel = @import("pixel.zig");
 
 /// Any kind of error that these SDL functions can throw.
