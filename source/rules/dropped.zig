@@ -3,8 +3,8 @@
 
 const checked = @import("checked.zig");
 const model = @import("../model.zig");
+const promoted = @import("promoted.zig");
 const std = @import("std");
-const Valid = @import("types.zig").Valid;
 
 /// Possible errors that can occur while calculating piece drops.
 pub const Error = std.mem.Allocator.Error;
@@ -85,10 +85,9 @@ pub fn pawnDropsFor(
 ) Error!std.ArrayList(model.BoardPos) {
     const has_pawn = board.filesHavePawnFor(player);
     const pawn = .{ .sort = .pawn, .player = player };
-    const last_rank: usize = switch (player) {
-        .black => 0,
-        .white => model.Board.size - 1,
-    };
+    const last_rank_i = promoted.pawnMustPromoteAtRank(player);
+    std.debug.assert(0 <= last_rank_i);
+    const last_rank: usize = @intCast(last_rank_i);
 
     var possible = std.ArrayList(model.BoardPos).init(alloc);
     errdefer possible.deinit();

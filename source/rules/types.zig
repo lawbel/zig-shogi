@@ -1,6 +1,7 @@
 //! The common types needed for calculating possible moves on the board.
 
 const model = @import("../model.zig");
+const promoted = @import("promoted.zig");
 const std = @import("std");
 
 /// A collection of valid possible moves.
@@ -73,14 +74,8 @@ pub const Drops = struct {
     }
 };
 
-pub const Promotion = union(enum) {
-    cannot_promote,
-    can_promote,
-    must_promote,
-};
-
 /// A possible movement on the board, including promotion information.
 pub const Movement = struct {
     motion: model.Motion,
-    promotion: Promotion,
+    promotion: promoted.AbleToPromote,
 };

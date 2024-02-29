@@ -7,6 +7,7 @@ const checked = @import("checked.zig");
 const model = @import("../model.zig");
 const std = @import("std");
 const types = @import("types.zig");
+const promoted = @import("promoted.zig");
 
 /// Errors than can occur while calculating piece movements.
 pub const Error = std.mem.Allocator.Error;
@@ -26,6 +27,7 @@ pub fn movementsFrom(
         return std.ArrayList(types.Movement).init(args.alloc);
     };
 
+    const must_promote = promoted.mustPromoteInRanks(piece);
     var direct_args: DirectArgs = .{
         .alloc = args.alloc,
         .from = args.from,
@@ -33,6 +35,7 @@ pub fn movementsFrom(
         .board = args.board,
         .motions = undefined,
         .test_check = args.test_check,
+        .must_promote_in_ranks = must_promote,
     };
     var ranged_args: RangedArgs = .{
         .alloc = args.alloc,
@@ -41,6 +44,7 @@ pub fn movementsFrom(
         .board = args.board,
         .steps = undefined,
         .test_check = args.test_check,
+        .must_promote_in_ranks = must_promote,
     };
 
     switch (piece.sort) {
@@ -160,7 +164,6 @@ pub fn movementsFrom(
                 }
             }
 
-            direct_args.must_promote_in_ranks = 2;
             direct_args.motions = &motions;
             return directMovementsFrom(direct_args);
         },
@@ -171,7 +174,6 @@ pub fn movementsFrom(
                 motion.flipHoriz();
             }
 
-            ranged_args.must_promote_in_ranks = 1;
             ranged_args.steps = &.{motion};
             return rangedMovementsFromSteps(ranged_args);
         },
@@ -182,7 +184,6 @@ pub fn movementsFrom(
                 motion.flipHoriz();
             }
 
-            direct_args.must_promote_in_ranks = 1;
             direct_args.motions = &.{motion};
             return directMovementsFrom(direct_args);
         },
@@ -197,7 +198,7 @@ const DirectArgs = struct {
     board: model.Board,
     motions: []const model.Motion,
     test_check: bool = true,
-    must_promote_in_ranks: usize = 0,
+    must_promote_in_ranks: i8 = 0,
 };
 
 /// Returns an array of possible `Movements` from the given position, by
@@ -237,27 +238,15 @@ fn directMovementsFrom(
 
         // If we got this far, then this move is okay. We just have to work out
         // whether this piece can/must be promoted.
-        var move: types.Movement = .{
+        const move: types.Movement = .{
             .motion = motion,
-            .promotion = undefined,
+            .promotion = promoted.ableToPromote(.{
+                .src = args.from,
+                .dest = dest,
+                .player = args.player,
+                .must_promote_in_ranks = args.must_promote_in_ranks,
+            }),
         };
-
-        const flip_ranks = model.Board.size - args.must_promote_in_ranks;
-        const must_promote = switch (args.player) {
-            .black => dest.y < args.must_promote_in_ranks,
-            .white => dest.y >= flip_ranks,
-        };
-        const can_promote =
-            args.from.inPromotionZoneFor(args.player) or
-            dest.inPromotionZoneFor(args.player);
-
-        if (must_promote) {
-            move.promotion = .must_promote;
-        } else if (can_promote) {
-            move.promotion = .can_promote;
-        } else {
-            move.promotion = .cannot_promote;
-        }
 
         try moves.append(move);
     }
@@ -273,7 +262,7 @@ const RangedArgs = struct {
     board: model.Board,
     steps: []const model.Motion,
     test_check: bool = true,
-    must_promote_in_ranks: usize = 0,
+    must_promote_in_ranks: i8 = 0,
 };
 
 /// Returns an array of possible `Movements` from the given position. For each
@@ -316,27 +305,15 @@ fn rangedMovementsFromSteps(
             // whether the piece can/must be promoted. It would be more optimal
             // to delay this as we may not need it, but it is not expensive
             // and makes the code more readable.
-            var move: types.Movement = .{
+            const move: types.Movement = .{
                 .motion = cur_step,
-                .promotion = undefined,
+                .promotion = promoted.ableToPromote(.{
+                    .src = args.from,
+                    .dest = dest,
+                    .player = args.player,
+                    .must_promote_in_ranks = args.must_promote_in_ranks,
+                }),
             };
-
-            const flip_ranks = model.Board.size - args.must_promote_in_ranks;
-            const must_promote = switch (args.player) {
-                .black => dest.y < args.must_promote_in_ranks,
-                .white => dest.y >= flip_ranks,
-            };
-            const can_promote =
-                args.from.inPromotionZoneFor(args.player) or
-                dest.inPromotionZoneFor(args.player);
-
-            if (must_promote) {
-                move.promotion = .must_promote;
-            } else if (can_promote) {
-                move.promotion = .can_promote;
-            } else {
-                move.promotion = .cannot_promote;
-            }
 
             // Now make the final checks and potentially add this move.
             if (args.board.get(dest)) |piece| {

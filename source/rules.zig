@@ -4,6 +4,7 @@
 pub const checked = @import("rules/checked.zig");
 pub const dropped = @import("rules/dropped.zig");
 pub const moved = @import("rules/moved.zig");
+pub const promoted = @import("rules/promoted.zig");
 pub const types = @import("rules/types.zig");
 pub const valid = @import("rules/valid.zig");
 
@@ -13,6 +14,7 @@ test {
     _ = checked;
     _ = dropped;
     _ = moved;
+    _ = promoted;
     _ = types;
     _ = valid;
 }
