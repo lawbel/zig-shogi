@@ -16,54 +16,36 @@ pub fn possibleDropsOf(
     piece: model.Piece,
     board: model.Board,
 ) Error!std.ArrayList(model.BoardPos) {
-    switch (piece.sort.demote()) {
-        .pawn => return pawnDropsFor(alloc, piece.player, board),
-
-        else => |sort| {
-            const skip_ranks: usize = switch (sort) {
-                .lance => 1,
-                .knight => 2,
-                else => 0,
-            };
-            return dropsOnEmptyTiles(.{
-                .alloc = alloc,
-                .player = piece.player,
-                .board = board,
-                .skip_ranks = skip_ranks,
-            });
-        },
-    }
+    return switch (piece.sort.demote()) {
+        .pawn => pawnDropsFor(alloc, piece.player, board),
+        else => dropsOnEmptyTiles(alloc, piece, board),
+    };
 }
 
 /// Returns a list of empty positions on the board - positions where any piece
 /// could be dropped (except for pawns, which are handled by `pawnDropsFor`).
 ///
-/// Forbids dropping a piece on the last ranks, according to the value of
-/// the `skip_ranks` argument.
+/// Forbids dropping a piece on the last few ranks, if it would have no moves
+/// available. This restriction applies to pawns, lances and knights.
 pub fn dropsOnEmptyTiles(
-    args: struct {
-        alloc: std.mem.Allocator,
-        player: model.Player,
-        board: model.Board,
-        skip_ranks: usize = 0,
-    },
+    alloc: std.mem.Allocator,
+    piece: model.Piece,
+    board: model.Board,
 ) Error!std.ArrayList(model.BoardPos) {
-    var tiles = std.ArrayList(model.BoardPos).init(args.alloc);
+    std.debug.assert(piece.sort != .pawn);
+
+    var tiles = std.ArrayList(model.BoardPos).init(alloc);
     errdefer tiles.deinit();
 
-    for (args.board.tiles, 0..) |row, y| {
-        switch (args.player) {
-            .black => if (y < args.skip_ranks) continue,
-            .white => if (y >= model.Board.size - args.skip_ranks) continue,
-        }
+    for (board.tiles, 0..) |row, y| {
+        const y_pos: i8 = @intCast(y);
+        if (promoted.mustPromoteAtRank(piece, y_pos)) continue;
 
-        for (row, 0..) |piece, x| {
-            if (piece != null) continue;
+        for (row, 0..) |dest, x| {
+            if (dest != null) continue;
 
             const x_pos: i8 = @intCast(x);
-            const y_pos: i8 = @intCast(y);
             const pos = .{ .x = x_pos, .y = y_pos };
-
             try tiles.append(pos);
         }
     }
@@ -75,9 +57,12 @@ pub fn dropsOnEmptyTiles(
 /// dropped by the given `model.Player`.
 ///
 /// * This accounts for the double pawn rule - a player cannot drop a pawn in
-///   such a way that there would be two un-promoted pawns on the same file.
+///   such a way that they would have two un-promoted pawns on the same file.
 /// * It also forbids dropping a pawn on the last rank (from the given player's
 ///   perspective), as doing so would leave it with no valid moves.
+/// * It does not allow dropping a pawn, if that would lead to an immediate
+///   checkmate of the other player. (Checks are okay, only checkmates are
+///   forbidden.)
 pub fn pawnDropsFor(
     alloc: std.mem.Allocator,
     player: model.Player,
@@ -85,10 +70,6 @@ pub fn pawnDropsFor(
 ) Error!std.ArrayList(model.BoardPos) {
     const has_pawn = board.filesHavePawnFor(player);
     const pawn = .{ .sort = .pawn, .player = player };
-    const last_rank_i = promoted.pawnMustPromoteAtRank(player);
-    std.debug.assert(0 <= last_rank_i);
-    const last_rank: usize = @intCast(last_rank_i);
-
     var possible = std.ArrayList(model.BoardPos).init(alloc);
     errdefer possible.deinit();
 
@@ -96,10 +77,10 @@ pub fn pawnDropsFor(
         if (has_pawn.isSet(x)) continue;
 
         for (0..model.Board.size) |y| {
-            if (y == last_rank) continue;
-
             const x_pos: i8 = @intCast(x);
             const y_pos: i8 = @intCast(y);
+            if (promoted.mustPromoteAtRank(pawn, y_pos)) continue;
+
             const pos = .{ .x = x_pos, .y = y_pos };
             if (board.get(pos) != null) continue;
 

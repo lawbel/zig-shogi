@@ -6,10 +6,11 @@ pub const AbleToPromote = union(enum) {
     must_promote,
 };
 
-pub fn pawnMustPromoteAtRank(player: model.Player) i8 {
-    return switch (player) {
-        .black => 0,
-        .white => model.Board.size - 1,
+pub fn mustPromoteAtRank(piece: model.Piece, rank: i8) bool {
+    const must_promote = mustPromoteInRanks(piece);
+    return switch (piece.player) {
+        .black => rank < must_promote,
+        .white => rank > must_promote,
     };
 }
 
