@@ -9,6 +9,7 @@ pub const Valid = struct {
     basics: Basics,
     drops: Drops,
 
+    /// Initialize this type by allocating memory for it.
     pub fn init(alloc: std.mem.Allocator) @This() {
         const basics = Basics.init(alloc);
         const drops = Drops.init(alloc);
@@ -22,12 +23,14 @@ pub const Valid = struct {
     }
 };
 
+/// Represents a collection of possible basic moves.
 pub const Basics = struct {
     map: std.AutoHashMap(
         model.BoardPos,
         std.ArrayList(Movement),
     ),
 
+    /// Initialize this type by allocating memory for it.
     pub fn init(alloc: std.mem.Allocator) @This() {
         const map = std.AutoHashMap(
             model.BoardPos,
@@ -48,12 +51,14 @@ pub const Basics = struct {
     }
 };
 
+/// Represents a collection of possible drops that a player could make.
 pub const Drops = struct {
     map: std.AutoHashMap(
         model.Piece,
         std.ArrayList(model.BoardPos),
     ),
 
+    /// Initialize this type by allocating memory for it.
     pub fn init(alloc: std.mem.Allocator) @This() {
         const map = std.AutoHashMap(
             model.Piece,

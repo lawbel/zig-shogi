@@ -98,6 +98,7 @@ pub fn randomMove(
     }
 }
 
+/// Returns a random basic move.
 fn randomMoveBasic(
     prng: *std.rand.DefaultPrng,
     basics: rules.types.Basics,
@@ -125,6 +126,7 @@ fn randomMoveBasic(
     };
 }
 
+/// Returns a random drop.
 fn randomMoveDrop(
     prng: *std.rand.DefaultPrng,
     drops: rules.types.Drops,

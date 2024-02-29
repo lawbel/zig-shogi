@@ -11,7 +11,7 @@ const std = @import("std");
 const texture = @import("texture.zig");
 const time = @import("time.zig");
 
-/// The allocator to be used for this program (except for the C code which
+/// The main allocator to be used for this program (except for the C code which
 /// uses its' own malloc provided by libc).
 const Alloc = std.heap.GeneralPurposeAllocator(.{});
 
@@ -19,22 +19,29 @@ const Alloc = std.heap.GeneralPurposeAllocator(.{});
 /// but they could just as well be intentionally leaked as they will be
 /// promptly freed by the OS once the process exits.
 pub fn main() !void {
+    // Create (and, at exit, destroy) the main allocator.
     var gpa: Alloc = .{};
     defer std.debug.assert(gpa.deinit() == .ok);
     const alloc = gpa.allocator();
 
+    // Start/quit the SDL lib.
     try init.sdlInit();
     defer init.sdlQuit();
 
+    // Create/destroy the game window.
     const window = try init.createWindow(.{ .title = "Zig Shogi" });
     defer c.SDL_DestroyWindow(window);
 
+    // Create/destroy the SDL renderer.
     const renderer = try init.createRenderer(.{ .window = window });
     defer {
         c.SDL_DestroyRenderer(renderer);
         texture.freeTextures();
     }
 
+    // The main game state. Some other state is contained in other modules, but
+    // most of the mutable state and 'global' variables used are contained in
+    // this type.
     var state = try State.init(.{
         .alloc = alloc,
         .user = .black,
@@ -47,6 +54,7 @@ pub fn main() !void {
     });
     defer state.deinit();
 
+    // The main game loop.
     while (true) {
         // Process any events since the last frame. May spawn a thread for the
         // CPU to calculate its next move.

@@ -201,8 +201,8 @@ pub fn renderFillRect(
 }
 
 /// A pixel position on the screen. This is conceptually the same as
-/// `model.PixelPos`, but uses `i16` instead of `i32` as some SDL functions
-/// require that integer type instead.
+/// 'PixelPos' from `pixel.zig`, but uses `i16` instead of `i32` as some SDL
+/// functions require that integer type instead.
 pub const Vertex = struct {
     x: i16,
     y: i16,

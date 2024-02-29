@@ -1,11 +1,15 @@
+//! Implements the logic for piece promotion.
+
 const model = @import("../model.zig");
 
+/// Represents whether a piece is able to (or *must*) promote while moving.
 pub const AbleToPromote = union(enum) {
     cannot_promote,
     can_promote,
     must_promote,
 };
 
+/// Whether the given piece must be promoted if it is moved into the given rank.
 pub fn mustPromoteAtRank(piece: model.Piece, rank: i8) bool {
     const must_promote = mustPromoteInRanks(piece);
     return switch (piece.player) {
@@ -14,6 +18,7 @@ pub fn mustPromoteAtRank(piece: model.Piece, rank: i8) bool {
     };
 }
 
+/// The rank beyond which the given piece *must* be promoted if it is moved.
 pub fn mustPromoteInRanks(piece: model.Piece) i8 {
     const as_black: i8 = switch (piece.sort) {
         .pawn, .lance => 1,
@@ -27,6 +32,9 @@ pub fn mustPromoteInRanks(piece: model.Piece) i8 {
     };
 }
 
+/// Calculates whether or not a piece can, or must, promote when moving from
+/// 'src' to 'dest'. Takes as argument `must_promote_in_ranks: i8` which will
+/// normally be the result of calling `mustPromoteInRanks`.
 pub fn ableToPromote(
     args: struct {
         src: model.BoardPos,

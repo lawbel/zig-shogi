@@ -1,4 +1,5 @@
-//! This module implements functionality for working with concurrency.
+//! This module implements functionality a simple mutex data-type to help
+//! with concurrency.
 
 const std = @import("std");
 

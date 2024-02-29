@@ -1,4 +1,6 @@
 //! Helpers for working with fonts.
+//!
+//! TODO: handle fonts on windows.
 
 const c = @import("c.zig");
 const std = @import("std");

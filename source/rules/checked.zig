@@ -68,7 +68,7 @@ pub fn isInCheckMate(
     defer moves.deinit();
 
     // If there is any move which results in us not being in check (which we
-    // are filtering on by setting `.test_check = true`), then we are not
+    // are filtering on by setting `.test_check = true` above), then we are not
     // in-fact in checkmate.
     const count = moves.basics.map.count() + moves.drops.map.count();
     return count > 0;
