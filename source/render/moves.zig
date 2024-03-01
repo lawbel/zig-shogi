@@ -19,7 +19,7 @@ pub fn highlightLast(
     state: State,
 ) Error!void {
     const last = state.last_move orelse return;
-    const col = colours.last_colour;
+    const col = colours.last_move;
 
     switch (last) {
         .basic => |basic| {
@@ -86,7 +86,7 @@ fn highlightCurrentBasic(
 
     for (moves.items) |item| {
         const dest = args.pos.applyMotion(item.motion) orelse continue;
-        const col = colours.option_colour;
+        const col = colours.move_option;
 
         // Show moves as a dot, and possible captures with corner triangles.
         if (args.state.board.get(dest) == null) {
@@ -96,7 +96,7 @@ fn highlightCurrentBasic(
         }
     }
 
-    try highlight.tileSquare(args.renderer, args.pos, colours.selected_colour);
+    try highlight.tileSquare(args.renderer, args.pos, colours.selected);
 }
 
 /// Shows the current move - a drop - on the board.
@@ -117,7 +117,7 @@ fn highlightCurrentDrop(
 
     for (drops.items) |pos| {
         if (args.state.board.get(pos) == null) {
-            try highlight.tileDot(args.renderer, pos, colours.option_colour);
+            try highlight.tileDot(args.renderer, pos, colours.move_option);
         }
     }
 }

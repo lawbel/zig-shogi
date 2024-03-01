@@ -67,7 +67,7 @@ fn showPlayer(
             .renderer = args.renderer,
             .piece = .{ .player = .black, .sort = sort },
             .pos = .{ .x = top_left_x, .y = top_left_y },
-            .shade = if (count > 0) null else colours.no_piece_in_hand_shade,
+            .shade = if (count > 0) null else colours.no_piece_in_hand,
         });
 
         // Step 2/3 - render the box we'll show the piece count in.
@@ -76,7 +76,7 @@ fn showPlayer(
 
         try sdl.renderFillRect(
             args.renderer,
-            colours.hand_box_border_colour,
+            colours.hand_box_border,
             &.{
                 .x = box_x - box_width,
                 .y = box_y - box_size,
@@ -86,7 +86,7 @@ fn showPlayer(
         );
         try sdl.renderFillRect(
             args.renderer,
-            colours.hand_box_colour,
+            colours.hand_box,
             &.{
                 .x = box_x - box_width + box_border,
                 .y = box_y - box_size + box_border,
@@ -106,7 +106,7 @@ fn showPlayer(
             .text = str,
             .font = args.font,
             .style = c.TTF_STYLE_BOLD,
-            .colour = colours.hand_text_colour,
+            .colour = colours.hand_text,
             .center = .{
                 .x = box_x - @divFloor(box_width, 2),
                 .y = box_y - @divFloor(box_size, 2),
