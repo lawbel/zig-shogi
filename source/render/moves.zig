@@ -5,6 +5,7 @@ const colours = @import("colours.zig");
 const Error = @import("errors.zig").Error;
 const highlight = @import("highlight.zig");
 const model = @import("../model.zig");
+const pixel = @import("../pixel.zig");
 const rules = @import("../rules.zig");
 const State = @import("../state.zig").State;
 const std = @import("std");
@@ -13,16 +14,15 @@ const std = @import("std");
 pub fn highlightCheck(
     alloc: std.mem.Allocator,
     renderer: *c.SDL_Renderer,
-    state: State,
+    board: model.Board,
 ) Error!void {
     inline for (@typeInfo(model.Player).Union.fields) |field| {
         const player = @unionInit(model.Player, field.name, {});
-        const in_check =
-            try rules.checked.isInCheck(alloc, player, state.board);
+        const in_check = try rules.checked.isInCheck(alloc, player, board);
 
         if (in_check) {
             const king = .{ .sort = .king, .player = player };
-            if (state.board.find(king)) |pos| {
+            if (board.find(king)) |pos| {
                 try highlight.tileCorners(renderer, pos, colours.checked);
             }
         }
@@ -36,12 +36,11 @@ pub fn highlightCheck(
 /// * The tile that the piece was dropped on (if it was a drop).
 pub fn highlightLast(
     renderer: *c.SDL_Renderer,
-    state: State,
+    move: model.Move,
 ) Error!void {
-    const last = state.last_move orelse return;
     const col = colours.last_move;
 
-    switch (last) {
+    switch (move) {
         .basic => |basic| {
             const dest = basic.from.applyMotion(basic.motion) orelse return;
             try highlight.tileSquare(renderer, basic.from, col);
@@ -58,28 +57,31 @@ pub fn highlightLast(
 /// tile/square of the selected piece, and any possible moves that piece could
 /// make.
 pub fn highlightCurrent(
-    alloc: std.mem.Allocator,
-    renderer: *c.SDL_Renderer,
-    state: State,
+    args: struct {
+        alloc: std.mem.Allocator,
+        renderer: *c.SDL_Renderer,
+        board: model.Board,
+        player: model.Player,
+        moved_from: pixel.PixelPos,
+    },
 ) Error!void {
-    const from_pix = state.mouse.move_from orelse return;
-
-    if (from_pix.toBoardPos()) |from_pos| {
+    if (args.moved_from.toBoardPos()) |from_pos| {
         try highlightCurrentBasic(.{
-            .alloc = alloc,
-            .renderer = renderer,
-            .state = state,
+            .alloc = args.alloc,
+            .renderer = args.renderer,
+            .board = args.board,
+            .player = args.player,
             .pos = from_pos,
         });
-    } else if (from_pix.toHandPiece()) |piece| {
-        if (!piece.player.eq(state.user)) return;
-        const count = state.board.getHand(state.user).get(piece.sort) orelse 0;
+    } else if (args.moved_from.toHandPiece()) |piece| {
+        if (!piece.player.eq(args.player)) return;
+        const count = args.board.getHand(args.player).get(piece.sort) orelse 0;
         if (count == 0) return;
 
         try highlightCurrentDrop(.{
-            .alloc = alloc,
-            .renderer = renderer,
-            .state = state,
+            .alloc = args.alloc,
+            .renderer = args.renderer,
+            .board = args.board,
             .piece = piece,
         });
     }
@@ -90,17 +92,18 @@ fn highlightCurrentBasic(
     args: struct {
         alloc: std.mem.Allocator,
         renderer: *c.SDL_Renderer,
-        state: State,
+        board: model.Board,
+        player: model.Player,
         pos: model.BoardPos,
     },
 ) Error!void {
-    const piece = args.state.board.get(args.pos) orelse return;
-    if (!piece.player.eq(args.state.user)) return;
+    const piece = args.board.get(args.pos) orelse return;
+    if (!piece.player.eq(args.player)) return;
 
     var moves = try rules.moved.movementsFrom(.{
         .alloc = args.alloc,
         .from = args.pos,
-        .board = args.state.board,
+        .board = args.board,
     });
     defer moves.deinit();
 
@@ -109,7 +112,7 @@ fn highlightCurrentBasic(
         const col = colours.move_option;
 
         // Show moves as a dot, and possible captures with corner triangles.
-        if (args.state.board.get(dest) == null) {
+        if (args.board.get(dest) == null) {
             try highlight.tileDot(args.renderer, dest, col);
         } else {
             try highlight.tileCorners(args.renderer, dest, col);
@@ -124,19 +127,16 @@ fn highlightCurrentDrop(
     args: struct {
         alloc: std.mem.Allocator,
         renderer: *c.SDL_Renderer,
-        state: State,
+        board: model.Board,
         piece: model.Piece,
     },
 ) Error!void {
-    var drops = try rules.dropped.possibleDropsOf(
-        args.alloc,
-        args.piece,
-        args.state.board,
-    );
+    var drops =
+        try rules.dropped.possibleDropsOf(args.alloc, args.piece, args.board);
     defer drops.deinit();
 
     for (drops.items) |pos| {
-        if (args.state.board.get(pos) == null) {
+        if (args.board.get(pos) == null) {
             try highlight.tileDot(args.renderer, pos, colours.move_option);
         }
     }

@@ -13,23 +13,26 @@ const std = @import("std");
 
 /// Show the state of both players hands.
 pub fn showBothPlayers(
-    alloc: std.mem.Allocator,
-    renderer: *c.SDL_Renderer,
-    state: State,
+    args: struct {
+        alloc: std.mem.Allocator,
+        renderer: *c.SDL_Renderer,
+        board: model.Board,
+        font: *c.TTF_Font,
+    },
 ) Error!void {
     try showPlayer(.{
-        .alloc = alloc,
-        .renderer = renderer,
-        .font = state.font,
+        .alloc = args.alloc,
+        .renderer = args.renderer,
+        .font = args.font,
         .player = .white,
-        .hand = state.board.hand.white,
+        .hand = args.board.hand.white,
     });
     try showPlayer(.{
-        .alloc = alloc,
-        .renderer = renderer,
-        .font = state.font,
+        .alloc = args.alloc,
+        .renderer = args.renderer,
+        .font = args.font,
         .player = .black,
-        .hand = state.board.hand.black,
+        .hand = args.board.hand.black,
     });
 }
 

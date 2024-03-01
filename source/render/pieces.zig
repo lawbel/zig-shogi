@@ -12,24 +12,29 @@ const State = @import("../state.zig").State;
 /// Renders all the pieces on the board, and the piece (if any) that the user
 /// is currently moving.
 pub fn showPieces(
-    renderer: *c.SDL_Renderer,
-    state: State,
+    args: struct {
+        renderer: *c.SDL_Renderer,
+        player: model.Player,
+        moved_from: ?pixel.PixelPos,
+        mouse_pos: pixel.PixelPos,
+        board: model.Board,
+    },
 ) Error!void {
     var moved_piece: ?model.Piece = null;
     var moved_from: ?model.BoardPos = null;
 
-    if (state.mouse.move_from) |pos| {
+    if (args.moved_from) |pos| {
         moved_from = pos.toBoardPos();
     }
 
     // Render every piece on the board, except for the one (if any) that the
     // user is currently moving.
-    for (state.board.tiles, 0..) |row, y| {
+    for (args.board.tiles, 0..) |row, y| {
         for (row, 0..) |val, x| {
             const piece = val orelse continue;
 
             if (moved_from) |pos| {
-                const owner_is_user = piece.player.eq(state.user);
+                const owner_is_user = piece.player.eq(args.player);
                 if (owner_is_user and x == pos.x and y == pos.y) {
                     moved_piece = piece;
                     continue;
@@ -42,7 +47,7 @@ pub fn showPieces(
             const top_left_y: c_int = @intCast(pixel.board_top_left.y);
 
             try showPiece(.{
-                .renderer = renderer,
+                .renderer = args.renderer,
                 .piece = piece,
                 .pos = .{
                     .x = top_left_x + (pixel.tile_size * pos_x),
@@ -58,35 +63,35 @@ pub fn showPieces(
     // Handle the user moving a piece on the board.
     piece_on_board: {
         const piece = moved_piece orelse break :piece_on_board;
-        const from = state.mouse.move_from orelse break :piece_on_board;
+        const from = args.moved_from orelse break :piece_on_board;
         const offset = from.offsetFromBoard();
 
         try showPiece(.{
-            .renderer = renderer,
+            .renderer = args.renderer,
             .piece = piece,
             .pos = .{
-                .x = state.mouse.pos.x - offset.x,
-                .y = state.mouse.pos.y - offset.y,
+                .x = args.mouse_pos.x - offset.x,
+                .y = args.mouse_pos.y - offset.y,
             },
         });
     }
 
     // Handle the user moving a piece from their hand.
     piece_in_hand: {
-        const pix_from = state.mouse.move_from orelse break :piece_in_hand;
+        const pix_from = args.moved_from orelse break :piece_in_hand;
         const piece = pix_from.toHandPiece() orelse break :piece_in_hand;
-        if (!piece.player.eq(state.user)) break :piece_in_hand;
+        if (!piece.player.eq(args.player)) break :piece_in_hand;
 
         const offset = pix_from.offsetFromUserHand();
-        const count = state.board.getHand(state.user).get(piece.sort) orelse 0;
+        const count = args.board.getHand(args.player).get(piece.sort) orelse 0;
         if (count == 0) break :piece_in_hand;
 
         try showPiece(.{
-            .renderer = renderer,
+            .renderer = args.renderer,
             .piece = piece,
             .pos = .{
-                .x = state.mouse.pos.x - offset.x,
-                .y = state.mouse.pos.y - offset.y,
+                .x = args.mouse_pos.x - offset.x,
+                .y = args.mouse_pos.y - offset.y,
             },
         });
     }

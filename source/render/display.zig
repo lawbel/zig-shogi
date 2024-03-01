@@ -23,11 +23,37 @@ pub fn showGameState(
 
     // Perform all the rendering logic.
     try board.show(renderer);
-    try moves.highlightLast(renderer, state);
-    try moves.highlightCurrent(alloc, renderer, state);
-    try moves.highlightCheck(alloc, renderer, state);
-    try hands.showBothPlayers(alloc, renderer, state);
-    try pieces.showPieces(renderer, state);
+
+    if (state.last_move) |last_move| {
+        try moves.highlightLast(renderer, last_move);
+    }
+
+    if (state.mouse.move_from) |moved_from| {
+        try moves.highlightCurrent(.{
+            .alloc = alloc,
+            .renderer = renderer,
+            .board = state.board,
+            .player = state.user,
+            .moved_from = moved_from,
+        });
+    }
+
+    try moves.highlightCheck(alloc, renderer, state.board);
+
+    try hands.showBothPlayers(.{
+        .alloc = alloc,
+        .renderer = renderer,
+        .board = state.board,
+        .font = state.font,
+    });
+
+    try pieces.showPieces(.{
+        .renderer = renderer,
+        .player = state.user,
+        .moved_from = state.mouse.move_from,
+        .mouse_pos = state.mouse.pos,
+        .board = state.board,
+    });
 
     // Take the rendered state and update the window with it.
     c.SDL_RenderPresent(renderer);
