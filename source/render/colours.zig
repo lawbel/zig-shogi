@@ -23,6 +23,14 @@ pub const selected: Colour = .{
 /// piece to.
 pub const move_option: Colour = selected;
 
+/// The colour to highlight the last move with (if there is one).
+pub const checked: Colour = .{
+    .red = 0x99,
+    .green = 0,
+    .blue = 0,
+    .alpha = Colour.max_opacity / 5,
+};
+
 /// The colour to print the count of pieces in a player's hand.
 pub const hand_text: Colour = .{
     .red = 0x79,

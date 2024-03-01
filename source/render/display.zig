@@ -25,6 +25,7 @@ pub fn showGameState(
     try board.show(renderer);
     try moves.highlightLast(renderer, state);
     try moves.highlightCurrent(alloc, renderer, state);
+    try moves.highlightCheck(alloc, renderer, state);
     try hands.showBothPlayers(alloc, renderer, state);
     try pieces.showPieces(renderer, state);
 

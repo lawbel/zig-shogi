@@ -9,6 +9,26 @@ const rules = @import("../rules.zig");
 const State = @import("../state.zig").State;
 const std = @import("std");
 
+/// Highlight either player's king if they are in check.
+pub fn highlightCheck(
+    alloc: std.mem.Allocator,
+    renderer: *c.SDL_Renderer,
+    state: State,
+) Error!void {
+    inline for (@typeInfo(model.Player).Union.fields) |field| {
+        const player = @unionInit(model.Player, field.name, {});
+        const in_check =
+            try rules.checked.isInCheck(alloc, player, state.board);
+
+        if (in_check) {
+            const king = .{ .sort = .king, .player = player };
+            if (state.board.find(king)) |pos| {
+                try highlight.tileCorners(renderer, pos, colours.checked);
+            }
+        }
+    }
+}
+
 /// Show the last move (if there is one) on the board by highlighting either:
 ///
 /// * The tile/square that the piece moved from and moved to (if it was a
