@@ -131,8 +131,11 @@ fn highlightCurrentDrop(
         piece: model.Piece,
     },
 ) Error!void {
-    var drops =
-        try rules.dropped.possibleDropsOf(args.alloc, args.piece, args.board);
+    var drops = try rules.dropped.possibleDropsOf(.{
+        .alloc = args.alloc,
+        .piece = args.piece,
+        .board = args.board,
+    });
     defer drops.deinit();
 
     for (drops.items) |pos| {

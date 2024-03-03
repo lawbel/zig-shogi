@@ -1,6 +1,7 @@
 //! Contains high-level methods for computing all valid moves in a position,
 //! or determining if a given move is valid.
 
+const checked = @import("checked.zig");
 const dropped = @import("dropped.zig");
 const model = @import("../model.zig");
 const moved = @import("moved.zig");
@@ -27,7 +28,12 @@ pub fn movesFor(
     });
     errdefer basics.deinit();
 
-    const drops = try movesDropFor(args.alloc, args.player, args.board);
+    const drops = try movesDropFor(.{
+        .alloc = args.alloc,
+        .player = args.player,
+        .board = args.board,
+        .test_check = args.test_check,
+    });
 
     return .{
         .basics = basics,
@@ -74,20 +80,33 @@ pub fn movesBasicFor(
 
 /// Returns all valid piece drops for the given player in the given position.
 pub fn movesDropFor(
-    alloc: std.mem.Allocator,
-    player: model.Player,
-    board: model.Board,
+    args: struct {
+        alloc: std.mem.Allocator,
+        player: model.Player,
+        board: model.Board,
+        test_check: bool = true,
+    },
 ) Error!types.Drops {
-    var moves = types.Drops.init(alloc);
+    var moves = types.Drops.init(args.alloc);
     errdefer moves.deinit();
 
-    const hand = board.getHand(player);
+    var test_check = args.test_check;
+    if (test_check) {
+        test_check = try checked.isInCheck(args.alloc, args.player, args.board);
+    }
+
+    const hand = args.board.getHand(args.player);
     inline for (@typeInfo(model.Sort).Enum.fields) |field| {
         const sort: model.Sort = @enumFromInt(field.value);
-        const piece: model.Piece = .{ .sort = sort, .player = player };
+        const piece: model.Piece = .{ .sort = sort, .player = args.player };
         const count = hand.get(sort) orelse 0;
         if (count > 0) {
-            const drops = try dropped.possibleDropsOf(alloc, piece, board);
+            const drops = try dropped.possibleDropsOf(.{
+                .alloc = args.alloc,
+                .piece = piece,
+                .board = args.board,
+                .test_check = test_check,
+            });
             if (drops.items.len > 0) {
                 try moves.map.put(piece, drops);
             }
@@ -122,8 +141,11 @@ pub fn isValid(
         },
 
         .drop => |drop| {
-            const drops =
-                try dropped.possibleDropsOf(alloc, drop.piece, board);
+            const drops = try dropped.possibleDropsOf(.{
+                .alloc = alloc,
+                .piece = drop.piece,
+                .board = board,
+            });
             defer drops.deinit();
 
             for (drops.items) |pos| {
