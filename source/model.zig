@@ -373,6 +373,20 @@ pub const Board = struct {
         },
     };
 
+    const empty_tiles: [size][size]?Piece = .{
+        .{null} ** size,
+    } ** size;
+
+    /// An empty board.
+    pub const empty: @This() = .{
+        .tiles = empty_tiles,
+
+        .hand = .{
+            .white = empty_hand,
+            .black = empty_hand,
+        },
+    };
+
     /// Whether or not the numbered file has 1 or more pawns (just a plain
     /// pawn, not counting *promoted* pawns). The numbering is 0-indexed from
     /// left-to-right, the same as indices into `tiles`.

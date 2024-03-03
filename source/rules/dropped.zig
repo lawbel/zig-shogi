@@ -145,3 +145,111 @@ pub fn pawnDropsFor(
 
     return possible;
 }
+
+test "pawn drop can check opponent's king" {
+    const alloc = std.testing.allocator;
+
+    const player: model.Player = .black;
+    const opponent: model.Player = player.swap();
+    const expected_drop: model.Move.Drop = .{
+        .piece = .{ .player = player, .sort = .pawn },
+        .pos = .{ .x = 4, .y = 5 },
+    };
+    const board: model.Board = init: {
+        var stage = model.Board.empty;
+        stage.getHandPtr(player).put(.pawn, 1);
+        stage.tiles[4][4] = .{ .player = opponent, .sort = .king };
+        break :init stage;
+    };
+
+    const all_drops = try pawnDropsFor(.{
+        .alloc = alloc,
+        .player = player,
+        .board = board,
+        .test_check = true,
+    });
+    defer all_drops.deinit();
+
+    var expected_drop_in_options = false;
+    for (all_drops.items) |pos| {
+        if (pos.eq(expected_drop.pos)) {
+            expected_drop_in_options = true;
+            break;
+        }
+    }
+
+    try std.testing.expect(expected_drop_in_options);
+
+    const expected_num_drops: usize = total: {
+        const all_tiles = model.Board.size * model.Board.size;
+        const back_rank = model.Board.size;
+        const king_tile = 1;
+
+        break :total all_tiles - back_rank - king_tile;
+    };
+
+    try std.testing.expectEqual(expected_num_drops, all_drops.items.len);
+}
+
+test "pawn drop cannot checkmate opponent's king" {
+    const alloc = std.testing.allocator;
+
+    const player: model.Player = .black;
+    const opponent: model.Player = player.swap();
+
+    const invalid_drop: model.Move.Drop = .{
+        .piece = .{ .player = player, .sort = .pawn },
+        .pos = .{ .x = 4, .y = 5 },
+    };
+
+    // The board is set up like so:
+    //
+    //         [0] [1] [2] [3] [4] [5] [6] [7] [8]
+    //     [0]  .   .   .   .   .   .   .   .   .
+    //     [1]  .   .   .   .   .   .   .   .   .
+    //     [2]  .   .   .   .   .   .   .   .   .
+    //     [3]  .   .   .   P   P   P   .   .   .
+    //     [4]  .   .   .   P   K   P   .   .   .
+    //     [5]  .   .   .   P   .   P   .   .   .
+    //     [6]  .   .   .   .   G   .   .   .   .
+    //     [7]  .   .   .   .   .   .   .   .   .
+    //     [8]  .   .   .   .   .   .   .   .   .
+    //
+    // Here the gold 'G' belongs to the player, and every other piece
+    // belongs to the opponent.
+    const board: model.Board = init: {
+        var stage = model.Board.empty;
+
+        stage.tiles[3][3] = .{ .player = opponent, .sort = .pawn };
+        stage.tiles[3][4] = .{ .player = opponent, .sort = .pawn };
+        stage.tiles[3][5] = .{ .player = opponent, .sort = .pawn };
+        stage.tiles[4][3] = .{ .player = opponent, .sort = .pawn };
+        stage.tiles[4][4] = .{ .player = opponent, .sort = .king };
+        stage.tiles[4][5] = .{ .player = opponent, .sort = .pawn };
+        stage.tiles[5][3] = .{ .player = opponent, .sort = .pawn };
+        stage.tiles[5][5] = .{ .player = opponent, .sort = .pawn };
+
+        stage.tiles[6][4] = .{ .player = player, .sort = .gold };
+        stage.getHandPtr(player).put(.pawn, 1);
+
+        break :init stage;
+    };
+
+    const all_drops = try pawnDropsFor(.{
+        .alloc = alloc,
+        .player = player,
+        .board = board,
+        .test_check = true,
+    });
+    defer all_drops.deinit();
+
+    var invalid_drop_in_options = false;
+    for (all_drops.items) |pos| {
+        if (pos.eq(invalid_drop.pos)) {
+            invalid_drop_in_options = true;
+            break;
+        }
+    }
+
+    try std.testing.expect(!invalid_drop_in_options);
+}
