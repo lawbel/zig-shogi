@@ -13,6 +13,7 @@ test {
     // here and ignore the result.
 
     _ = @import("model.zig");
+    _ = @import("parse.zig");
     _ = @import("pixel.zig");
     _ = @import("rules.zig");
 }
