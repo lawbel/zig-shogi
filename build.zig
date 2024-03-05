@@ -1,7 +1,7 @@
 const std = @import("std");
 
 // This is needed so that we can have our source files under `source/`
-// and other files in another folder like `data/` for example.
+// and other files in another folder like `assets/`.
 const main_mod_path: std.build.LazyPath = .{ .path = "." };
 
 /// Builds this project.
@@ -38,7 +38,7 @@ pub fn build(builder: *std.Build) void {
     // Test suite.
     const tester = builder.addTest(.{
         .root_source_file = .{ .path = "source/test.zig" },
-        // .main_mod_path = main_mod_path,
+        .main_mod_path = main_mod_path,
         .target = target,
         .optimize = optimize,
     });

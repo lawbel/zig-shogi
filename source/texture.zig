@@ -5,19 +5,19 @@ const model = @import("model.zig");
 const sdl = @import("sdl.zig");
 const std = @import("std");
 
-/// Embed a file in the `data` directory.
-fn embedData(comptime path: [:0]const u8) [:0]const u8 {
-    return @embedFile("../data/" ++ path);
+/// Embed a file in the `assets` directory.
+fn embedAsset(comptime path: [:0]const u8) [:0]const u8 {
+    return @embedFile("../assets/" ++ path);
 }
 
 /// The board image.
-pub const board_image: [:0]const u8 = embedData("board.png");
+pub const board_image: [:0]const u8 = embedAsset("board.png");
 
 /// The white king image.
-pub const white_king_image: [:0]const u8 = embedData("white_king.png");
+pub const white_king_image: [:0]const u8 = embedAsset("white_king.png");
 
 /// The black king image.
-pub const black_king_image: [:0]const u8 = embedData("black_king.png");
+pub const black_king_image: [:0]const u8 = embedAsset("black_king.png");
 
 /// The images for all 'core' pieces - every piece except for the kings.
 pub var core_piece_images: std.EnumMap(model.Sort, [:0]const u8) = init: {
@@ -28,7 +28,7 @@ pub var core_piece_images: std.EnumMap(model.Sort, [:0]const u8) = init: {
         // assign them different images for white and black.
         if (field.value != @intFromEnum(model.Sort.king)) {
             const sort: model.Sort = @enumFromInt(field.value);
-            map.put(sort, embedData(field.name ++ ".png"));
+            map.put(sort, embedAsset(field.name ++ ".png"));
         }
     }
 
