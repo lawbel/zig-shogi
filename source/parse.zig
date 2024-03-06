@@ -122,6 +122,7 @@ fn csaMoves(
     return moves;
 }
 
+/// Parse a single move in CSA format.
 fn csaMove(input: []const u8) ParseError!CsaMove {
     if (input.len < 7) return error.EndOfInput;
 
