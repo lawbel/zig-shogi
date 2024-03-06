@@ -224,16 +224,17 @@ fn directMovementsFrom(
         // We cannot make a move that would leave us in check
         if (args.test_check) {
             var if_moved = args.board;
+            const doesnt_matter = false;
             const is_ok = if_moved.applyMoveBasic(.{
                 .from = args.from,
                 .motion = motion,
-                .promoted = false,
+                .promoted = doesnt_matter,
             });
             std.debug.assert(is_ok);
 
-            const causes_check =
+            const leaves_in_check =
                 try checked.isInCheck(args.alloc, args.player, if_moved);
-            if (causes_check) continue;
+            if (leaves_in_check) continue;
         }
 
         // If we got this far, then this move is okay. We just have to work out
@@ -281,24 +282,29 @@ fn rangedMovementsFromSteps(
     errdefer moves.deinit();
 
     for (args.steps) |step| {
-        var cur_step = step;
+        var cur_step: model.Motion = .{ .x = 0, .y = 0 };
 
         for (1..model.Board.size) |_| {
+            cur_step.x += step.x;
+            cur_step.y += step.y;
+
+            // If this would take us off the edges of the board, then stop.
             const dest = args.from.applyMotion(cur_step) orelse break;
 
             // We cannot make a move that would leave us in check.
             if (args.test_check) {
                 var if_moved = args.board;
+                const doesnt_matter = false;
                 const is_ok = if_moved.applyMoveBasic(.{
                     .from = args.from,
                     .motion = cur_step,
-                    .promoted = false,
+                    .promoted = doesnt_matter,
                 });
                 std.debug.assert(is_ok);
 
-                const causes_check =
+                const leaves_in_check =
                     try checked.isInCheck(args.alloc, args.player, if_moved);
-                if (causes_check) break;
+                if (leaves_in_check) continue;
             }
 
             // Here we pre-compute the move that we might be making, including
@@ -327,9 +333,6 @@ fn rangedMovementsFromSteps(
                 // If the tile is vacant, then this move is okay.
                 try moves.append(move);
             }
-
-            cur_step.x += step.x;
-            cur_step.y += step.y;
         }
     }
 
