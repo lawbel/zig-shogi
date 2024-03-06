@@ -3,28 +3,38 @@
 //! performance or robustness.
 
 const model = @import("model.zig");
+const rules = @import("rules.zig");
 const std = @import("std");
 
-pub const Error = ParseError || CsaError || std.mem.Allocator.Error;
+/// Any kind of error that can occur in this module while parsing and
+/// processing CSA data.
+pub const Error = ParseError || GameError || std.mem.Allocator.Error;
 
+/// Parsing errors that may occur while parsing a CSA file.
 pub const ParseError = error{
     EndOfInput,
     UnexpectedChar,
 };
 
-pub const CsaError = error{
-    MissingPiece,
+/// Logical errors that may occur while processing a CSA move.
+pub const GameError = error{
+    PieceNotInHand,
     InvalidMove,
 };
 
+/// Reads a game in `.csa` format and turns it into a sequence of
+/// `model.Move`s. This function does not attempt to fully parse the input,
+/// instead it simply assumes that the given moves were played for a game
+/// with no handicap on a standard board.
 pub fn parseCsa(
     alloc: std.mem.Allocator,
     content: []const u8,
+    test_valid: bool,
 ) Error!std.ArrayList(model.Move) {
-    const csa_moves = try csaMoves(alloc, content);
-    defer csa_moves.deinit();
+    const moves = try csaMoves(alloc, content);
+    defer moves.deinit();
 
-    return csaToMoves(alloc, csa_moves);
+    return csaToMoves(alloc, moves, test_valid);
 }
 
 /// Turns a sequence of `CsaMove`s into a sequence of `model.Move`s. This
@@ -33,6 +43,7 @@ pub fn parseCsa(
 fn csaToMoves(
     alloc: std.mem.Allocator,
     csa_moves: std.ArrayList(CsaMove),
+    test_valid: bool,
 ) Error!std.ArrayList(model.Move) {
     var board = model.Board.init;
     var moves = std.ArrayList(model.Move).init(alloc);
@@ -40,6 +51,11 @@ fn csaToMoves(
 
     for (csa_moves.items) |csa_move| {
         const move = try csaToMove(csa_move, board);
+        if (test_valid) {
+            const valid = try rules.valid.isValid(alloc, move, board);
+            if (!valid) return error.InvalidMove;
+        }
+
         try moves.append(move);
         const is_ok = board.applyMove(move);
         if (!is_ok) return error.InvalidMove;
@@ -48,28 +64,26 @@ fn csaToMoves(
     return moves;
 }
 
-/// Turns a `CsaMove` into a `model.Move`. This required knowing the current
+/// Turns a `CsaMove` into a `model.Move`. This requires knowing the current
 /// state of the game, as some information is left implicit in the csa format.
-///
 /// In particular, from simply reading a csa move one cannot tell whether a
 /// given move promoted a piece, or if it was *already* promoted and simply
 /// moved around.
-fn csaToMove(move: CsaMove, board: model.Board) Error!model.Move {
-    switch (move) {
+fn csaToMove(csa_move: CsaMove, board: model.Board) GameError!model.Move {
+    switch (csa_move) {
         .drop => |drop| return .{ .drop = drop },
+
         .basic => |basic| {
             const orig_piece = board.get(basic.from) orelse {
-                return error.MissingPiece;
+                return error.PieceNotInHand;
             };
-
             const promoted = !orig_piece.eq(basic.final_piece);
-            return .{
-                .basic = .{
-                    .from = basic.from,
-                    .motion = basic.motion,
-                    .promoted = promoted,
-                },
+            const move = .{
+                .from = basic.from,
+                .motion = basic.motion,
+                .promoted = promoted,
             };
+            return .{ .basic = move };
         },
     }
 }
@@ -115,20 +129,12 @@ fn csaMove(input: []const u8) ParseError!CsaMove {
     const src_opt = try csaPos(input[1..3]);
     const dest_opt = try csaPos(input[3..5]);
     const sort = try csaSort(input[5..7]);
-
     const dest = dest_opt orelse return error.UnexpectedChar;
     const piece = .{ .sort = sort, .player = player };
 
     if (src_opt) |src| {
-        const motion = .{
-            .x = dest.x - src.x,
-            .y = dest.y - src.y,
-        };
-        const basic = .{
-            .final_piece = piece,
-            .from = src,
-            .motion = motion,
-        };
+        const motion = .{ .x = dest.x - src.x, .y = dest.y - src.y };
+        const basic = .{ .final_piece = piece, .from = src, .motion = motion };
         return .{ .basic = basic };
     } else {
         const drop = .{ .pos = dest, .piece = piece };
@@ -140,7 +146,7 @@ test "csaMove example 1" {
     const move = "+2726FU";
     const expected: ?CsaMove = .{
         .basic = .{
-            .from = .{ .x = 1, .y = 6 },
+            .from = .{ .x = 7, .y = 6 },
             .motion = .{ .x = 0, .y = -1 },
             .final_piece = .{ .sort = .pawn, .player = .black },
         },
@@ -153,8 +159,8 @@ test "csaMove example 2" {
     const move = "-3243GI";
     const expected: ?CsaMove = .{
         .basic = .{
-            .from = .{ .x = 2, .y = 1 },
-            .motion = .{ .x = 1, .y = 1 },
+            .from = .{ .x = 6, .y = 1 },
+            .motion = .{ .x = -1, .y = 1 },
             .final_piece = .{ .sort = .silver, .player = .white },
         },
     };
@@ -171,31 +177,31 @@ fn csaPlayer(char: u8) ParseError!model.Player {
     };
 }
 
-/// Performs the translation from standard shogi notation (numbering 1-9,
-/// left-to-right and top-to-bottom) to the coordinate system we
-/// use internally (numbering 0-8, left-to-right and top-to-bottom).
-///
-/// Note that this may return `null`, which has a special meaning of
-/// 'not any rank/file' and is used when a piece is dropped from hand.
-fn csaCoord(char: u8) ParseError!?i8 {
+/// Returns the index of this co-ordinate. Performs the translation from
+/// 1-indexed (standard notation) to 0-indexed (what we use internally). Does
+/// not handle zero specially or flip ranks to match our system.
+fn csaCoord(char: u8) ParseError!i8 {
     if (char < '0' or '9' < char) return error.UnexpectedChar;
-
-    const standard: i8 = @intCast(char - '0');
-    return if (standard > 0) standard - 1 else null;
+    return @intCast(char - '0');
 }
 
 /// Performs the translation from standard shogi notation to the coordinate
 /// system we use internally. May return `null`, which has a special meaning of
 /// 'not any position on the board' and is used when a piece is dropped from
 /// hand.
-fn csaPos(chars: []const u8) ParseError!?model.BoardPos {
+fn csaPos(chars: *const [2]u8) ParseError!?model.BoardPos {
     const x = try csaCoord(chars[0]);
     const y = try csaCoord(chars[1]);
-    return if (x == null or y == null) null else .{ .x = x.?, .y = y.? };
+
+    if (x == 0 or y == 0) {
+        return null;
+    } else {
+        return .{ .x = model.Board.size - x, .y = y - 1 };
+    }
 }
 
 /// Returns what sort of piece this is.
-fn csaSort(chars: []const u8) ParseError!model.Sort {
+fn csaSort(chars: *const [2]u8) ParseError!model.Sort {
     if (std.mem.eql(u8, chars, "OU")) return .king;
     if (std.mem.eql(u8, chars, "HI")) return .rook;
     if (std.mem.eql(u8, chars, "KA")) return .bishop;
