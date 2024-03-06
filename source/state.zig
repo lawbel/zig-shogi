@@ -38,6 +38,8 @@ pub const State = struct {
     last_frame: u32,
     /// The font in use.
     font: *c.TTF_Font,
+    /// Whether to emit some debug information.
+    debug: bool = false,
 
     /// Create an initial game state.
     pub fn init(
@@ -50,6 +52,7 @@ pub const State = struct {
                 match: [:0]const u8,
                 pt_size: c_int,
             },
+            debug: bool = false,
         },
     ) Error!@This() {
         const file_path =
@@ -69,6 +72,7 @@ pub const State = struct {
             .cpu_pending_move = mutex.MutexGuard(model.Move).init(null),
             .last_frame = args.init_frame,
             .font = ttf,
+            .debug = args.debug,
         };
     }
 

@@ -17,6 +17,11 @@ pub fn applyQueuedMove(state: *State) void {
 
     state.current_player = state.current_player.swap();
     state.last_move = move;
+
+    if (state.debug) {
+        state.board.debugPrint();
+        std.debug.print("\n", .{});
+    }
 }
 
 /// The minimum time for the CPU to appear to be thinking about it's move. The

@@ -274,6 +274,30 @@ pub const Piece = struct {
     pub fn eq(this: @This(), other: @This()) bool {
         return this.player.eq(other.player) and this.sort.eq(other.sort);
     }
+
+    /// Intended for debugging purposes only. Returns a symbol (a static
+    /// string, so no need for the caller to free it) representing this piece.
+    pub fn debugShow(this: @This()) []const u8 {
+        return switch (this.sort) {
+            .king => switch (this.player) {
+                .black => "玉",
+                .white => "王",
+            },
+            .rook => "飛",
+            .promoted_rook => "龍",
+            .bishop => "角",
+            .promoted_bishop => "馬",
+            .gold => "金",
+            .silver => "銀",
+            .promoted_silver => "全",
+            .knight => "桂",
+            .promoted_knight => "今",
+            .lance => "香",
+            .promoted_lance => "仝",
+            .pawn => "歩",
+            .promoted_pawn => "个",
+        };
+    }
 };
 
 /// The pieces in a player's hand.
@@ -534,5 +558,52 @@ pub const Board = struct {
         }
 
         return true;
+    }
+
+    /// Intended for debugging purposes only. Prints out the board to stderr,
+    /// showing black pieces as red and white pieces as blue. The output looks
+    /// like so (minus colours) for the initial board:
+    ///
+    /// ```
+    /// + ー + ー + ー + ー + ー + ー + ー + ー + ー +
+    /// | 香 | 桂 | 銀 | 金 | 王 | 金 | 銀 | 桂 | 香 |
+    /// | 　 | 飛 | 　 | 　 | 　 | 　 | 　 | 角 | 　 |
+    /// | 歩 | 歩 | 歩 | 歩 | 歩 | 歩 | 歩 | 歩 | 歩 |
+    /// | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    /// | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    /// | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    /// | 歩 | 歩 | 歩 | 歩 | 歩 | 歩 | 歩 | 歩 | 歩 |
+    /// | 　 | 角 | 　 | 　 | 　 | 　 | 　 | 飛 | 　 |
+    /// | 香 | 桂 | 銀 | 金 | 玉 | 金 | 銀 | 桂 | 香 |
+    /// + ー + ー + ー + ー + ー + ー + ー + ー + ー +
+    /// ```
+    pub fn debugPrint(this: @This()) void {
+        const line = ("+ ー " ** size) ++ "+";
+        std.debug.print("{s}\n", .{line});
+        for (this.tiles) |row| {
+            for (row) |value| {
+                if (value) |piece| {
+                    const reset = std.io.tty.Color.reset;
+                    const colour = switch (piece.player) {
+                        .white => std.io.tty.Color.blue,
+                        .black => std.io.tty.Color.red,
+                    };
+
+                    const std_err = std.io.getStdErr();
+                    const conf = std.io.tty.detectConfig(std_err);
+                    const setColour = std.io.tty.Config.setColor;
+
+                    std.debug.print("| ", .{});
+                    setColour(conf, std_err, colour) catch unreachable;
+                    std.debug.print("{s}", .{piece.debugShow()});
+                    setColour(conf, std_err, reset) catch unreachable;
+                    std.debug.print(" ", .{});
+                } else {
+                    std.debug.print("| {s} ", .{"　"});
+                }
+            }
+            std.debug.print("|\n", .{});
+        }
+        std.debug.print("{s}\n", .{line});
     }
 };

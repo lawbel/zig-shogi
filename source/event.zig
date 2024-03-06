@@ -42,7 +42,13 @@ pub fn processEvents(
                 if (!state.current_player.eq(state.user)) continue;
 
                 const moved = try applyUserMove(alloc, state);
-                if (moved) try queueCpuMove(alloc, state);
+                if (moved) {
+                    if (state.debug) {
+                        state.board.debugPrint();
+                        std.debug.print("\n", .{});
+                    }
+                    try queueCpuMove(alloc, state);
+                }
             },
 
             c.SDL_QUIT => return .quit,

@@ -51,6 +51,7 @@ pub fn main() !void {
             .match = ":serif:lang=en:fontformat=TrueType",
             .pt_size = 16,
         },
+        .debug = false,
     });
     defer state.deinit();
 
