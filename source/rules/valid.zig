@@ -209,3 +209,57 @@ test "isValid forbids moving starting knights" {
         }
     }
 }
+
+test "isValid check example" {
+    // Situation is like this:
+    //
+    // + ー + ー + ー + ー + ー + ー + ー + ー + ー +
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    // | 　 | 飛 | 　 | 　 | 　 | 馬 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 玉 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 王 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    // + ー + ー + ー + ー + ー + ー + ー + ー + ー +
+    //
+    // Pieces on the board:
+    //
+    // * White has the promoted bishop 馬 and their king 王.
+    // * Black has the rook 飛 and their king 玉 which is in check.
+    //
+    // So, in this example, black should be able to capture the promoted
+    // bishop or move their king away.
+
+    const alloc = std.testing.allocator;
+    const to_move: model.Player = .black;
+    const opp: model.Player = to_move.swap();
+
+    const board: model.Board = def: {
+        var stage = model.Board.empty;
+
+        stage.tiles[1][1] = .{ .player = to_move, .sort = .rook };
+        stage.tiles[1][5] = .{ .player = opp, .sort = .promoted_bishop };
+        stage.tiles[2][4] = .{ .player = to_move, .sort = .king };
+        stage.tiles[7][4] = .{ .player = opp, .sort = .king };
+
+        break :def stage;
+    };
+
+    const expect_valid = [_]model.Move.Basic{
+        // Run away with the king.
+        .{ .from = .{ .y = 2, .x = 4 }, .motion = .{ .y = 0, .x = -1 } },
+        // Capture with the king.
+        .{ .from = .{ .y = 2, .x = 4 }, .motion = .{ .y = -1, .x = 1 } },
+        // Capture with the rook.
+        .{ .from = .{ .y = 1, .x = 1 }, .motion = .{ .y = 0, .x = 4 } },
+    };
+
+    for (expect_valid) |basic| {
+        const move: model.Move = .{ .basic = basic };
+        const valid = try isValid(alloc, move, board);
+        try std.testing.expect(valid);
+    }
+}
