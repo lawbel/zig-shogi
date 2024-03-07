@@ -206,7 +206,8 @@ const DirectArgs = struct {
 ///
 /// * The result of making that move would be in-bounds.
 /// * The destination tile is vacant OR occupied by an opponent's piece.
-/// * Making this move would not leave the player in check.
+/// * Making this move would not leave the player in check (as long
+///   as `.test_check = true`).
 fn directMovementsFrom(
     args: DirectArgs,
 ) Error!std.ArrayList(types.Movement) {
@@ -269,15 +270,17 @@ const RangedArgs = struct {
     must_promote_in_ranks: i8 = 0,
 };
 
-/// Returns an array of possible `Movements` from the given position. For each
+/// Returns an array of possible `Movement`s from the given position. For each
 /// step in the `steps` argument, applying the given step to the starting
 /// `pos` as many times as possible until either:
 ///
 /// * It hits a tile that is out-of-bounds.
-/// * It hits a tile that is occupied by an opponent's piece.
+/// * It hits a tile that is occupied by a piece. If it is an opponent's
+///   piece, then additionally allow the option to capture it, but to go
+///   no further.
 ///
-/// Additionally, any motion which would leave the player in check is discarded
-/// from the possibilities.
+/// Furthermore, any movement which would leave the player in check is
+/// discarded from the possibilities as long as `.test_check = true`.
 fn rangedMovementsFromSteps(
     args: RangedArgs,
 ) Error!std.ArrayList(types.Movement) {
