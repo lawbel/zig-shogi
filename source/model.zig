@@ -579,28 +579,28 @@ pub const Board = struct {
     /// ```
     pub fn debugPrint(this: @This()) void {
         const line = ("+ ー " ** size) ++ "+";
+        const std_err = std.io.getStdErr();
+        const tty = std.io.tty;
+        const conf = tty.detectConfig(std_err);
+        const reset = tty.Color.reset;
+
         std.debug.print("{s}\n", .{line});
         for (this.tiles) |row| {
             for (row) |value| {
-                if (value) |piece| {
-                    const reset = std.io.tty.Color.reset;
-                    const colour = switch (piece.player) {
-                        .white => std.io.tty.Color.blue,
-                        .black => std.io.tty.Color.red,
-                    };
-
-                    const std_err = std.io.getStdErr();
-                    const conf = std.io.tty.detectConfig(std_err);
-                    const setColour = std.io.tty.Config.setColor;
-
-                    std.debug.print("| ", .{});
-                    setColour(conf, std_err, colour) catch unreachable;
-                    std.debug.print("{s}", .{piece.debugShow()});
-                    setColour(conf, std_err, reset) catch unreachable;
-                    std.debug.print(" ", .{});
-                } else {
+                const piece = value orelse {
                     std.debug.print("| {s} ", .{"　"});
-                }
+                    continue;
+                };
+                const colour = switch (piece.player) {
+                    .white => tty.Color.blue,
+                    .black => tty.Color.red,
+                };
+
+                std.debug.print("| ", .{});
+                tty.Config.setColor(conf, std_err, colour) catch unreachable;
+                std.debug.print("{s}", .{piece.debugShow()});
+                tty.Config.setColor(conf, std_err, reset) catch unreachable;
+                std.debug.print(" ", .{});
             }
             std.debug.print("|\n", .{});
         }
