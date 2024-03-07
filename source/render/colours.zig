@@ -59,3 +59,11 @@ pub const no_piece_in_hand: Colour = .{
     .green = 0xC8,
     .blue = 0xC1,
 };
+
+/// The colour to shade pieces with, if they are being moved around by the user.
+pub const piece_shadow_on_board: Colour = .{
+    .red = 0xD4,
+    .green = 0xC8,
+    .blue = 0xC1,
+    .alpha = (Colour.max_opacity / 5) * 4,
+};

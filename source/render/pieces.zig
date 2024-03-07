@@ -2,12 +2,13 @@
 //! currently moving.
 
 const c = @import("../c.zig");
+const colours = @import("colours.zig");
 const Error = @import("errors.zig").Error;
 const model = @import("../model.zig");
-const texture = @import("../texture.zig");
-const sdl = @import("../sdl.zig");
 const pixel = @import("../pixel.zig");
+const sdl = @import("../sdl.zig");
 const State = @import("../state.zig").State;
+const texture = @import("../texture.zig");
 
 /// Renders all the pieces on the board, and the piece (if any) that the user
 /// is currently moving.
@@ -22,6 +23,7 @@ pub fn showPieces(
 ) Error!void {
     var moved_piece: ?model.Piece = null;
     var moved_from: ?model.BoardPos = null;
+    var shade: ?pixel.Colour = null;
 
     if (args.moved_from) |pos| {
         moved_from = pos.toBoardPos();
@@ -37,9 +39,10 @@ pub fn showPieces(
                 const owner_is_user = piece.player.eq(args.player);
                 if (owner_is_user and x == pos.x and y == pos.y) {
                     moved_piece = piece;
-                    continue;
+                    shade = colours.piece_shadow_on_board;
                 }
             }
+            defer shade = null;
 
             const pos_x: c_int = @intCast(x);
             const pos_y: c_int = @intCast(y);
@@ -53,6 +56,7 @@ pub fn showPieces(
                     .x = top_left_x + (pixel.tile_size * pos_x),
                     .y = top_left_y + (pixel.tile_size * pos_y),
                 },
+                .shade = shade,
             });
         }
     }
