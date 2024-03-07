@@ -55,7 +55,7 @@ pub const hand_box_border: Colour = .{
 
 /// The colour to shade pieces with, if a player has zero of them in hand.
 pub const no_piece_in_hand: Colour = .{
-    .red = 0xCC,
-    .green = 0xCC,
-    .blue = 0xCC,
+    .red = 0xD4,
+    .green = 0xC8,
+    .blue = 0xC1,
 };
