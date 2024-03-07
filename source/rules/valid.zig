@@ -263,3 +263,58 @@ test "isValid check example" {
         try std.testing.expect(valid);
     }
 }
+
+test "isValid forbids phase through pieces to block check" {
+    // Situation is like this:
+    //
+    // + ー + ー + ー + ー + ー + ー + ー + ー + ー +
+    // | 　 | 　 | 　 | 　 | 玉 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 角 | 　 | 　 |
+    // | 　 | 飛 | 　 | 歩 | 　 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 | 　 |
+    // | 　 | 　 | 　 | 王 | 　 | 　 | 　 | 　 | 　 |
+    // + ー + ー + ー + ー + ー + ー + ー + ー + ー +
+    //
+    // Pieces on the board:
+    //
+    // * White has a rook 飛, a pawn 歩, and their king 王 currently in check.
+    // * Black has the bishop 角 and the king 玉.
+    //
+    // So, from this position, white needs to get out of check somehow.
+    // Blocking with the rook should not possible as the pawn is in the way,
+    // and that is what this test is to check for.
+
+    const alloc = std.testing.allocator;
+    const to_move: model.Player = .white;
+    const opp: model.Player = to_move.swap();
+
+    const board: model.Board = def: {
+        var stage = model.Board.empty;
+
+        stage.tiles[0][4] = .{ .player = opp, .sort = .king };
+        stage.tiles[5][6] = .{ .player = opp, .sort = .bishop };
+        stage.tiles[6][1] = .{ .player = to_move, .sort = .rook };
+        stage.tiles[6][3] = .{ .player = to_move, .sort = .pawn };
+        stage.tiles[8][3] = .{ .player = to_move, .sort = .king };
+
+        break :def stage;
+    };
+
+    const expect_not_valid = [_]model.Move.Basic{
+        // Block with the rook.
+        .{
+            .from = .{ .y = 6, .x = 1 },
+            .motion = .{ .y = 0, .x = 4 },
+        },
+    };
+
+    for (expect_not_valid) |basic| {
+        const move: model.Move = .{ .basic = basic };
+        const valid = try isValid(alloc, move, board);
+        try std.testing.expect(!valid);
+    }
+}
