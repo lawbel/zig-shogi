@@ -28,7 +28,8 @@ const FontError = error{
 ///
 /// For working with SDL_ttf, `:fontformat=TrueType` will be helpful.
 ///
-/// See [here](https://www.freedesktop.org/software/fontconfig/fontconfig-user.html)
+/// See
+/// [here](https://www.freedesktop.org/software/fontconfig/fontconfig-user.html)
 /// or run `man fonts-conf` for a reference on these patterns (as well as
 /// general information on fontconfig).
 pub fn bestFontMatching(
