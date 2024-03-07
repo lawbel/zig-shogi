@@ -32,13 +32,15 @@ pub fn tileSquare(
     );
 }
 
+/// The size of dot, in pixels, to be drawn by `tileDot`.
+const dot_radius: i16 = 9;
+
 /// Renders a `dot` highlight at the given position on the board.
 pub fn tileDot(
     renderer: *c.SDL_Renderer,
     tile: model.BoardPos,
     colour: pixel.Colour,
 ) Error!void {
-    const tile_size_i: i16 = @intCast(pixel.tile_size);
     const tile_size_f: f32 = @floatFromInt(pixel.tile_size);
     const tile_x: f32 = @floatFromInt(tile.x);
     const tile_y: f32 = @floatFromInt(tile.y);
@@ -54,7 +56,7 @@ pub fn tileDot(
             .x = top_left_x + center_x,
             .y = top_left_y + center_y,
         },
-        .radius = tile_size_i / 6,
+        .radius = dot_radius,
     });
 }
 
