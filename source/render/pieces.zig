@@ -34,6 +34,10 @@ pub fn showPieces(
     for (args.board.tiles, 0..) |row, y| {
         for (row, 0..) |val, x| {
             const piece = val orelse continue;
+            const pos_x: c_int = @intCast(x);
+            const pos_y: c_int = @intCast(y);
+            const top_left_x: c_int = @intCast(pixel.board_top_left.x);
+            const top_left_y: c_int = @intCast(pixel.board_top_left.y);
 
             if (moved_from) |pos| {
                 const owner_is_user = piece.player.eq(args.player);
@@ -43,11 +47,6 @@ pub fn showPieces(
                 }
             }
             defer shade = null;
-
-            const pos_x: c_int = @intCast(x);
-            const pos_y: c_int = @intCast(y);
-            const top_left_x: c_int = @intCast(pixel.board_top_left.x);
-            const top_left_y: c_int = @intCast(pixel.board_top_left.y);
 
             try showPiece(.{
                 .renderer = args.renderer,
@@ -62,9 +61,8 @@ pub fn showPieces(
     }
 
     // We need to render any piece the user may be moving last, so it
-    // appears on top of everything else.
+    // appears on top of everything else. This falls into the two cases below.
 
-    // Handle the user moving a piece on the board.
     piece_on_board: {
         const piece = moved_piece orelse break :piece_on_board;
         const from = args.moved_from orelse break :piece_on_board;
@@ -80,12 +78,10 @@ pub fn showPieces(
         });
     }
 
-    // Handle the user moving a piece from their hand.
     piece_in_hand: {
         const pix_from = args.moved_from orelse break :piece_in_hand;
         const piece = pix_from.toHandPiece() orelse break :piece_in_hand;
         if (!piece.player.eq(args.player)) break :piece_in_hand;
-
         const offset = pix_from.offsetFromUserHand();
         const count = args.board.getHand(args.player).get(piece.sort) orelse 0;
         if (count == 0) break :piece_in_hand;
