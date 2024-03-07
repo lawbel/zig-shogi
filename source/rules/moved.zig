@@ -214,6 +214,7 @@ fn directMovementsFrom(
     errdefer moves.deinit();
 
     for (args.motions) |motion| {
+        // We cannot move beyond the bounds of the board.
         const dest = args.from.applyMotion(motion) orelse continue;
 
         // We cannot capture our own pieces.
@@ -221,14 +222,16 @@ fn directMovementsFrom(
             if (piece.player.eq(args.player)) continue;
         }
 
-        // We cannot make a move that would leave us in check
+        // We cannot make a move that would leave us in check. (Unless it
+        // would immediately end the game by capturing the opponents king,
+        // which is the main use case for disabling this test.)
         if (args.test_check) {
             var if_moved = args.board;
-            const doesnt_matter = false;
+            const arbitrary: bool = false;
             const is_ok = if_moved.applyMoveBasic(.{
                 .from = args.from,
                 .motion = motion,
-                .promoted = doesnt_matter,
+                .promoted = arbitrary,
             });
             std.debug.assert(is_ok);
 
@@ -288,23 +291,36 @@ fn rangedMovementsFromSteps(
             cur_step.x += step.x;
             cur_step.y += step.y;
 
-            // If this would take us off the edges of the board, then stop.
+            // If this would take us off the edges of the board, then break
+            // the loop here.
             const dest = args.from.applyMotion(cur_step) orelse break;
 
-            // We cannot make a move that would leave us in check.
+            // We cannot make a move that would leave us in check. (Unless it
+            // would immediately end the game by capturing the opponents king,
+            // which is the main use case for disabling this test.)
             if (args.test_check) {
                 var if_moved = args.board;
-                const doesnt_matter = false;
+                const arbitrary: bool = false;
                 const is_ok = if_moved.applyMoveBasic(.{
                     .from = args.from,
                     .motion = cur_step,
-                    .promoted = doesnt_matter,
+                    .promoted = arbitrary,
                 });
                 std.debug.assert(is_ok);
 
                 const leaves_in_check =
                     try checked.isInCheck(args.alloc, args.player, if_moved);
-                if (leaves_in_check) continue;
+
+                if (leaves_in_check) {
+                    // This move is out of the question as it leaves us in
+                    // check. We need to test whether the destination was
+                    // occupied by a piece:
+                    //
+                    // * If yes, then break the loop here.
+                    // * If no, then continue on and try the next iteration.
+                    const occupied = args.board.get(dest) != null;
+                    if (occupied) break else continue;
+                }
             }
 
             // Here we pre-compute the move that we might be making, including
