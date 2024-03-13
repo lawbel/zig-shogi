@@ -380,7 +380,7 @@ pub const Board = struct {
             middleRankFor(.white),
             frontRankFor(.white),
 
-            // No-mans land.
+            // No-man's land.
             .{null} ** size,
             .{null} ** size,
             .{null} ** size,

@@ -122,9 +122,9 @@ pub fn tileCorners(
     const top_left_y: i16 = @intCast(pixel.board_top_left.y);
 
     inline for (corners) |corner| {
-        const horix_offset = triangle_size * corner.x_offset;
+        const horiz_offset = triangle_size * corner.x_offset;
         const horiz_pt = .{
-            .x = top_left_x + corner.base.x + horix_offset,
+            .x = top_left_x + corner.base.x + horiz_offset,
             .y = top_left_y + corner.base.y,
         };
 

@@ -267,7 +267,7 @@ pub fn renderFillTriangle(
 }
 
 /// Render the given text (which is expected to be UTF-8 encoded) with the
-/// given font, style, and colour. The resulting text will be centered about
+/// given font, style, and colour. The resulting text will be centred about
 /// the position of the 'center' argument.
 pub fn renderUtf8Text(
     args: struct {

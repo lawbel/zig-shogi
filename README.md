@@ -36,7 +36,7 @@ dependencies, build it, and run the resulting executable.
 Otherwise, clone the repo and then:
 
 - To run the program, simply do `nix run` - this will (re)build the
-  project if neccesary and then run it.
+  project if necessary and then run it.
 - To build the program, use `nix build`. This will handle fetching all
   dependencies, build the project, and put the resulting binary in the
   `result/bin` directory (which is symlinked).

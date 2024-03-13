@@ -18,7 +18,7 @@ pub const Error = error{
 pub const sdl_init_flags: u32 =
     c.SDL_INIT_VIDEO | c.SDL_INIT_TIMER;
 
-/// Intialize SDL and other systems.
+/// Initialize SDL and other systems.
 pub fn sdlInit() Error!void {
     if (c.SDL_Init(sdl_init_flags) < 0) {
         const msg = "Failed to initialize SDL: %s";
