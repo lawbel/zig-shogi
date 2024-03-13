@@ -23,7 +23,7 @@ pub fn highlightCheck(
         if (in_check) {
             const king = .{ .sort = .king, .player = player };
             if (board.find(king)) |pos| {
-                try highlight.tileCorners(renderer, pos, colours.checked);
+                try highlight.tileCheck(renderer, pos);
             }
         }
     }

@@ -8,6 +8,7 @@ const c = @import("../c.zig");
 const Error = @import("errors.zig").Error;
 const model = @import("../model.zig");
 const pixel = @import("../pixel.zig");
+const texture = @import("../texture.zig");
 const sdl = @import("../sdl.zig");
 
 /// Highlights the given position on the board, by filling it with the given
@@ -145,4 +146,30 @@ pub fn tileCorners(
             colour,
         );
     }
+}
+
+/// Highlights the given position on the board, by drawing the 'check' texture
+/// at that location.
+pub fn tileCheck(
+    renderer: *c.SDL_Renderer,
+    tile: model.BoardPos,
+) Error!void {
+    const top_left_x: c_int = @intCast(pixel.board_top_left.x);
+    const top_left_y: c_int = @intCast(pixel.board_top_left.y);
+
+    const tex = try texture.getInitTexture(
+        renderer,
+        &texture.check_texture,
+        texture.check_image,
+    );
+    try sdl.renderCopy(.{
+        .renderer = renderer,
+        .texture = tex,
+        .dst_rect = &.{
+            .x = top_left_x + (tile.x * pixel.tile_size),
+            .y = top_left_y + (tile.y * pixel.tile_size),
+            .w = pixel.tile_size,
+            .h = pixel.tile_size,
+        },
+    });
 }

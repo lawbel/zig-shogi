@@ -13,6 +13,9 @@ fn embedAsset(comptime path: [:0]const u8) [:0]const u8 {
 /// The board image.
 pub const board_image: [:0]const u8 = embedAsset("board.png");
 
+/// The check highlight image.
+pub const check_image: [:0]const u8 = embedAsset("check.png");
+
 /// The white king image.
 pub const white_king_image: [:0]const u8 = embedAsset("white_king.png");
 
@@ -38,6 +41,9 @@ pub var core_piece_images: std.EnumMap(model.Sort, [:0]const u8) = init: {
 /// The board texture.
 pub var board_texture: ?*c.SDL_Texture = null;
 
+/// The check highlight texture.
+pub var check_texture: ?*c.SDL_Texture = null;
+
 /// The white king texture.
 pub var white_king_texture: ?*c.SDL_Texture = null;
 
@@ -62,11 +68,13 @@ pub var core_piece_textures: PieceTextures = init: {
 /// Frees the memory associated with the textures:
 ///
 /// * `board_texture`
+/// * `check_texture`
 /// * `white_king_texture`
 /// * `black_king_texture`
 /// * `core_piece_textures`
 pub fn freeTextures() void {
     c.SDL_DestroyTexture(board_texture);
+    c.SDL_DestroyTexture(check_texture);
     c.SDL_DestroyTexture(white_king_texture);
     c.SDL_DestroyTexture(black_king_texture);
 
