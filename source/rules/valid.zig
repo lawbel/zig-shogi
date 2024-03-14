@@ -141,6 +141,10 @@ pub fn isValid(
         },
 
         .drop => |drop| {
+            const hand = board.getHand(drop.piece.player);
+            const count_in_hand = hand.get(drop.piece.sort) orelse 0;
+            if (count_in_hand == 0) return false;
+
             const drops = try dropped.possibleDropsOf(.{
                 .alloc = alloc,
                 .piece = drop.piece,
