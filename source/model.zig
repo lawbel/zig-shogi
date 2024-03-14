@@ -404,7 +404,6 @@ pub const Board = struct {
     /// An empty board.
     pub const empty: @This() = .{
         .tiles = empty_tiles,
-
         .hand = .{
             .white = empty_hand,
             .black = empty_hand,
@@ -479,11 +478,7 @@ pub const Board = struct {
             for (row, 0..) |value, x| {
                 const tile_piece = value orelse continue;
                 if (tile_piece.eq(piece)) {
-                    const pos: BoardPos = .{
-                        .x = @intCast(x),
-                        .y = @intCast(y),
-                    };
-                    return pos;
+                    return .{ .x = @intCast(x), .y = @intCast(y) };
                 }
             }
         }
@@ -523,13 +518,13 @@ pub const Board = struct {
         if (dest.* != null) return false;
         if (count.* < 1) return false;
 
-        // Make sure to demote the piece, if it isn't already.
-        var piece = move.piece;
-        piece.sort = piece.sort.demote();
+        // The piece should not be promoted - only un-promoted sorts of pieces
+        // can be dropped. And of course, one should never be dropping kings.
+        std.debug.assert(move.piece.sort.demote().eq(move.piece.sort));
+        std.debug.assert(!move.piece.sort.eq(.king));
 
-        dest.* = piece;
+        dest.* = move.piece;
         count.* -= 1;
-
         return true;
     }
 
@@ -539,7 +534,6 @@ pub const Board = struct {
         var src_piece = this.get(move.from) orelse return false;
         const dest = move.from.applyMotion(move.motion) orelse return false;
         const dest_piece = this.get(dest);
-
         if (move.promoted) {
             src_piece.sort = src_piece.sort.promote();
         }
@@ -552,7 +546,6 @@ pub const Board = struct {
         const hand = this.getHandPtr(src_piece.player);
         const piece = dest_piece orelse return true;
         const sort = piece.sort.demote();
-
         if (hand.getPtr(sort)) |count| {
             count.* += 1;
         }
