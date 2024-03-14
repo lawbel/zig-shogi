@@ -55,7 +55,8 @@ pub fn highlightLast(
 
 /// Show the current move (if there is one) on the board by highlighting the
 /// tile/square of the selected piece, and any possible moves that piece could
-/// make.
+/// make. In addition, if the user is hovering over a tile for a possible
+/// move, highlight it specially.
 pub fn highlightCurrent(
     args: struct {
         alloc: std.mem.Allocator,
@@ -63,6 +64,7 @@ pub fn highlightCurrent(
         board: model.Board,
         player: model.Player,
         moved_from: pixel.PixelPos,
+        cur_pos: pixel.PixelPos,
     },
 ) Error!void {
     if (args.moved_from.toBoardPos()) |from_pos| {
@@ -72,6 +74,7 @@ pub fn highlightCurrent(
             .board = args.board,
             .player = args.player,
             .pos = from_pos,
+            .cur_pos = args.cur_pos,
         });
     } else if (args.moved_from.toHandPiece()) |piece| {
         if (!piece.player.eq(args.player)) return;
@@ -83,6 +86,7 @@ pub fn highlightCurrent(
             .renderer = args.renderer,
             .board = args.board,
             .piece = piece,
+            .cur_pos = args.cur_pos,
         });
     }
 }
@@ -95,9 +99,12 @@ fn highlightCurrentBasic(
         board: model.Board,
         player: model.Player,
         pos: model.BoardPos,
+        cur_pos: pixel.PixelPos,
     },
 ) Error!void {
     const piece = args.board.get(args.pos) orelse return;
+    const current = args.cur_pos.toBoardPos();
+    const col = colours.move_option;
     if (!piece.player.eq(args.player)) return;
 
     var moves = try rules.moved.movementsFrom(.{
@@ -109,10 +116,10 @@ fn highlightCurrentBasic(
 
     for (moves.items) |item| {
         const dest = args.pos.applyMotion(item.motion) orelse continue;
-        const col = colours.move_option;
 
-        // Show moves as a dot, and possible captures with corner triangles.
-        if (args.board.get(dest) == null) {
+        if (current != null and current.?.eq(dest)) {
+            try highlight.tileSquare(args.renderer, dest, col);
+        } else if (args.board.get(dest) == null) {
             try highlight.tileDot(args.renderer, dest, col);
         } else {
             try highlight.tileCorners(args.renderer, dest, col);
@@ -129,8 +136,11 @@ fn highlightCurrentDrop(
         renderer: *c.SDL_Renderer,
         board: model.Board,
         piece: model.Piece,
+        cur_pos: pixel.PixelPos,
     },
 ) Error!void {
+    const current = args.cur_pos.toBoardPos();
+    const col = colours.move_option;
     var drops = try rules.dropped.possibleDropsOf(.{
         .alloc = args.alloc,
         .piece = args.piece,
@@ -139,8 +149,10 @@ fn highlightCurrentDrop(
     defer drops.deinit();
 
     for (drops.items) |pos| {
-        if (args.board.get(pos) == null) {
-            try highlight.tileDot(args.renderer, pos, colours.move_option);
+        if (current != null and current.?.eq(pos)) {
+            try highlight.tileSquare(args.renderer, pos, col);
+        } else {
+            try highlight.tileDot(args.renderer, pos, col);
         }
     }
 }

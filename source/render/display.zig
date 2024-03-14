@@ -35,6 +35,7 @@ pub fn showGameState(
             .board = state.board,
             .player = state.user,
             .moved_from = moved_from,
+            .cur_pos = state.mouse.pos,
         });
     }
 
