@@ -4,19 +4,19 @@ const Colour = @import("../pixel.zig").Colour;
 
 /// The colour to highlight the last move with (if there is one).
 pub const last_move: Colour = .{
-    .red = 0,
-    .green = 0x77,
-    .blue = 0,
-    .alpha = Colour.max_opacity / 4,
+    .red = 0x57,
+    .green = 0x9A,
+    .blue = 0x03,
+    .alpha = (Colour.max_opacity / 7) * 2,
 };
 
 /// The colour to highlight a selected piece in, that the user has started
 /// moving.
 pub const selected: Colour = .{
-    .red = 0,
+    .red = 0x17,
     .green = 0x33,
-    .blue = 0x22,
-    .alpha = Colour.max_opacity / 4,
+    .blue = 0x02,
+    .alpha = (Colour.max_opacity / 7) * 2,
 };
 
 /// The colour to highlight a tile with, that is a possible option to move the
