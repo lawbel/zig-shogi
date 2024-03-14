@@ -51,14 +51,22 @@ fn csaToMoves(
 
     for (csa_moves.items) |csa_move| {
         const move = try csaToMove(csa_move, board);
+
+        // This does a comprehensive test of whether the move is valid, testing
+        // things like if a move is physically possible (no intermediate tiles
+        // occupied) and doesn't leave the player in check.
         if (test_valid) {
             const valid = try rules.valid.isValid(alloc, move, board);
             if (!valid) return error.InvalidMove;
         }
 
-        try moves.append(move);
+        // This does a basic test, it only does the bare minimum to ensure the
+        // move can sensibly be interpreted and applied to the board.
         const is_ok = board.applyMove(move);
         if (!is_ok) return error.InvalidMove;
+
+        // All the above being well, add this move to the list.
+        try moves.append(move);
     }
 
     return moves;
