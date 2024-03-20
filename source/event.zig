@@ -41,13 +41,11 @@ pub fn processEvents(
                 if (event.button.button != c.SDL_BUTTON_LEFT) continue;
                 if (!state.current_player.eq(state.user)) continue;
 
-                const moved = try applyUserMove(alloc, state);
-                if (moved) {
-                    if (state.debug) {
-                        state.board.debugPrint();
-                        std.debug.print("\n", .{});
-                    }
-                    try queueCpuMove(alloc, state);
+                if (state.user_promotion) |promotion| {
+                    _ = promotion;
+                    //
+                } else {
+                    try processUserMove(alloc, state);
                 }
             },
 
@@ -60,12 +58,24 @@ pub fn processEvents(
     return .pass;
 }
 
+fn processUserMove(
+    alloc: std.mem.Allocator,
+    state: *State,
+) Error!void {
+    const moved = try applyUserMove(alloc, state);
+    if (!moved) return;
+
+    if (state.debug) {
+        state.board.debugPrint();
+        std.debug.print("\n", .{});
+    }
+    try queueCpuMove(alloc, state);
+}
+
 /// Assumes that the user is currently the one whose turn it is. It works out
 /// the move the user has inputted based on the mouse movement, and then tries
 /// to apply that move to the board. Returns `true` if the move was valid and
 /// successfully applied, or `false` otherwise.
-///
-/// TODO: prompt the user for their choice of promotion, if appropriate.
 fn applyUserMove(alloc: std.mem.Allocator, state: *State) Error!bool {
     const dest = state.mouse.pos.toBoardPos() orelse return false;
     const src_pix = state.mouse.move_from orelse return false;
@@ -110,17 +120,26 @@ fn applyUserMoveBasic(
         .must_promote_in_ranks = rules.promoted.mustPromoteInRanks(piece),
     });
 
+    const promoted = switch (able_to_promote) {
+        .cannot_promote => false,
+        .must_promote => true,
+        .can_promote => {
+            args.state.user_promotion = .{
+                .from = args.src,
+                .to = args.dest,
+                .orig_piece = piece,
+            };
+            return false;
+        },
+    };
+
     const basic_move: model.Move.Basic = .{
         .from = args.src,
         .motion = .{
             .x = args.dest.x - args.src.x,
             .y = args.dest.y - args.src.y,
         },
-        .promoted = switch (able_to_promote) {
-            .cannot_promote => false,
-            .must_promote => true,
-            .can_promote => false, // TODO: handle properly
-        },
+        .promoted = promoted,
     };
     if (basic_move.motion.x == 0 and basic_move.motion.y == 0) return false;
 

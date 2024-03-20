@@ -8,3 +8,4 @@ pub const hands = @import("render/hands.zig");
 pub const highlight = @import("render/highlight.zig");
 pub const moves = @import("render/moves.zig");
 pub const pieces = @import("render/pieces.zig");
+pub const promoted = @import("render/promoted.zig");
