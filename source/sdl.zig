@@ -2,6 +2,12 @@
 //! We handle errors in a more idiomatic Zig fashion, and provide "keyword"
 //! arguments for functions with long argument lists via the struct trick.
 //!
+//! As a rule, the exposed functions from this module do not change the
+//! renderer/texture 'draw modes', 'blend modes', etc. Instead they take care
+//! to remember what the original modes were, and restore them to their initial
+//! values at the end of the function calls. This makes the functions simpler
+//! to use as there is less to keep track of.
+//!
 //! Note: if we do get an error from the underlying functions, we always log
 //! it with the help of the C functions `SDL_GetError` (to get the details of
 //! what happened) and `SDL_LogError` (to do the logging).
@@ -14,6 +20,7 @@ pub const Error = error{
     CannotLoadTexture,
     CannotReadMemory,
     CannotSetVar,
+    CannotGetVar,
     RenderError,
 };
 
@@ -54,7 +61,6 @@ pub fn renderCopy(
         return error.RenderError;
     }
 
-    // Cannot `defer { ... try ... }`, so put this here rather than above.
     if (orig) |colour| {
         try setTextureColourMod(args.texture, colour);
     }
@@ -62,7 +68,7 @@ pub fn renderCopy(
 
 /// Set the RGB colour and alpha values of the given texture's modifier. These
 /// values are combined with the texture itself during rendering.
-pub fn setTextureColourMod(
+fn setTextureColourMod(
     texture: *c.SDL_Texture,
     colour: pixel.Colour,
 ) Error!void {
@@ -86,7 +92,7 @@ pub fn setTextureColourMod(
 
 /// Get the RGB colour and alpha values of the given texture's modifier. These
 /// values are combined with the texture itself during rendering.
-pub fn getTextureColourMod(
+fn getTextureColourMod(
     texture: *c.SDL_Texture,
 ) Error!pixel.Colour {
     var colour: pixel.Colour = undefined;
@@ -94,7 +100,7 @@ pub fn getTextureColourMod(
     if (c.SDL_GetTextureAlphaMod(texture, &colour.alpha) < 0) {
         const msg = "Failed to get texture alpha mod: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.CannotReadMemory;
+        return error.CannotGetVar;
     }
 
     if (c.SDL_GetTextureColorMod(
@@ -105,7 +111,7 @@ pub fn getTextureColourMod(
     ) < 0) {
         const msg = "Failed to get texture colour mod: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.CannotReadMemory;
+        return error.CannotGetVar;
     }
 
     return colour;
@@ -154,7 +160,7 @@ pub fn constMemToRw(data: [:0]const u8) Error!*c.SDL_RWops {
 }
 
 /// A wrapper around the C function `SDL_SetRenderDrawColor`.
-pub fn setRenderDrawColour(
+fn setRenderDrawColour(
     renderer: *c.SDL_Renderer,
     colour: pixel.Colour,
 ) Error!void {
@@ -171,10 +177,30 @@ pub fn setRenderDrawColour(
     }
 }
 
-/// A wrapper around the C function `SDL_RenderClear`. Note: may change the
-/// render draw colour.
+/// A wrapper around the C function `SDL_GetRenderDrawColor`.
+fn getRenderDrawColour(renderer: *c.SDL_Renderer) Error!pixel.Colour {
+    var colour: pixel.Colour = undefined;
+
+    if (c.SDL_GetRenderDrawColor(
+        renderer,
+        &colour.red,
+        &colour.green,
+        &colour.blue,
+        &colour.alpha,
+    ) < 0) {
+        const msg = "Failed to get render draw colour: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return error.CannotGetVar;
+    }
+
+    return colour;
+}
+
+/// A wrapper around the C function `SDL_RenderClear`.
 pub fn renderClear(renderer: *c.SDL_Renderer) Error!void {
-    const black = pixel.Colour{};
+    const orig = try getRenderDrawColour(renderer);
+
+    const black: pixel.Colour = .{};
     try setRenderDrawColour(renderer, black);
 
     if (c.SDL_RenderClear(renderer) < 0) {
@@ -182,22 +208,26 @@ pub fn renderClear(renderer: *c.SDL_Renderer) Error!void {
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return error.RenderError;
     }
+
+    try setRenderDrawColour(renderer, orig);
 }
 
-/// A wrapper around the C function `c.SDL_RenderFillRect`. Note: may change
-/// the render draw colour.
+/// A wrapper around the C function `c.SDL_RenderFillRect`.
 pub fn renderFillRect(
     renderer: *c.SDL_Renderer,
     colour: pixel.Colour,
     rect: ?*const c.SDL_Rect,
 ) Error!void {
-    try setRenderDrawColour(renderer, colour);
+    const orig = try getRenderDrawColour(renderer);
 
+    try setRenderDrawColour(renderer, colour);
     if (c.SDL_RenderFillRect(renderer, rect) < 0) {
         const msg = "Failed to fill rectangle: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return error.RenderError;
     }
+
+    try setRenderDrawColour(renderer, orig);
 }
 
 /// A pixel position on the screen. This is conceptually the same as
@@ -208,6 +238,77 @@ pub const Vertex = struct {
     y: i16,
 };
 
+/// A wrapper around the C function `c.roundedBoxRGBA`.
+pub fn renderFillRoundedRect(
+    args: struct {
+        renderer: *c.SDL_Renderer,
+        colour: pixel.Colour,
+        rect: struct {
+            top_left: Vertex,
+            bot_right: Vertex,
+        },
+        corner_radius: i16,
+    },
+) Error!void {
+    const blend_mode = try getRenderDrawBlendMode(args.renderer);
+    const colour = try getRenderDrawColour(args.renderer);
+
+    // We take arguments 'top-left' and 'bot-right' as that feels more natural
+    // to me, however the C function expects top-right and bot-left. So we
+    // have to a little conversion.
+    if (c.roundedBoxRGBA(
+        // The renderer.
+        args.renderer,
+        // The top-right corner.
+        args.rect.bot_right.x,
+        args.rect.top_left.y,
+        // The bottom-left corner.
+        args.rect.top_left.x,
+        args.rect.bot_right.y,
+        // The radius of the rounded corners.
+        args.corner_radius,
+        // The fill colour.
+        args.colour.red,
+        args.colour.green,
+        args.colour.blue,
+        args.colour.alpha,
+    ) < 0) {
+        const msg = "Failed to fill rounded rectangle";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg);
+        return error.RenderError;
+    }
+
+    try setRenderDrawBlendMode(args.renderer, blend_mode);
+    try setRenderDrawColour(args.renderer, colour);
+}
+
+/// A simple wrapper around `c.SDL_GetRenderDrawBlendMode`.
+fn getRenderDrawBlendMode(
+    renderer: *c.SDL_Renderer,
+) Error!c.SDL_BlendMode {
+    var blend_mode: c.SDL_BlendMode = undefined;
+
+    if (c.SDL_GetRenderDrawBlendMode(renderer, &blend_mode) < 0) {
+        const msg = "Failed to get render draw blend mode: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return error.CannotGetVar;
+    }
+
+    return blend_mode;
+}
+
+/// A simple wrapper around `c.SDL_SetRenderDrawBlendMode`.
+fn setRenderDrawBlendMode(
+    renderer: *c.SDL_Renderer,
+    blend_mode: c.SDL_BlendMode,
+) Error!void {
+    if (c.SDL_SetRenderDrawBlendMode(renderer, blend_mode) < 0) {
+        const msg = "Failed to set render draw blend mode: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return error.CannotSetVar;
+    }
+}
+
 /// A wrapper around the C function `c.filledCircleRGBA` from SDL_gfx.
 pub fn renderFillCircle(
     args: struct {
@@ -217,6 +318,9 @@ pub fn renderFillCircle(
         radius: i16,
     },
 ) Error!void {
+    const blend_mode = try getRenderDrawBlendMode(args.renderer);
+    const colour = try getRenderDrawColour(args.renderer);
+
     if (c.filledCircleRGBA(
         // The renderer.
         args.renderer,
@@ -234,6 +338,9 @@ pub fn renderFillCircle(
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg);
         return error.RenderError;
     }
+
+    try setRenderDrawBlendMode(args.renderer, blend_mode);
+    try setRenderDrawColour(args.renderer, colour);
 }
 
 /// A wrapper around the C function `c.filledTrigonRGBA` from SDL_gfx.
@@ -242,6 +349,9 @@ pub fn renderFillTriangle(
     vertices: [3]Vertex,
     colour: pixel.Colour,
 ) Error!void {
+    const blend_mode = try getRenderDrawBlendMode(renderer);
+    const orig = try getRenderDrawColour(renderer);
+
     if (c.filledTrigonRGBA(
         // The renderer.
         renderer,
@@ -264,6 +374,9 @@ pub fn renderFillTriangle(
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg);
         return error.RenderError;
     }
+
+    try setRenderDrawBlendMode(renderer, blend_mode);
+    try setRenderDrawColour(renderer, orig);
 }
 
 /// Render the given text (which is expected to be UTF-8 encoded) with the
