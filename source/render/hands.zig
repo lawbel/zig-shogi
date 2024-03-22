@@ -55,15 +55,14 @@ fn showPlayer(
         .black => pixel.right_hand_top_left,
     };
 
-    for (pixel.order_of_pieces_in_hand, 0..) |sort, i| {
+    for (pixel.order_of_pieces_in_hand, 0..) |sort, i_usize| {
+        const i: i16 = @intCast(i_usize);
         const count = args.hand.get(sort) orelse 0;
-        const box_width: c_int = if (count < 10) box_size else (box_size * 1.5);
+        const box_width: i16 = if (count < 10) box_size else (box_size * 1.5);
 
         // Step 1/3 - render the piece.
-        const top_left_x: c_int = @intCast(hand_top_left.x);
-        const top_left_y: c_int =
-            @as(c_int, @intCast(hand_top_left.y)) +
-            @as(c_int, @intCast(pixel.tile_size * i));
+        const top_left_x = hand_top_left.x;
+        const top_left_y = hand_top_left.y + (pixel.tile_size * i);
 
         // Always render the piece "right way up" by setting `.player=.black`.
         try pieces.showPiece(.{
@@ -74,13 +73,13 @@ fn showPlayer(
         });
 
         // Step 2/3 - render the box we'll show the piece count in.
-        const box_x: c_int = @intCast(top_left_x + pixel.tile_size);
-        const box_y: c_int = @intCast(top_left_y + pixel.tile_size);
+        const box_x = top_left_x + pixel.tile_size;
+        const box_y = top_left_y + pixel.tile_size;
 
         try sdl.renderFillRect(
             args.renderer,
             colours.hand_box_border,
-            &.{
+            .{
                 .x = box_x - box_width,
                 .y = box_y - box_size,
                 .w = box_width,
@@ -90,7 +89,7 @@ fn showPlayer(
         try sdl.renderFillRect(
             args.renderer,
             colours.hand_box,
-            &.{
+            .{
                 .x = box_x - box_width + box_border,
                 .y = box_y - box_size + box_border,
                 .w = box_width - (box_border * 2),

@@ -18,15 +18,12 @@ pub fn tileSquare(
     tile: model.BoardPos,
     colour: pixel.Colour,
 ) Error!void {
-    const top_left_x: c_int = @intCast(pixel.board_top_left.x);
-    const top_left_y: c_int = @intCast(pixel.board_top_left.y);
-
     try sdl.renderFillRect(
         renderer,
         colour,
-        &.{
-            .x = top_left_x + (tile.x * pixel.tile_size),
-            .y = top_left_y + (tile.y * pixel.tile_size),
+        .{
+            .x = pixel.board_top_left.x + (tile.x * pixel.tile_size),
+            .y = pixel.board_top_left.y + (tile.y * pixel.tile_size),
             .w = pixel.tile_size,
             .h = pixel.tile_size,
         },
@@ -45,8 +42,6 @@ pub fn tileDot(
     const tile_size_f: f32 = @floatFromInt(pixel.tile_size);
     const tile_x: f32 = @floatFromInt(tile.x);
     const tile_y: f32 = @floatFromInt(tile.y);
-    const top_left_x: i16 = @intCast(pixel.board_top_left.x);
-    const top_left_y: i16 = @intCast(pixel.board_top_left.y);
     const center_x: i16 = @intFromFloat((tile_x + 0.5) * tile_size_f);
     const center_y: i16 = @intFromFloat((tile_y + 0.5) * tile_size_f);
 
@@ -54,8 +49,8 @@ pub fn tileDot(
         .renderer = renderer,
         .colour = colour,
         .centre = .{
-            .x = top_left_x + center_x,
-            .y = top_left_y + center_y,
+            .x = pixel.board_top_left.x + center_x,
+            .y = pixel.board_top_left.y + center_y,
         },
         .radius = dot_radius,
     });
@@ -75,7 +70,7 @@ pub fn tileCorners(
     colour: pixel.Colour,
 ) Error!void {
     const Corner = struct {
-        base: sdl.Vertex,
+        base: sdl.Point,
         x_offset: i16,
         y_offset: i16,
     };
@@ -84,8 +79,8 @@ pub fn tileCorners(
         // Top left corner.
         .{
             .base = .{
-                .x = @intCast(pixel.tile_size * tile.x),
-                .y = @intCast(pixel.tile_size * tile.y),
+                .x = pixel.tile_size * tile.x,
+                .y = pixel.tile_size * tile.y,
             },
             .x_offset = 1,
             .y_offset = 1,
@@ -93,8 +88,8 @@ pub fn tileCorners(
         // Top right corner.
         .{
             .base = .{
-                .x = @intCast(pixel.tile_size * (tile.x + 1)),
-                .y = @intCast(pixel.tile_size * tile.y),
+                .x = pixel.tile_size * (tile.x + 1),
+                .y = pixel.tile_size * tile.y,
             },
             .x_offset = -1,
             .y_offset = 1,
@@ -102,8 +97,8 @@ pub fn tileCorners(
         // Bottom left corner.
         .{
             .base = .{
-                .x = @intCast(pixel.tile_size * tile.x),
-                .y = @intCast(pixel.tile_size * (tile.y + 1)),
+                .x = pixel.tile_size * tile.x,
+                .y = pixel.tile_size * (tile.y + 1),
             },
             .x_offset = 1,
             .y_offset = -1,
@@ -111,33 +106,30 @@ pub fn tileCorners(
         // Bottom right corner.
         .{
             .base = .{
-                .x = @intCast(pixel.tile_size * (tile.x + 1)),
-                .y = @intCast(pixel.tile_size * (tile.y + 1)),
+                .x = pixel.tile_size * (tile.x + 1),
+                .y = pixel.tile_size * (tile.y + 1),
             },
             .x_offset = -1,
             .y_offset = -1,
         },
     };
 
-    const top_left_x: i16 = @intCast(pixel.board_top_left.x);
-    const top_left_y: i16 = @intCast(pixel.board_top_left.y);
-
     inline for (corners) |corner| {
         const horiz_offset = triangle_size * corner.x_offset;
         const horiz_pt = .{
-            .x = top_left_x + corner.base.x + horiz_offset,
-            .y = top_left_y + corner.base.y,
+            .x = pixel.board_top_left.x + corner.base.x + horiz_offset,
+            .y = pixel.board_top_left.y + corner.base.y,
         };
 
         const vert_offset = triangle_size * corner.y_offset;
         const vert_pt = .{
-            .x = top_left_x + corner.base.x,
-            .y = top_left_y + corner.base.y + vert_offset,
+            .x = pixel.board_top_left.x + corner.base.x,
+            .y = pixel.board_top_left.y + corner.base.y + vert_offset,
         };
 
         const base = .{
-            .x = top_left_x + corner.base.x,
-            .y = top_left_y + corner.base.y,
+            .x = pixel.board_top_left.x + corner.base.x,
+            .y = pixel.board_top_left.y + corner.base.y,
         };
 
         try sdl.renderFillTriangle(
@@ -154,20 +146,18 @@ pub fn tileCheck(
     renderer: *c.SDL_Renderer,
     tile: model.BoardPos,
 ) Error!void {
-    const top_left_x: c_int = @intCast(pixel.board_top_left.x);
-    const top_left_y: c_int = @intCast(pixel.board_top_left.y);
-
     const tex = try texture.getInitTexture(
         renderer,
         &texture.check_texture,
         texture.check_image,
     );
+
     try sdl.renderCopy(.{
         .renderer = renderer,
         .texture = tex,
-        .dst_rect = &.{
-            .x = top_left_x + (tile.x * pixel.tile_size),
-            .y = top_left_y + (tile.y * pixel.tile_size),
+        .dst_rect = .{
+            .x = pixel.board_top_left.x + (tile.x * pixel.tile_size),
+            .y = pixel.board_top_left.y + (tile.y * pixel.tile_size),
             .w = pixel.tile_size,
             .h = pixel.tile_size,
         },

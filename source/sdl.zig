@@ -8,6 +8,10 @@
 //! values at the end of the function calls. This makes the functions simpler
 //! to use as there is less to keep track of.
 //!
+//! We make efforts to use `i16`s consistently as the arguments to public
+//! functions, as the common denominator between `SDL2` (which expects `c_int`
+//! arguments - `i32`s) and `SDL_gfx` (which expects `i16` arguments).
+//!
 //! Note: if we do get an error from the underlying functions, we always log
 //! it with the help of the C functions `SDL_GetError` (to get the details of
 //! what happened) and `SDL_LogError` (to do the logging).
@@ -24,6 +28,38 @@ pub const Error = error{
     RenderError,
 };
 
+/// Conceptually the same as `c.SDL_Rect`, but contains `i16`s instead of
+/// `i32`s (`c_int`s).
+pub const Rect = struct {
+    x: i16,
+    y: i16,
+    w: i16,
+    h: i16,
+
+    pub fn toSDL(this: @This()) c.SDL_Rect {
+        return .{
+            .x = this.x,
+            .y = this.y,
+            .w = this.w,
+            .h = this.h,
+        };
+    }
+};
+
+/// Conceptually the same as `c.SDL_Point`, but contains `i16`s instead of
+/// `i32`s (`c_int`s).
+pub const Point = struct {
+    x: i16,
+    y: i16,
+
+    pub fn toSDL(this: @This()) c.SDL_Point {
+        return .{
+            .x = this.x,
+            .y = this.y,
+        };
+    }
+};
+
 /// A wrapper around the C function `SDL_RenderCopyEx`. As that function has a
 /// lot of arguments, in order to easily keep track of them we take them in as
 /// a struct which allows us to give a name to each one, and to provide
@@ -32,10 +68,10 @@ pub fn renderCopy(
     args: struct {
         renderer: *c.SDL_Renderer,
         texture: *c.SDL_Texture,
-        src_rect: ?*const c.SDL_Rect = null,
-        dst_rect: ?*const c.SDL_Rect = null,
+        src_rect: ?Rect = null,
+        dst_rect: ?Rect = null,
         angle: f64 = 0,
-        center: ?*const c.SDL_Point = null,
+        center: ?Point = null,
         flip: c.SDL_RendererFlip = c.SDL_FLIP_NONE,
         shade: ?pixel.Colour = null,
     },
@@ -47,13 +83,20 @@ pub fn renderCopy(
         break :init old;
     };
 
+    const src_rect: ?c.SDL_Rect =
+        if (args.src_rect) |src| src.toSDL() else null;
+    const dest_rect: ?c.SDL_Rect =
+        if (args.dst_rect) |dest| dest.toSDL() else null;
+    const center: ?c.SDL_Point =
+        if (args.center) |pt| pt.toSDL() else null;
+
     if (c.SDL_RenderCopyEx(
         args.renderer,
         args.texture,
-        args.src_rect,
-        args.dst_rect,
+        if (src_rect) |src| &src else null,
+        if (dest_rect) |dest| &dest else null,
         args.angle,
-        args.center,
+        if (center) |pt| &pt else null,
         args.flip,
     ) < 0) {
         const msg = "Failed to render copy: %s";
@@ -92,9 +135,7 @@ fn setTextureColourMod(
 
 /// Get the RGB colour and alpha values of the given texture's modifier. These
 /// values are combined with the texture itself during rendering.
-fn getTextureColourMod(
-    texture: *c.SDL_Texture,
-) Error!pixel.Colour {
+fn getTextureColourMod(texture: *c.SDL_Texture) Error!pixel.Colour {
     var colour: pixel.Colour = undefined;
 
     if (c.SDL_GetTextureAlphaMod(texture, &colour.alpha) < 0) {
@@ -216,12 +257,14 @@ pub fn renderClear(renderer: *c.SDL_Renderer) Error!void {
 pub fn renderFillRect(
     renderer: *c.SDL_Renderer,
     colour: pixel.Colour,
-    rect: ?*const c.SDL_Rect,
+    rect: ?Rect,
 ) Error!void {
     const orig = try getRenderDrawColour(renderer);
+    const sdl_rect: ?c.SDL_Rect = if (rect) |r| r.toSDL() else null;
 
     try setRenderDrawColour(renderer, colour);
-    if (c.SDL_RenderFillRect(renderer, rect) < 0) {
+
+    if (c.SDL_RenderFillRect(renderer, if (sdl_rect) |r| &r else null) < 0) {
         const msg = "Failed to fill rectangle: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return error.RenderError;
@@ -230,41 +273,27 @@ pub fn renderFillRect(
     try setRenderDrawColour(renderer, orig);
 }
 
-/// A pixel position on the screen. This is conceptually the same as
-/// 'PixelPos' from `pixel.zig`, but uses `i16` instead of `i32` as some SDL
-/// functions require that integer type instead.
-pub const Vertex = struct {
-    x: i16,
-    y: i16,
-};
-
 /// A wrapper around the C function `c.roundedBoxRGBA`.
 pub fn renderFillRoundedRect(
     args: struct {
         renderer: *c.SDL_Renderer,
         colour: pixel.Colour,
-        rect: struct {
-            top_left: Vertex,
-            bot_right: Vertex,
-        },
+        rect: Rect,
         corner_radius: i16,
     },
 ) Error!void {
     const blend_mode = try getRenderDrawBlendMode(args.renderer);
     const colour = try getRenderDrawColour(args.renderer);
 
-    // We take arguments 'top-left' and 'bot-right' as that feels more natural
-    // to me, however the C function expects top-right and bot-left. So we
-    // have to a little conversion.
     if (c.roundedBoxRGBA(
         // The renderer.
         args.renderer,
         // The top-right corner.
-        args.rect.bot_right.x,
-        args.rect.top_left.y,
+        args.rect.x + args.rect.w,
+        args.rect.y,
         // The bottom-left corner.
-        args.rect.top_left.x,
-        args.rect.bot_right.y,
+        args.rect.x,
+        args.rect.y + args.rect.h,
         // The radius of the rounded corners.
         args.corner_radius,
         // The fill colour.
@@ -314,7 +343,7 @@ pub fn renderFillCircle(
     args: struct {
         renderer: *c.SDL_Renderer,
         colour: pixel.Colour,
-        centre: Vertex,
+        centre: Point,
         radius: i16,
     },
 ) Error!void {
@@ -346,7 +375,7 @@ pub fn renderFillCircle(
 /// A wrapper around the C function `c.filledTrigonRGBA` from SDL_gfx.
 pub fn renderFillTriangle(
     renderer: *c.SDL_Renderer,
-    vertices: [3]Vertex,
+    vertices: [3]Point,
     colour: pixel.Colour,
 ) Error!void {
     const blend_mode = try getRenderDrawBlendMode(renderer);
@@ -389,10 +418,7 @@ pub fn renderUtf8Text(
         font: *c.TTF_Font,
         colour: pixel.Colour,
         style: c_int = c.TTF_STYLE_NORMAL,
-        center: struct {
-            x: c_int,
-            y: c_int,
-        },
+        center: Point,
     },
 ) Error!void {
     const orig_style = c.TTF_GetFontStyle(args.font);
@@ -424,22 +450,22 @@ pub fn renderUtf8Text(
     };
     defer c.SDL_DestroyTexture(texture);
 
-    var width: c_int = undefined;
-    var height: c_int = undefined;
-    if (c.SDL_QueryTexture(texture, null, null, &width, &height) < 0) {
+    var width_c: c_int = undefined;
+    var height_c: c_int = undefined;
+    if (c.SDL_QueryTexture(texture, null, null, &width_c, &height_c) < 0) {
         const msg = "Failed to query rendered text size: %s";
         c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
         return error.RenderError;
     }
 
-    const top_left_x: c_int = args.center.x - @divFloor(width, 2);
-    const top_left_y: c_int = args.center.y - @divFloor(height, 2);
+    const width: i16 = @intCast(width_c);
+    const height: i16 = @intCast(height_c);
     try renderCopy(.{
         .renderer = args.renderer,
         .texture = texture,
-        .dst_rect = &.{
-            .x = top_left_x,
-            .y = top_left_y,
+        .dst_rect = .{
+            .x = args.center.x - @divFloor(width, 2),
+            .y = args.center.y - @divFloor(height, 2),
             .w = width,
             .h = height,
         },

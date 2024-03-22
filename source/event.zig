@@ -27,8 +27,8 @@ pub fn processEvents(
     while (c.SDL_PollEvent(&event) != 0) {
         switch (event.type) {
             c.SDL_MOUSEMOTION => {
-                state.mouse.pos.x = event.motion.x;
-                state.mouse.pos.y = event.motion.y;
+                state.mouse.pos.x = @intCast(event.motion.x);
+                state.mouse.pos.y = @intCast(event.motion.y);
             },
 
             c.SDL_MOUSEBUTTONDOWN => {

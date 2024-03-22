@@ -34,10 +34,8 @@ pub fn showPieces(
     for (args.board.tiles, 0..) |row, y| {
         for (row, 0..) |val, x| {
             const piece = val orelse continue;
-            const pos_x: c_int = @intCast(x);
-            const pos_y: c_int = @intCast(y);
-            const top_left_x: c_int = @intCast(pixel.board_top_left.x);
-            const top_left_y: c_int = @intCast(pixel.board_top_left.y);
+            const pos_x: i16 = @intCast(x);
+            const pos_y: i16 = @intCast(y);
 
             if (moved_from) |pos| {
                 const owner_is_user = piece.player.eq(args.player);
@@ -52,8 +50,8 @@ pub fn showPieces(
                 .renderer = args.renderer,
                 .piece = piece,
                 .pos = .{
-                    .x = top_left_x + (pixel.tile_size * pos_x),
-                    .y = top_left_y + (pixel.tile_size * pos_y),
+                    .x = pixel.board_top_left.x + (pixel.tile_size * pos_x),
+                    .y = pixel.board_top_left.y + (pixel.tile_size * pos_y),
                 },
                 .shade = shade,
             });
@@ -103,10 +101,7 @@ pub fn showPiece(
     args: struct {
         renderer: *c.SDL_Renderer,
         piece: model.Piece,
-        pos: struct {
-            x: c_int,
-            y: c_int,
-        },
+        pos: sdl.Point,
         shade: ?pixel.Colour = null,
     },
 ) Error!void {
@@ -115,7 +110,7 @@ pub fn showPiece(
     try sdl.renderCopy(.{
         .renderer = args.renderer,
         .texture = tex,
-        .dst_rect = &.{
+        .dst_rect = .{
             .x = args.pos.x,
             .y = args.pos.y,
             .w = pixel.tile_size,
