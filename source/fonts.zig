@@ -62,14 +62,14 @@ pub fn bestFontMatching(
     defer c.FcPatternDestroy(matches);
 
     // Try get a file path to the matching font.
-    var file_path: [*:0]u8 = undefined;
+    var file_path: [*c]u8 = undefined;
     const get_file_path: [:0]const u8 = c.FC_FILE;
     const use_first_match: c_int = 0;
     result = c.FcPatternGetString(
         matches,
         get_file_path,
         use_first_match,
-        @ptrCast(&file_path),
+        &file_path,
     );
     switch (result) {
         c.FcResultMatch => {},
