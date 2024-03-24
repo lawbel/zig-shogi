@@ -120,16 +120,17 @@ fn applyUserMoveBasic(
         .must_promote_in_ranks = rules.promoted.mustPromoteInRanks(piece),
     });
 
+    // User input may be needed, in the `.can_promote` case. This is somewhat
+    // subtle - we still need to check whether the move is valid, so proceed
+    // for now but remember (by setting `user_input_needed`) that we may need
+    // to bail out further down this function.
+    var user_input_needed = false;
     const promoted = switch (able_to_promote) {
         .cannot_promote => false,
         .must_promote => true,
-        .can_promote => {
-            args.state.user_promotion = .{
-                .from = args.src,
-                .to = args.dest,
-                .orig_piece = piece,
-            };
-            return false;
+        .can_promote => set_flag: {
+            user_input_needed = true;
+            break :set_flag true;
         },
     };
 
@@ -150,6 +151,23 @@ fn applyUserMoveBasic(
 
     const move_ok = args.state.board.applyMoveBasic(basic_move);
     std.debug.assert(move_ok);
+
+    // If we got here and this check passes, the move *is* valid but needs user
+    // input to choose whether or not to promote. So:
+    //
+    // * get the board ready,
+    // * store the possible promotion in `state`, and
+    // * return `false` as we've not completed a move yet.
+    if (user_input_needed) {
+        args.state.board.set(args.dest, null);
+        args.state.user_promotion = .{
+            .from = args.src,
+            .to = args.dest,
+            .orig_piece = piece,
+        };
+        return false;
+    }
+
     args.state.last_move = move;
     args.state.current_player = args.state.current_player.swap();
 

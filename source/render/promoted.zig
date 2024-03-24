@@ -9,9 +9,9 @@ const pixel = @import("../pixel.zig");
 const PromotionOption = @import("../state.zig").PromotionOption;
 const sdl = @import("../sdl.zig");
 
-const overlay_corner_radius = 17;
+const overlay_corner_radius = 15;
 
-const overlay_padding = 7;
+const overlay_padding = 5;
 
 pub fn showPromotion(
     renderer: *c.SDL_Renderer,
@@ -21,8 +21,8 @@ pub fn showPromotion(
     const top_left = pixel.board_top_left;
     const n = 2;
     const piece_sorts = [n]model.Sort{
-        promotion.orig_piece.sort.promote(),
         promotion.orig_piece.sort,
+        promotion.orig_piece.sort.promote(),
     };
 
     // Need to take care not to fall off the edge of the board. So we check if

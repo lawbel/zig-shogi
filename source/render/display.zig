@@ -29,7 +29,8 @@ pub fn showGameState(
         try moves.highlightLast(renderer, last_move);
     }
 
-    if (state.mouse.move_from) |moved_from| {
+    if (state.mouse.move_from) |moved_from| current: {
+        if (state.user_promotion != null) break :current;
         try moves.highlightCurrent(.{
             .alloc = alloc,
             .renderer = renderer,
@@ -49,10 +50,12 @@ pub fn showGameState(
         .font = state.font,
     });
 
+    var moved_from = state.mouse.move_from;
+    if (state.user_promotion != null) moved_from = null;
     try pieces.showPieces(.{
         .renderer = renderer,
         .player = state.user,
-        .moved_from = state.mouse.move_from,
+        .moved_from = moved_from,
         .mouse_pos = state.mouse.pos,
         .board = state.board,
     });
