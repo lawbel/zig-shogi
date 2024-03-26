@@ -4,6 +4,8 @@
 const c = @import("c.zig");
 const cpu = @import("cpu.zig");
 const model = @import("model.zig");
+const pixel = @import("pixel.zig");
+const PromotionOption = @import("state.zig").PromotionOption;
 const rules = @import("rules.zig");
 const State = @import("state.zig").State;
 const std = @import("std");
@@ -27,8 +29,8 @@ pub fn processEvents(
     while (c.SDL_PollEvent(&event) != 0) {
         switch (event.type) {
             c.SDL_MOUSEMOTION => {
-                state.mouse.pos.x = event.motion.x;
-                state.mouse.pos.y = event.motion.y;
+                state.mouse.pos.x = @intCast(event.motion.x);
+                state.mouse.pos.y = @intCast(event.motion.y);
             },
 
             c.SDL_MOUSEBUTTONDOWN => {
@@ -38,16 +40,14 @@ pub fn processEvents(
             c.SDL_MOUSEBUTTONUP => {
                 defer state.mouse.move_from = null;
 
-                if (event.button.button != c.SDL_BUTTON_LEFT) continue;
-                if (!state.current_player.eq(state.user)) continue;
+                if (state.current_player.eq(state.user)) {
+                    if (event.button.button != c.SDL_BUTTON_LEFT) continue;
 
-                const moved = try applyUserMove(alloc, state);
-                if (moved) {
-                    if (state.debug) {
-                        state.board.debugPrint();
-                        std.debug.print("\n", .{});
+                    if (state.user_promotion) |promotion| {
+                        try processUserPromotion(alloc, state, promotion);
+                    } else {
+                        try processUserMove(alloc, state);
                     }
-                    try queueCpuMove(alloc, state);
                 }
             },
 
@@ -60,12 +60,80 @@ pub fn processEvents(
     return .pass;
 }
 
+/// Try to interpret the users click as choosing a promotion option. If we can
+/// do so, then apply that move to the board and queue up the CPU to decide
+/// its' response. Otherwise, return without changing anything.
+fn processUserPromotion(
+    alloc: std.mem.Allocator,
+    state: *State,
+    promotion: PromotionOption,
+) Error!void {
+    const moved = applyUserPromotion(state, promotion);
+    if (!moved) return;
+
+    if (state.debug) {
+        state.board.debugPrint();
+        std.debug.print("\n", .{});
+    }
+
+    try queueCpuMove(alloc, state);
+}
+
+/// Try to interpret the user's click as a choice of promotion option.
+///
+/// * If we can do so, then apply that promotion to the board, and return
+///   `true` to indicate a move was applied.
+/// * Otherwise, do nothing and return `false` to indicate no move made.
+fn applyUserPromotion(state: *State, promotion: PromotionOption) bool {
+    const pos = state.mouse.pos.toBoardPos() orelse return false;
+
+    const choices = pixel.promotionOverlayAt(promotion.to);
+    var move: model.Move.Basic = .{
+        .from = promotion.from,
+        .motion = .{
+            .x = promotion.to.x - promotion.from.x,
+            .y = promotion.to.y - promotion.from.y,
+        },
+        .promoted = undefined,
+    };
+
+    for (choices, 0..) |choice, i| {
+        if (pos.eq(choice)) {
+            move.promoted = pixel.order_of_promotion_choices[i];
+
+            state.board.set(promotion.from, promotion.orig_piece);
+            const is_ok = state.board.applyMoveBasic(move);
+            std.debug.assert(is_ok);
+
+            state.last_move = .{ .basic = move };
+            state.current_player = state.current_player.swap();
+            state.user_promotion = null;
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+fn processUserMove(
+    alloc: std.mem.Allocator,
+    state: *State,
+) Error!void {
+    const moved = try applyUserMove(alloc, state);
+    if (!moved) return;
+
+    if (state.debug) {
+        state.board.debugPrint();
+        std.debug.print("\n", .{});
+    }
+    try queueCpuMove(alloc, state);
+}
+
 /// Assumes that the user is currently the one whose turn it is. It works out
 /// the move the user has inputted based on the mouse movement, and then tries
 /// to apply that move to the board. Returns `true` if the move was valid and
 /// successfully applied, or `false` otherwise.
-///
-/// TODO: prompt the user for their choice of promotion, if appropriate.
 fn applyUserMove(alloc: std.mem.Allocator, state: *State) Error!bool {
     const dest = state.mouse.pos.toBoardPos() orelse return false;
     const src_pix = state.mouse.move_from orelse return false;
@@ -103,12 +171,31 @@ fn applyUserMoveBasic(
     const piece = args.state.board.get(args.src) orelse return false;
     if (!piece.player.eq(args.state.user)) return false;
 
-    const able_to_promote = rules.promoted.ableToPromote(.{
-        .src = args.src,
-        .dest = args.dest,
-        .player = args.state.user,
-        .must_promote_in_ranks = rules.promoted.mustPromoteInRanks(piece),
-    });
+    var able_to_promote: rules.promoted.AbleToPromote = undefined;
+    if (piece.sort.canPromote()) {
+        able_to_promote = rules.promoted.ableToPromote(.{
+            .src = args.src,
+            .dest = args.dest,
+            .player = args.state.user,
+            .must_promote_in_ranks = rules.promoted.mustPromoteInRanks(piece),
+        });
+    } else {
+        able_to_promote = .cannot_promote;
+    }
+
+    // User input may be needed, in the `.can_promote` case. This is somewhat
+    // subtle - we still need to check whether the move is valid, so proceed
+    // for now but remember (by setting `user_input_needed`) that we may need
+    // to bail out further down this function.
+    var user_input_needed = false;
+    const promoted = switch (able_to_promote) {
+        .cannot_promote => false,
+        .must_promote => true,
+        .can_promote => set_flag: {
+            user_input_needed = true;
+            break :set_flag true;
+        },
+    };
 
     const basic_move: model.Move.Basic = .{
         .from = args.src,
@@ -116,11 +203,7 @@ fn applyUserMoveBasic(
             .x = args.dest.x - args.src.x,
             .y = args.dest.y - args.src.y,
         },
-        .promoted = switch (able_to_promote) {
-            .cannot_promote => false,
-            .must_promote => true,
-            .can_promote => false, // TODO: handle properly
-        },
+        .promoted = promoted,
     };
     if (basic_move.motion.x == 0 and basic_move.motion.y == 0) return false;
 
@@ -131,6 +214,23 @@ fn applyUserMoveBasic(
 
     const move_ok = args.state.board.applyMoveBasic(basic_move);
     std.debug.assert(move_ok);
+
+    // If we got here and this check passes, the move *is* valid but needs user
+    // input to choose whether or not to promote. So:
+    //
+    // * get the board ready,
+    // * store the possible promotion in `state`, and
+    // * return `false` as we've not completed a move yet.
+    if (user_input_needed) {
+        args.state.board.set(args.dest, null);
+        args.state.user_promotion = .{
+            .from = args.src,
+            .to = args.dest,
+            .orig_piece = piece,
+        };
+        return false;
+    }
+
     args.state.last_move = move;
     args.state.current_player = args.state.current_player.swap();
 

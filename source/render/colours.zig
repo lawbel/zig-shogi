@@ -67,3 +67,18 @@ pub const piece_shadow_on_board: Colour = .{
     .blue = 0xC1,
     .alpha = (Colour.max_opacity / 5) * 4,
 };
+
+/// The colour to overlay the game screen with when the user is choosing
+/// whether or not to promote a piece.
+pub const promotion_overlay: Colour = .{
+    .alpha = Colour.max_opacity / 2,
+};
+
+/// The colour for the back the game screen with when the user is choosing
+/// whether or not to promote a piece.
+pub const promotion_box: Colour = .{
+    .red = 0x33,
+    .green = 0x33,
+    .blue = 0x33,
+    .alpha = (Colour.max_opacity / 5) * 4,
+};

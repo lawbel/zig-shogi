@@ -231,6 +231,14 @@ pub const Sort = enum {
         };
     }
 
+    /// Whether the piece is capable of being promoted.
+    pub fn canPromote(this: @This()) bool {
+        return switch (this) {
+            .rook, .bishop, .silver, .knight, .lance, .pawn => true,
+            else => false,
+        };
+    }
+
     /// Demote this piece. If it is already demoted or cannot be demoted,
     /// returns it as-is.
     pub fn demote(this: @This()) @This() {
@@ -463,12 +471,11 @@ pub const Board = struct {
 
     /// Get the `Piece` (if any) at the given position.
     pub fn get(this: @This(), pos: BoardPos) ?Piece {
+        std.debug.assert(0 <= pos.x and pos.x < size);
+        std.debug.assert(0 <= pos.y and pos.y < size);
+
         const x: usize = @intCast(pos.x);
         const y: usize = @intCast(pos.y);
-
-        std.debug.assert(x < size);
-        std.debug.assert(y < size);
-
         return this.tiles[y][x];
     }
 
@@ -487,6 +494,9 @@ pub const Board = struct {
 
     /// Get a pointer into the `Piece` (if any) at the given position.
     pub fn getPtr(this: *@This(), pos: BoardPos) *?Piece {
+        std.debug.assert(0 <= pos.x and pos.x < size);
+        std.debug.assert(0 <= pos.y and pos.y < size);
+
         const x: usize = @intCast(pos.x);
         const y: usize = @intCast(pos.y);
         return &this.tiles[y][x];
@@ -494,6 +504,9 @@ pub const Board = struct {
 
     /// Set (or delete) the `Piece` present at the given position.
     pub fn set(this: *@This(), pos: BoardPos, piece: ?Piece) void {
+        std.debug.assert(0 <= pos.x and pos.x < size);
+        std.debug.assert(0 <= pos.y and pos.y < size);
+
         const x: usize = @intCast(pos.x);
         const y: usize = @intCast(pos.y);
         this.tiles[y][x] = piece;

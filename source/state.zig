@@ -11,6 +11,12 @@ const std = @import("std");
 /// Errors that can occur while working with this state.
 pub const Error = fonts.Error || error{CantOpenFont};
 
+pub const PromotionOption = struct {
+    from: model.BoardPos,
+    to: model.BoardPos,
+    orig_piece: model.Piece,
+};
+
 /// Our entire game state, which includes a mix of core types like `Board`
 /// and things relating to window/mouse state.
 pub const State = struct {
@@ -31,6 +37,9 @@ pub const State = struct {
     user: model.Player,
     /// The current player.
     current_player: model.Player,
+    /// The piece (if any) that the user has moved which requires them to
+    /// choose whether it should be promoted.
+    user_promotion: ?PromotionOption = null,
     /// A move that the CPU player has decided on, that has not yet been
     /// applied to update the board.
     cpu_pending_move: mutex.MutexGuard(model.Move),

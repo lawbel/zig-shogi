@@ -15,14 +15,12 @@ pub const Colour = struct {
 };
 
 /// The size (in pixels) of one tile/square on the game board.
-pub const tile_size: c_int = 70;
+pub const tile_size: i16 = 70;
 
-/// A position (x, y) in our game window. We use `i32` as the type, instead
-/// of an alternative like `u16`, for ease when interfacing with the SDL
-/// library.
+/// A position (x, y) in our game window.
 pub const PixelPos = struct {
-    x: i32,
-    y: i32,
+    x: i16,
+    y: i16,
 
     /// Add these coordinates together.
     pub fn add(this: @This(), other: @This()) @This() {
@@ -117,7 +115,7 @@ pub const PixelPos = struct {
             hand_top_left.x <= this.x and
             this.x < hand_top_left.x + tile_size;
 
-        const height: i32 = @intCast(tile_size * order_of_pieces_in_hand.len);
+        const height: i16 = tile_size * order_of_pieces_in_hand.len;
         const y_in_hand =
             hand_top_left.y <= this.y and
             this.y < hand_top_left.y + height;
@@ -134,6 +132,32 @@ pub const PixelPos = struct {
         };
     }
 };
+
+/// The order of promotion choices - that is, when displaying on-screen a
+/// collection of possible promoted pieces to choose from, what order should
+/// we show them in. So `true` represents a promoted piece, while `false`
+/// represents a base un-promoted piece.
+pub const order_of_promotion_choices: [2]bool = .{ true, false };
+
+/// The board positions where the promotion overlay should be displayed.
+pub fn promotionOverlayAt(pos: model.BoardPos) [2]model.BoardPos {
+    const n = 2;
+    var ys = [n]i8{ pos.y, pos.y + 1 };
+
+    // Need to take care not to fall off the edge of the board. So we check if
+    // the last position would be out of bounds, and in that case move
+    // everything up by one.
+    if (ys[n - 1] >= model.Board.size) {
+        for (&ys) |*y| {
+            y.* -= 1;
+        }
+    }
+
+    return [n]model.BoardPos{
+        .{ .x = pos.x, .y = ys[0] },
+        .{ .x = pos.x, .y = ys[1] },
+    };
+}
 
 /// The coordinates of the top-left corner of the board.
 pub const board_top_left: PixelPos = .{
@@ -160,14 +184,14 @@ pub const right_hand_top_left: PixelPos = init: {
 
 /// How much bigger the window should be horizontally, compared to the
 /// board size.
-pub const board_padding_horiz: i32 = board_top_left.x * 2;
+pub const board_padding_horiz: i16 = board_top_left.x * 2;
 
 /// How much bigger the window should be vertically, compared to the
 /// board size.
-pub const board_padding_vert: i32 = board_top_left.y * 2;
+pub const board_padding_vert: i16 = board_top_left.y * 2;
 
 /// The size of the board (width/height), in pixels.
-const board_size_pix: c_int = tile_size * model.Board.size;
+const board_size_pix: i16 = tile_size * model.Board.size;
 
 /// The order (top-to-bottom) of the pieces in-hand. This determines how we
 /// will draw the player hands, and is also needed to properly implement the
