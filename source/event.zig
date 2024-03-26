@@ -4,6 +4,8 @@
 const c = @import("c.zig");
 const cpu = @import("cpu.zig");
 const model = @import("model.zig");
+const pixel = @import("pixel.zig");
+const PromotionOption = @import("state.zig").PromotionOption;
 const rules = @import("rules.zig");
 const State = @import("state.zig").State;
 const std = @import("std");
@@ -38,14 +40,14 @@ pub fn processEvents(
             c.SDL_MOUSEBUTTONUP => {
                 defer state.mouse.move_from = null;
 
-                if (event.button.button != c.SDL_BUTTON_LEFT) continue;
-                if (!state.current_player.eq(state.user)) continue;
+                if (state.current_player.eq(state.user)) {
+                    if (event.button.button != c.SDL_BUTTON_LEFT) continue;
 
-                if (state.user_promotion) |promotion| {
-                    _ = promotion;
-                    //
-                } else {
-                    try processUserMove(alloc, state);
+                    if (state.user_promotion) |promotion| {
+                        try processUserPromotion(alloc, state, promotion);
+                    } else {
+                        try processUserMove(alloc, state);
+                    }
                 }
             },
 
@@ -56,6 +58,62 @@ pub fn processEvents(
     }
 
     return .pass;
+}
+
+/// Try to interpret the users click as choosing a promotion option. If we can
+/// do so, then apply that move to the board and queue up the CPU to decide
+/// its' response. Otherwise, return without changing anything.
+fn processUserPromotion(
+    alloc: std.mem.Allocator,
+    state: *State,
+    promotion: PromotionOption,
+) Error!void {
+    const moved = applyUserPromotion(state, promotion);
+    if (!moved) return;
+
+    if (state.debug) {
+        state.board.debugPrint();
+        std.debug.print("\n", .{});
+    }
+
+    try queueCpuMove(alloc, state);
+}
+
+/// Try to interpret the user's click as a choice of promotion option.
+///
+/// * If we can do so, then apply that promotion to the board, and return
+///   `true` to indicate a move was applied.
+/// * Otherwise, do nothing and return `false` to indicate no move made.
+fn applyUserPromotion(state: *State, promotion: PromotionOption) bool {
+    const pos = state.mouse.pos.toBoardPos() orelse return false;
+
+    const choices = pixel.promotionOverlayAt(promotion.to);
+    var move: model.Move.Basic = .{
+        .from = promotion.from,
+        .motion = .{
+            .x = promotion.to.x - promotion.from.x,
+            .y = promotion.to.y - promotion.from.y,
+        },
+        .promoted = undefined,
+    };
+
+    for (choices, 0..) |choice, i| {
+        if (pos.eq(choice)) {
+            move.promoted = pixel.order_of_promotion_choices[i];
+
+            state.board.set(promotion.from, promotion.orig_piece);
+            const is_ok = state.board.applyMoveBasic(move);
+            std.debug.assert(is_ok);
+
+            state.last_move = .{ .basic = move };
+            state.current_player = state.current_player.swap();
+            state.user_promotion = null;
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 fn processUserMove(
@@ -113,12 +171,17 @@ fn applyUserMoveBasic(
     const piece = args.state.board.get(args.src) orelse return false;
     if (!piece.player.eq(args.state.user)) return false;
 
-    const able_to_promote = rules.promoted.ableToPromote(.{
-        .src = args.src,
-        .dest = args.dest,
-        .player = args.state.user,
-        .must_promote_in_ranks = rules.promoted.mustPromoteInRanks(piece),
-    });
+    var able_to_promote: rules.promoted.AbleToPromote = undefined;
+    if (piece.sort.canPromote()) {
+        able_to_promote = rules.promoted.ableToPromote(.{
+            .src = args.src,
+            .dest = args.dest,
+            .player = args.state.user,
+            .must_promote_in_ranks = rules.promoted.mustPromoteInRanks(piece),
+        });
+    } else {
+        able_to_promote = .cannot_promote;
+    }
 
     // User input may be needed, in the `.can_promote` case. This is somewhat
     // subtle - we still need to check whether the move is valid, so proceed

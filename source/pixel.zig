@@ -133,6 +133,32 @@ pub const PixelPos = struct {
     }
 };
 
+/// The order of promotion choices - that is, when displaying on-screen a
+/// collection of possible promoted pieces to choose from, what order should
+/// we show them in. So `true` represents a promoted piece, while `false`
+/// represents a base un-promoted piece.
+pub const order_of_promotion_choices: [2]bool = .{ true, false };
+
+/// The board positions where the promotion overlay should be displayed.
+pub fn promotionOverlayAt(pos: model.BoardPos) [2]model.BoardPos {
+    const n = 2;
+    var ys = [n]i8{ pos.y, pos.y + 1 };
+
+    // Need to take care not to fall off the edge of the board. So we check if
+    // the last position would be out of bounds, and in that case move
+    // everything up by one.
+    if (ys[n - 1] >= model.Board.size) {
+        for (&ys) |*y| {
+            y.* -= 1;
+        }
+    }
+
+    return [n]model.BoardPos{
+        .{ .x = pos.x, .y = ys[0] },
+        .{ .x = pos.x, .y = ys[1] },
+    };
+}
+
 /// The coordinates of the top-left corner of the board.
 pub const board_top_left: PixelPos = .{
     .x = 175,

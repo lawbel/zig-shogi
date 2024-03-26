@@ -1,4 +1,5 @@
-//! TODO: add docs.
+//! This module handles the situation where the user is required to make a
+//! choice about promoting one of their pieces.
 
 const c = @import("../c.zig");
 const colours = @import("colours.zig");
@@ -9,10 +10,17 @@ const pixel = @import("../pixel.zig");
 const PromotionOption = @import("../state.zig").PromotionOption;
 const sdl = @import("../sdl.zig");
 
+/// The corner radius to use for the promotion overlay, in pixels.
 const overlay_corner_radius = 15;
 
+/// The padding to use for the promotion overlay, in pixels.
 const overlay_padding = 5;
 
+/// Show the promotion choice, by rendering these parts:
+///
+/// * Dim the whole screen.
+/// * Draw a rectangular overlay around the promotion choices.
+/// * Draw the two pieces (base and promoted) the user has to choose from.
 pub fn showPromotion(
     renderer: *c.SDL_Renderer,
     promotion: PromotionOption,
@@ -20,20 +28,21 @@ pub fn showPromotion(
     const tile = pixel.tile_size;
     const top_left = pixel.board_top_left;
     const n = 2;
-    const piece_sorts = [n]model.Sort{
-        promotion.orig_piece.sort,
-        promotion.orig_piece.sort.promote(),
-    };
 
-    // Need to take care not to fall off the edge of the board. So we check if
-    // the last position would be out of bounds, and in that case move
-    // everything up by one.
-    var y_positions = [n]i16{ promotion.to.y, promotion.to.y + 1 };
-    if (y_positions[n - 1] >= model.Board.size) {
-        for (&y_positions) |*pos| {
-            pos.* -= 1;
+    const positions: [n]model.BoardPos =
+        pixel.promotionOverlayAt(promotion.to);
+
+    const piece_sorts: [n]model.Sort = def: {
+        const sort = promotion.orig_piece.sort;
+        const choice = pixel.order_of_promotion_choices;
+
+        var array: [n]model.Sort = undefined;
+        for (0..n) |i| {
+            array[i] = if (choice[i]) sort.promote() else sort;
         }
-    }
+
+        break :def array;
+    };
 
     // Dim the screen.
     try sdl.renderFillRect(renderer, colours.promotion_overlay, null);
@@ -43,8 +52,8 @@ pub fn showPromotion(
         .renderer = renderer,
         .colour = colours.promotion_box,
         .rect = .{
-            .x = top_left.x - overlay_padding + (tile * promotion.to.x),
-            .y = top_left.y - overlay_padding + (tile * y_positions[0]),
+            .x = top_left.x - overlay_padding + (tile * positions[0].x),
+            .y = top_left.y - overlay_padding + (tile * positions[0].y),
             .w = (overlay_padding * 2) + tile,
             .h = (overlay_padding * 2) + (tile * n),
         },
@@ -52,13 +61,13 @@ pub fn showPromotion(
     });
 
     // Draw each possible promotion choice.
-    for (y_positions, piece_sorts) |y_pos, sort| {
+    for (positions, piece_sorts) |pos, sort| {
         try pieces.showPiece(.{
             .renderer = renderer,
             .piece = .{ .player = promotion.orig_piece.player, .sort = sort },
             .pos = .{
-                .x = top_left.x + (tile * promotion.to.x),
-                .y = top_left.y + (tile * y_pos),
+                .x = top_left.x + (tile * pos.x),
+                .y = top_left.y + (tile * pos.y),
             },
         });
     }

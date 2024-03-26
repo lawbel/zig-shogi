@@ -231,6 +231,14 @@ pub const Sort = enum {
         };
     }
 
+    /// Whether the piece is capable of being promoted.
+    pub fn canPromote(this: @This()) bool {
+        return switch (this) {
+            .rook, .bishop, .silver, .knight, .lance, .pawn => true,
+            else => false,
+        };
+    }
+
     /// Demote this piece. If it is already demoted or cannot be demoted,
     /// returns it as-is.
     pub fn demote(this: @This()) @This() {
