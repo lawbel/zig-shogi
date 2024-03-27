@@ -79,7 +79,7 @@ pub fn randomMove(
     player: model.Player,
     board: model.Board,
 ) std.mem.Allocator.Error!model.Move {
-    var moves = try rules.valid.movesFor(.{
+    var moves = try rules.movesFor(.{
         .alloc = alloc,
         .player = player,
         .board = board,
@@ -106,7 +106,7 @@ pub fn randomMove(
 /// Returns a random basic move.
 fn randomMoveBasic(
     prng: *std.rand.DefaultPrng,
-    basics: rules.types.Basics,
+    basics: rules.Basics,
     choice: usize,
 ) model.Move.Basic {
     var iter = basics.map.iterator();
@@ -134,7 +134,7 @@ fn randomMoveBasic(
 /// Returns a random drop.
 fn randomMoveDrop(
     prng: *std.rand.DefaultPrng,
-    drops: rules.types.Drops,
+    drops: rules.Drops,
     choice: usize,
 ) model.Move.Drop {
     var iter = drops.map.iterator();

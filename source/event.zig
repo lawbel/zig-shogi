@@ -171,13 +171,13 @@ fn applyUserMoveBasic(
     const piece = args.state.board.get(args.src) orelse return false;
     if (!piece.player.eq(args.state.user)) return false;
 
-    var able_to_promote: rules.promoted.AbleToPromote = undefined;
+    var able_to_promote: rules.AbleToPromote = undefined;
     if (piece.sort.canPromote()) {
-        able_to_promote = rules.promoted.ableToPromote(.{
+        able_to_promote = rules.ableToPromote(.{
             .src = args.src,
             .dest = args.dest,
             .player = args.state.user,
-            .must_promote_in_ranks = rules.promoted.mustPromoteInRanks(piece),
+            .must_promote_in_ranks = rules.mustPromoteInRanks(piece),
         });
     } else {
         able_to_promote = .cannot_promote;
@@ -208,8 +208,7 @@ fn applyUserMoveBasic(
     if (basic_move.motion.x == 0 and basic_move.motion.y == 0) return false;
 
     const move = .{ .basic = basic_move };
-    const is_valid =
-        try rules.valid.isValid(args.alloc, move, args.state.board);
+    const is_valid = try rules.isValid(args.alloc, move, args.state.board);
     if (!is_valid) return false;
 
     const move_ok = args.state.board.applyMoveBasic(basic_move);
@@ -253,8 +252,7 @@ fn applyUserMoveDrop(
     };
 
     const move = .{ .drop = drop_move };
-    const is_valid =
-        try rules.valid.isValid(args.alloc, move, args.state.board);
+    const is_valid = try rules.isValid(args.alloc, move, args.state.board);
     if (!is_valid) return false;
 
     const move_ok = args.state.board.applyMoveDrop(drop_move);

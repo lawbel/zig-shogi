@@ -17,7 +17,7 @@ pub fn highlightCheck(
 ) Error!void {
     inline for (@typeInfo(model.Player).Union.fields) |field| {
         const player = @unionInit(model.Player, field.name, {});
-        const in_check = try rules.checked.isInCheck(alloc, player, board);
+        const in_check = try rules.isInCheck(alloc, player, board);
 
         if (in_check) {
             const king = .{ .sort = .king, .player = player };
@@ -124,7 +124,7 @@ fn highlightCurrentBasic(
     const current = args.cur_pos.toBoardPos();
     if (!piece.player.eq(args.player)) return;
 
-    var moves = try rules.moved.movementsFrom(.{
+    var moves = try rules.movementsFrom(.{
         .alloc = args.alloc,
         .from = args.pos,
         .board = args.board,
@@ -157,7 +157,7 @@ fn highlightCurrentDrop(
     },
 ) Error!void {
     const current = args.cur_pos.toBoardPos();
-    var drops = try rules.dropped.possibleDropsOf(.{
+    var drops = try rules.possibleDropsOf(.{
         .alloc = args.alloc,
         .piece = args.piece,
         .board = args.board,
