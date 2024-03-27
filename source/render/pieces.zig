@@ -2,13 +2,20 @@
 //! currently moving.
 
 const c = @import("../c.zig");
-const colours = @import("colours.zig");
 const Error = @import("errors.zig").Error;
 const model = @import("../model.zig");
 const pixel = @import("../pixel.zig");
 const sdl = @import("../sdl.zig");
 const State = @import("../state.zig").State;
 const texture = @import("../texture.zig");
+
+/// The colour to shade pieces with, if they are being moved around by the user.
+pub const piece_shadow_on_board: pixel.Colour = .{
+    .red = 0xD4,
+    .green = 0xC8,
+    .blue = 0xC1,
+    .alpha = (pixel.Colour.max_opacity / 5) * 4,
+};
 
 /// Renders all the pieces on the board, and the piece (if any) that the user
 /// is currently moving.
@@ -41,7 +48,7 @@ pub fn showPieces(
                 const owner_is_user = piece.player.eq(args.player);
                 if (owner_is_user and x == pos.x and y == pos.y) {
                     moved_piece = piece;
-                    shade = colours.piece_shadow_on_board;
+                    shade = piece_shadow_on_board;
                 }
             }
             defer shade = null;

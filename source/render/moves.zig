@@ -1,7 +1,6 @@
 //! Highlights useful information on the game board.
 
 const c = @import("../c.zig");
-const colours = @import("colours.zig");
 const Error = @import("errors.zig").Error;
 const highlight = @import("highlight.zig");
 const model = @import("../model.zig");
@@ -29,6 +28,14 @@ pub fn highlightCheck(
     }
 }
 
+/// The colour to highlight the last move with (if there is one).
+pub const last_move: pixel.Colour = .{
+    .red = 0x57,
+    .green = 0x9A,
+    .blue = 0x03,
+    .alpha = (pixel.Colour.max_opacity / 7) * 2,
+};
+
 /// Show the last move (if there is one) on the board by highlighting either:
 ///
 /// * The tile/square that the piece moved from and moved to (if it was a
@@ -38,20 +45,31 @@ pub fn highlightLast(
     renderer: *c.SDL_Renderer,
     move: model.Move,
 ) Error!void {
-    const col = colours.last_move;
-
     switch (move) {
         .basic => |basic| {
             const dest = basic.from.applyMotion(basic.motion) orelse return;
-            try highlight.tileSquare(renderer, basic.from, col);
-            try highlight.tileSquare(renderer, dest, col);
+            try highlight.tileSquare(renderer, basic.from, last_move);
+            try highlight.tileSquare(renderer, dest, last_move);
         },
 
         .drop => |drop| {
-            try highlight.tileSquare(renderer, drop.pos, col);
+            try highlight.tileSquare(renderer, drop.pos, last_move);
         },
     }
 }
+
+/// The colour to highlight a selected piece in, that the user has started
+/// moving.
+pub const selected: pixel.Colour = .{
+    .red = 0x17,
+    .green = 0x33,
+    .blue = 0x02,
+    .alpha = (pixel.Colour.max_opacity / 7) * 2,
+};
+
+/// The colour to highlight a tile with, that is a possible option to move the
+/// piece to.
+pub const move_option: pixel.Colour = selected;
 
 /// Show the current move (if there is one) on the board by highlighting the
 /// tile/square of the selected piece, and any possible moves that piece could
@@ -104,7 +122,6 @@ fn highlightCurrentBasic(
 ) Error!void {
     const piece = args.board.get(args.pos) orelse return;
     const current = args.cur_pos.toBoardPos();
-    const col = colours.move_option;
     if (!piece.player.eq(args.player)) return;
 
     var moves = try rules.moved.movementsFrom(.{
@@ -118,15 +135,15 @@ fn highlightCurrentBasic(
         const dest = args.pos.applyMotion(item.motion) orelse continue;
 
         if (current != null and current.?.eq(dest)) {
-            try highlight.tileSquare(args.renderer, dest, col);
+            try highlight.tileSquare(args.renderer, dest, move_option);
         } else if (args.board.get(dest) == null) {
-            try highlight.tileDot(args.renderer, dest, col);
+            try highlight.tileDot(args.renderer, dest, move_option);
         } else {
-            try highlight.tileCorners(args.renderer, dest, col);
+            try highlight.tileCorners(args.renderer, dest, move_option);
         }
     }
 
-    try highlight.tileSquare(args.renderer, args.pos, colours.selected);
+    try highlight.tileSquare(args.renderer, args.pos, selected);
 }
 
 /// Shows the current move - a drop - on the board.
@@ -140,7 +157,6 @@ fn highlightCurrentDrop(
     },
 ) Error!void {
     const current = args.cur_pos.toBoardPos();
-    const col = colours.move_option;
     var drops = try rules.dropped.possibleDropsOf(.{
         .alloc = args.alloc,
         .piece = args.piece,
@@ -150,9 +166,9 @@ fn highlightCurrentDrop(
 
     for (drops.items) |pos| {
         if (current != null and current.?.eq(pos)) {
-            try highlight.tileSquare(args.renderer, pos, col);
+            try highlight.tileSquare(args.renderer, pos, move_option);
         } else {
-            try highlight.tileDot(args.renderer, pos, col);
+            try highlight.tileDot(args.renderer, pos, move_option);
         }
     }
 }

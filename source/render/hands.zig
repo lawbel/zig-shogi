@@ -2,7 +2,6 @@
 //! of each.
 
 const c = @import("../c.zig");
-const colours = @import("colours.zig");
 const Error = @import("errors.zig").Error;
 const model = @import("../model.zig");
 const pieces = @import("pieces.zig");
@@ -35,6 +34,35 @@ pub fn showBothPlayers(
         .hand = args.board.hand.black,
     });
 }
+
+/// The colour to print the count of pieces in a player's hand.
+pub const hand_text: pixel.Colour = .{
+    .red = 0x79,
+    .green = 0x66,
+    .blue = 0x41,
+};
+
+/// The colour to draw the box showing the piece count for each player's hand.
+pub const hand_box: pixel.Colour = .{
+    .red = 0xDD,
+    .green = 0xC8,
+    .blue = 0xA1,
+};
+
+/// The colour to draw the border of the box which shows the piece count for
+/// a player's hand.
+pub const hand_box_border: pixel.Colour = .{
+    .red = 0xA3,
+    .green = 0x87,
+    .blue = 0x50,
+};
+
+/// The colour to shade pieces with, if a player has zero of them in hand.
+pub const no_piece_in_hand: pixel.Colour = .{
+    .red = 0xD4,
+    .green = 0xC8,
+    .blue = 0xC1,
+};
 
 /// Render the state of the given players hand - draw the pieces, and show how
 /// many of that piece are in the player's hand in a box next to each piece.
@@ -69,7 +97,7 @@ fn showPlayer(
             .renderer = args.renderer,
             .piece = .{ .player = .black, .sort = sort },
             .pos = .{ .x = top_left_x, .y = top_left_y },
-            .shade = if (count > 0) null else colours.no_piece_in_hand,
+            .shade = if (count > 0) null else no_piece_in_hand,
         });
 
         // Step 2/3 - render the box we'll show the piece count in.
@@ -78,7 +106,7 @@ fn showPlayer(
 
         try sdl.renderFillRect(
             args.renderer,
-            colours.hand_box_border,
+            hand_box_border,
             .{
                 .x = box_x - box_width,
                 .y = box_y - box_size,
@@ -88,7 +116,7 @@ fn showPlayer(
         );
         try sdl.renderFillRect(
             args.renderer,
-            colours.hand_box,
+            hand_box,
             .{
                 .x = box_x - box_width + box_border,
                 .y = box_y - box_size + box_border,
@@ -108,7 +136,7 @@ fn showPlayer(
             .text = str,
             .font = args.font,
             .style = c.TTF_STYLE_BOLD,
-            .colour = colours.hand_text,
+            .colour = hand_text,
             .center = .{
                 .x = box_x - @divFloor(box_width, 2),
                 .y = box_y - @divFloor(box_size, 2),
