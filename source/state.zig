@@ -17,6 +17,7 @@ pub const PromotionOption = struct {
     from: model.BoardPos,
     to: model.BoardPos,
     orig_piece: model.Piece,
+    captured_piece: ?model.Piece,
 };
 
 /// Our entire game state, which includes a mix of core types like `Board`

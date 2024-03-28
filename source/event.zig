@@ -51,13 +51,30 @@ pub fn processEvents(
                 }
             },
 
-            c.SDL_QUIT => return .quit,
+            c.SDL_KEYUP => {
+                if (state.current_player.eq(state.user) and
+                    state.user_promotion != null and
+                    event.key.keysym.sym == c.SDLK_ESCAPE)
+                {
+                    rollBackPromotion(state, state.user_promotion.?);
+                }
+            },
+
+            c.SDL_QUIT, c.SDL_APP_TERMINATING => return .quit,
 
             else => {},
         }
     }
 
     return .pass;
+}
+
+/// Undo the given `PromotionOption`, resetting the board state and clearing
+/// the `user_promotion` field of the given `State`.
+fn rollBackPromotion(state: *State, promotion: PromotionOption) void {
+    state.board.set(promotion.to, promotion.captured_piece);
+    state.board.set(promotion.from, promotion.orig_piece);
+    state.user_promotion = null;
 }
 
 /// Try to interpret the users click as choosing a promotion option. If we can
@@ -69,7 +86,10 @@ fn processUserPromotion(
     promotion: PromotionOption,
 ) Error!void {
     const moved = applyUserPromotion(state, promotion);
-    if (!moved) return;
+    if (!moved) {
+        rollBackPromotion(state, promotion);
+        return;
+    }
 
     if (state.debug) {
         state.board.debugPrint();
@@ -214,6 +234,7 @@ fn applyUserMoveBasic(
     const is_valid = try rules.isValid(args.alloc, move, args.state.board);
     if (!is_valid) return false;
 
+    const captured_piece = args.state.board.get(args.dest);
     const move_ok = args.state.board.applyMoveBasic(basic_move);
     std.debug.assert(move_ok);
 
@@ -229,6 +250,7 @@ fn applyUserMoveBasic(
             .from = args.src,
             .to = args.dest,
             .orig_piece = piece,
+            .captured_piece = captured_piece,
         };
         return false;
     }
