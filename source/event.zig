@@ -116,6 +116,9 @@ fn applyUserPromotion(state: *State, promotion: PromotionOption) bool {
     return false;
 }
 
+/// Try to interpret the user's click as a move (could be a drop or a regular
+/// move), and apply that move to the board. If successful, queues up the CPU
+/// the decide on its' response.
 fn processUserMove(
     alloc: std.mem.Allocator,
     state: *State,

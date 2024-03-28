@@ -11,6 +11,8 @@ const std = @import("std");
 /// Errors that can occur while working with this state.
 pub const Error = fonts.Error || error{CantOpenFont};
 
+/// A 'promotion option' - an option for the user to promote a piece, which
+/// requires their input to decide to promote or not.
 pub const PromotionOption = struct {
     from: model.BoardPos,
     to: model.BoardPos,
