@@ -30,7 +30,7 @@ pub fn showGameState(
     }
 
     if (state.mouse.move_from) |moved_from| current: {
-        if (state.user_promotion != null) break :current;
+        if (state.promote_option != null) break :current;
         try moves.highlightCurrent(.{
             .alloc = alloc,
             .renderer = renderer,
@@ -51,7 +51,7 @@ pub fn showGameState(
     });
 
     var moved_from = state.mouse.move_from;
-    if (state.user_promotion != null) moved_from = null;
+    if (state.promote_option != null) moved_from = null;
     try pieces.showPieces(.{
         .renderer = renderer,
         .player = state.user,
@@ -60,7 +60,7 @@ pub fn showGameState(
         .board = state.board,
     });
 
-    if (state.user_promotion) |promotion| {
+    if (state.promote_option) |promotion| {
         try promoted.showPromotion(renderer, promotion);
     }
 

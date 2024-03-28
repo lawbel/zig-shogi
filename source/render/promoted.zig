@@ -6,7 +6,7 @@ const Error = @import("errors.zig").Error;
 const model = @import("../model.zig");
 const pieces = @import("pieces.zig");
 const pixel = @import("../pixel.zig");
-const PromotionOption = @import("../state.zig").PromotionOption;
+const PromoteOption = @import("../state.zig").PromoteOption;
 const sdl = @import("../sdl.zig");
 
 /// The corner radius to use for the promotion overlay, in pixels.
@@ -37,7 +37,7 @@ pub const promotion_box: pixel.Colour = .{
 /// * Draw the two pieces (base and promoted) the user has to choose from.
 pub fn showPromotion(
     renderer: *c.SDL_Renderer,
-    promotion: PromotionOption,
+    promotion: PromoteOption,
 ) Error!void {
     const tile = pixel.tile_size;
     const top_left = pixel.board_top_left;

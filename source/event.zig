@@ -5,7 +5,7 @@ const c = @import("c.zig");
 const cpu = @import("cpu.zig");
 const model = @import("model.zig");
 const pixel = @import("pixel.zig");
-const PromotionOption = @import("state.zig").PromotionOption;
+const PromoteOption = @import("state.zig").PromoteOption;
 const rules = @import("rules.zig");
 const State = @import("state.zig").State;
 const std = @import("std");
@@ -43,7 +43,7 @@ pub fn processEvents(
                 if (state.current_player.eq(state.user)) {
                     if (event.button.button != c.SDL_BUTTON_LEFT) continue;
 
-                    if (state.user_promotion) |promotion| {
+                    if (state.promote_option) |promotion| {
                         try processUserPromotion(alloc, state, promotion);
                     } else {
                         try processUserMove(alloc, state);
@@ -53,10 +53,10 @@ pub fn processEvents(
 
             c.SDL_KEYUP => {
                 if (state.current_player.eq(state.user) and
-                    state.user_promotion != null and
+                    state.promote_option != null and
                     event.key.keysym.sym == c.SDLK_ESCAPE)
                 {
-                    rollBackPromotion(state, state.user_promotion.?);
+                    rollBackPromotion(state, state.promote_option.?);
                 }
             },
 
@@ -69,12 +69,12 @@ pub fn processEvents(
     return .pass;
 }
 
-/// Undo the given `PromotionOption`, resetting the board state and clearing
-/// the `user_promotion` field of the given `State`.
-fn rollBackPromotion(state: *State, promotion: PromotionOption) void {
+/// Undo the given `PromoteOption`, resetting the board state and clearing
+/// the `promote_option` field of the given `State`.
+fn rollBackPromotion(state: *State, promotion: PromoteOption) void {
     state.board.set(promotion.to, promotion.captured_piece);
     state.board.set(promotion.from, promotion.orig_piece);
-    state.user_promotion = null;
+    state.promote_option = null;
 }
 
 /// Try to interpret the users click as choosing a promotion option. If we can
@@ -83,7 +83,7 @@ fn rollBackPromotion(state: *State, promotion: PromotionOption) void {
 fn processUserPromotion(
     alloc: std.mem.Allocator,
     state: *State,
-    promotion: PromotionOption,
+    promotion: PromoteOption,
 ) Error!void {
     const moved = applyUserPromotion(state, promotion);
     if (!moved) {
@@ -104,7 +104,7 @@ fn processUserPromotion(
 /// * If we can do so, then apply that promotion to the board, and return
 ///   `true` to indicate a move was applied.
 /// * Otherwise, do nothing and return `false` to indicate no move made.
-fn applyUserPromotion(state: *State, promotion: PromotionOption) bool {
+fn applyUserPromotion(state: *State, promotion: PromoteOption) bool {
     const pos = state.mouse.pos.toBoardPos() orelse return false;
 
     const choices = pixel.promotionOverlayAt(promotion.to);
@@ -127,7 +127,7 @@ fn applyUserPromotion(state: *State, promotion: PromotionOption) bool {
 
             state.last_move = .{ .basic = move };
             state.current_player = state.current_player.swap();
-            state.user_promotion = null;
+            state.promote_option = null;
 
             return true;
         }
@@ -246,7 +246,7 @@ fn applyUserMoveBasic(
     // * return `false` as we've not completed a move yet.
     if (user_input_needed) {
         args.state.board.set(args.dest, null);
-        args.state.user_promotion = .{
+        args.state.promote_option = .{
             .from = args.src,
             .to = args.dest,
             .orig_piece = piece,

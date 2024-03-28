@@ -13,7 +13,7 @@ pub const Error = fonts.Error || error{CantOpenFont};
 
 /// A 'promotion option' - an option for the user to promote a piece, which
 /// requires their input to decide to promote or not.
-pub const PromotionOption = struct {
+pub const PromoteOption = struct {
     from: model.BoardPos,
     to: model.BoardPos,
     orig_piece: model.Piece,
@@ -42,7 +42,7 @@ pub const State = struct {
     current_player: model.Player,
     /// The piece (if any) that the user has moved which requires them to
     /// choose whether it should be promoted.
-    user_promotion: ?PromotionOption = null,
+    promote_option: ?PromoteOption = null,
     /// A move that the CPU player has decided on, that has not yet been
     /// applied to update the board.
     cpu_pending_move: mutex.MutexGuard(model.Move),
