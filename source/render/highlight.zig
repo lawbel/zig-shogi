@@ -1,7 +1,7 @@
 //! This module provides helper functions for highlighting a tile on the board:
 //!
 //! * `tileSquare` highlights the entire tile.
-//! * `tileDot` draws a dot in the center of the tile.
+//! * `tileDot` draws a dot in the centre of the tile.
 //! * `tileCorners` highlights the corners of the tile.
 
 const c = @import("../c.zig");
@@ -42,15 +42,15 @@ pub fn tileDot(
     const tile_size_f: f32 = @floatFromInt(pixel.tile_size);
     const tile_x: f32 = @floatFromInt(tile.x);
     const tile_y: f32 = @floatFromInt(tile.y);
-    const center_x: i16 = @intFromFloat((tile_x + 0.5) * tile_size_f);
-    const center_y: i16 = @intFromFloat((tile_y + 0.5) * tile_size_f);
+    const centre_x: i16 = @intFromFloat((tile_x + 0.5) * tile_size_f);
+    const centre_y: i16 = @intFromFloat((tile_y + 0.5) * tile_size_f);
 
     try sdl.renderFillCircle(.{
         .renderer = renderer,
         .colour = colour,
         .centre = .{
-            .x = pixel.board_top_left.x + center_x,
-            .y = pixel.board_top_left.y + center_y,
+            .x = pixel.board_top_left.x + centre_x,
+            .y = pixel.board_top_left.y + centre_y,
         },
         .radius = dot_radius,
     });

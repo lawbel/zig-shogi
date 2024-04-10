@@ -71,7 +71,7 @@ pub fn renderCopy(
         src_rect: ?Rect = null,
         dst_rect: ?Rect = null,
         angle: f64 = 0,
-        center: ?Point = null,
+        centre: ?Point = null,
         flip: c.SDL_RendererFlip = c.SDL_FLIP_NONE,
         shade: ?pixel.Colour = null,
     },
@@ -87,8 +87,8 @@ pub fn renderCopy(
         if (args.src_rect) |src| src.toSDL() else null;
     const dest_rect: ?c.SDL_Rect =
         if (args.dst_rect) |dest| dest.toSDL() else null;
-    const center: ?c.SDL_Point =
-        if (args.center) |pt| pt.toSDL() else null;
+    const centre: ?c.SDL_Point =
+        if (args.centre) |pt| pt.toSDL() else null;
 
     if (c.SDL_RenderCopyEx(
         args.renderer,
@@ -96,7 +96,7 @@ pub fn renderCopy(
         if (src_rect) |src| &src else null,
         if (dest_rect) |dest| &dest else null,
         args.angle,
-        if (center) |pt| &pt else null,
+        if (centre) |pt| &pt else null,
         args.flip,
     ) < 0) {
         const msg = "Failed to render copy: %s";
@@ -410,7 +410,7 @@ pub fn renderFillTriangle(
 
 /// Render the given text (which is expected to be UTF-8 encoded) with the
 /// given font, style, and colour. The resulting text will be centred about
-/// the position of the 'center' argument.
+/// the position of the 'centre' argument.
 pub fn renderUtf8Text(
     args: struct {
         renderer: *c.SDL_Renderer,
@@ -418,7 +418,7 @@ pub fn renderUtf8Text(
         font: *c.TTF_Font,
         colour: pixel.Colour,
         style: c_int = c.TTF_STYLE_NORMAL,
-        center: Point,
+        centre: Point,
     },
 ) Error!void {
     const orig_style = c.TTF_GetFontStyle(args.font);
@@ -464,8 +464,8 @@ pub fn renderUtf8Text(
         .renderer = args.renderer,
         .texture = texture,
         .dst_rect = .{
-            .x = args.center.x - @divFloor(width, 2),
-            .y = args.center.y - @divFloor(height, 2),
+            .x = args.centre.x - @divFloor(width, 2),
+            .y = args.centre.y - @divFloor(height, 2),
             .w = width,
             .h = height,
         },

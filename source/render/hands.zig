@@ -137,7 +137,7 @@ fn showPlayer(
             .font = args.font,
             .style = c.TTF_STYLE_BOLD,
             .colour = hand_text,
-            .center = .{
+            .centre = .{
                 .x = box_x - @divFloor(box_width, 2),
                 .y = box_y - @divFloor(box_size, 2),
             },
