@@ -12,6 +12,12 @@ pub const Colour = struct {
     alpha: u8 = max_opacity,
 
     pub const max_opacity = std.math.maxInt(u8);
+    pub const max_field = std.math.maxInt(u8);
+
+    pub const black: @This() =
+        .{ .red = 0, .green = 0, .blue = 0 };
+    pub const white: @This() =
+        .{ .red = max_field, .green = max_field, .blue = max_field };
 };
 
 /// The size (in pixels) of one tile/square on the game board.
