@@ -9,6 +9,7 @@ const moves = @import("moves.zig");
 const pieces = @import("pieces.zig");
 const promoted = @import("promoted.zig");
 const sdl = @import("../sdl.zig");
+const selected = @import("selected.zig");
 const State = @import("../state.zig").State;
 const std = @import("std");
 
@@ -58,6 +59,12 @@ pub fn showGameState(
         .moved_from = moved_from,
         .mouse_pos = state.mouse.pos,
         .board = state.board,
+    });
+
+    try selected.show(.{
+        .renderer = renderer,
+        .moves = state.selected_moves,
+        .tiles = state.selected_tiles,
     });
 
     if (state.promote_option) |promotion| {

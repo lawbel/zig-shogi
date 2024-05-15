@@ -3,6 +3,8 @@
 //! * `tileSquare` highlights the entire tile.
 //! * `tileDot` draws a dot in the centre of the tile.
 //! * `tileCorners` highlights the corners of the tile.
+//! * `tileCheck` draws a red dot which fades outwards with a gradient.
+//! * `tileSelect` draws a blue circle around the middle of the tile.
 
 const c = @import("../c.zig");
 const Error = @import("errors.zig").Error;
@@ -150,6 +152,30 @@ pub fn tileCheck(
         renderer,
         &texture.check_texture,
         texture.check_image,
+    );
+
+    try sdl.renderCopy(.{
+        .renderer = renderer,
+        .texture = tex,
+        .dst_rect = .{
+            .x = pixel.board_top_left.x + (tile.x * pixel.tile_size),
+            .y = pixel.board_top_left.y + (tile.y * pixel.tile_size),
+            .w = pixel.tile_size,
+            .h = pixel.tile_size,
+        },
+    });
+}
+
+/// Highlights the given position on the board, by drawing the 'select' texture
+/// at that location.
+pub fn tileSelect(
+    renderer: *c.SDL_Renderer,
+    tile: model.BoardPos,
+) Error!void {
+    const tex = try texture.getInitTexture(
+        renderer,
+        &texture.select_texture,
+        texture.select_image,
     );
 
     try sdl.renderCopy(.{

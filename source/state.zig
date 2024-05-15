@@ -20,6 +20,11 @@ pub const PromoteOption = struct {
     captured_piece: ?model.Piece,
 };
 
+pub const SelectedMove = struct {
+    from: model.BoardPos,
+    to: model.BoardPos,
+};
+
 /// Our entire game state, which includes a mix of core types like `Board`
 /// and things relating to window/mouse state.
 pub const State = struct {
@@ -43,6 +48,10 @@ pub const State = struct {
     /// The piece (if any) that the user has moved which requires them to
     /// choose whether it should be promoted.
     promote_option: ?PromoteOption = null,
+    /// The tiles that the user has selected to highlight.
+    selected_tiles: std.AutoHashMap(model.BoardPos, void),
+    /// Moves that the user has selected to highlight on the board.
+    selected_moves: std.AutoHashMap(SelectedMove, void),
     /// A move that the CPU player has decided on, that has not yet been
     /// applied to update the board.
     cpu_pending_move: mutex.MutexGuard(model.Move),
@@ -74,6 +83,9 @@ pub const State = struct {
         const opt = c.TTF_OpenFont(@ptrCast(file_path), args.font.pt_size);
         const ttf: *c.TTF_Font = opt orelse return error.CantOpenFont;
 
+        const Moves = std.AutoHashMap(SelectedMove, void);
+        const Tiles = std.AutoHashMap(model.BoardPos, void);
+
         return .{
             .board = model.Board.init,
             .user = args.user,
@@ -82,6 +94,8 @@ pub const State = struct {
                 .pos = .{ .x = 0, .y = 0 },
             },
             .cpu_pending_move = mutex.MutexGuard(model.Move).init(null),
+            .selected_moves = Moves.init(args.alloc),
+            .selected_tiles = Tiles.init(args.alloc),
             .last_frame = args.init_frame,
             .font = ttf,
             .debug = args.debug,
@@ -89,7 +103,9 @@ pub const State = struct {
     }
 
     /// Free the memory associated with this type.
-    pub fn deinit(this: @This()) void {
+    pub fn deinit(this: *@This()) void {
+        this.selected_moves.deinit();
+        this.selected_tiles.deinit();
         c.TTF_CloseFont(this.font);
     }
 };

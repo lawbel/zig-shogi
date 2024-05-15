@@ -42,12 +42,14 @@ pub fn processEvents(
 
                 if (state.current_player.eq(state.user)) {
                     if (event.button.button != c.SDL_BUTTON_LEFT) continue;
-
                     if (state.promote_option) |promotion| {
                         try processUserPromotion(alloc, state, promotion);
                     } else {
                         try processUserMove(alloc, state);
                     }
+                } else {
+                    if (event.button.button != c.SDL_BUTTON_RIGHT) continue;
+                    try processUserSelection(state);
                 }
             },
 
@@ -67,6 +69,38 @@ pub fn processEvents(
     }
 
     return .pass;
+}
+
+/// Try to interpret the users click as selecting a move (or just a
+/// single tile) to highlight on the board. If we can do so, then update the
+/// state which will end up rendered on the board. Otherwise, just return.
+fn processUserSelection(state: *State) Error!void {
+    const dest: model.BoardPos = state.mouse.pos.toBoardPos() orelse return;
+    const src: ?model.BoardPos = def: {
+        const pix = (state.mouse.move_from) orelse break :def null;
+        const pos = pix.toBoardPos() orelse break :def null;
+        break :def if (pos.eq(dest)) null else pos;
+    };
+
+    if (src) |pos| {
+        // There is a move, with distinct 'src' and 'dest'.
+        const move = .{ .from = pos, .to = dest };
+
+        if (state.selected_moves.contains(move)) {
+            const was_deleted = state.selected_moves.remove(move);
+            std.debug.assert(was_deleted);
+        } else {
+            try state.selected_moves.put(move, {});
+        }
+    } else if (state.selected_tiles.contains(dest)) {
+        // There is a single tile selected which was already selected,
+        // so de-select it.
+        const was_deleted = state.selected_tiles.remove(dest);
+        std.debug.assert(was_deleted);
+    } else {
+        // There is a single tile selected, so highlight it.
+        try state.selected_tiles.put(dest, {});
+    }
 }
 
 /// Undo the given `PromoteOption`, resetting the board state and clearing
