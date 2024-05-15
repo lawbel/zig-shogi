@@ -179,12 +179,7 @@ pub fn rwToTexture(
         return error.CannotLoadTexture;
     };
 
-    if (c.SDL_SetTextureBlendMode(texture, args.blend_mode) < 0) {
-        const msg = "Failed to set draw blend mode: %s";
-        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
-        return error.CannotSetVar;
-    }
-
+    try setTextureBlendMode(texture, args.blend_mode);
     return texture;
 }
 
@@ -240,9 +235,7 @@ fn getRenderDrawColour(renderer: *c.SDL_Renderer) Error!pixel.Colour {
 /// A wrapper around the C function `SDL_RenderClear`.
 pub fn renderClear(renderer: *c.SDL_Renderer) Error!void {
     const orig = try getRenderDrawColour(renderer);
-
-    const black: pixel.Colour = .{};
-    try setRenderDrawColour(renderer, black);
+    try setRenderDrawColour(renderer, pixel.Colour.black);
 
     if (c.SDL_RenderClear(renderer) < 0) {
         const msg = "Failed to clear renderer: %s";
@@ -370,6 +363,17 @@ pub fn renderFillCircle(
 
     try setRenderDrawBlendMode(args.renderer, blend_mode);
     try setRenderDrawColour(args.renderer, colour);
+}
+
+fn setTextureBlendMode(
+    texture: *c.SDL_Texture,
+    blend_mode: c.SDL_BlendMode,
+) Error!void {
+    if (c.SDL_SetTextureBlendMode(texture, blend_mode) < 0) {
+        const msg = "Failed to set texture blend mode: %s";
+        c.SDL_LogError(c.SDL_LOG_CATEGORY_RENDER, msg, c.SDL_GetError());
+        return error.CannotSetVar;
+    }
 }
 
 /// A wrapper around the C function `c.filledTrigonRGBA` from SDL_gfx.
